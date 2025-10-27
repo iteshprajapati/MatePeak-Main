@@ -47,8 +47,26 @@ const availabilitySchema = z.object({
 });
 
 const pricingSchema = z.object({
-  isPaid: z.boolean(),
-  pricePerSession: z.number().optional().nullable(),
+  servicePricing: z.object({
+    oneOnOneSession: z.object({
+      enabled: z.boolean().optional(),
+      price: z.number().min(0, "Price must be positive").optional(),
+      hasFreeDemo: z.boolean().optional(),
+    }).optional(),
+    chatAdvice: z.object({
+      enabled: z.boolean().optional(),
+      price: z.number().min(0, "Price must be positive").optional(),
+      hasFreeDemo: z.boolean().optional(),
+    }).optional(),
+    digitalProducts: z.object({
+      enabled: z.boolean().optional(),
+      price: z.number().min(0, "Price must be positive").optional(),
+    }).optional(),
+    notes: z.object({
+      enabled: z.boolean().optional(),
+      price: z.number().min(0, "Price must be positive").optional(),
+    }).optional(),
+  }),
 });
 
 const profileDescriptionSchema = z.object({
@@ -90,7 +108,7 @@ const educationSchema = z.object({
 
 const profileSetupSchema = z.object({
   profilePicture: z.any().optional(),
-  bio: z.string().max(500, "Bio must be less than 500 characters"),
+  profilePictureUrl: z.string().optional(),
   socialLinks: z.object({
     linkedin: z.string().url("Please enter a valid URL").or(z.literal("")).optional(),
     instagram: z.string().url("Please enter a valid URL").or(z.literal("")).optional(),
@@ -136,9 +154,13 @@ export function useExpertOnboardingForm() {
       digitalProducts: false,
       notes: false,
       availability: [],
-      isPaid: true,
-      pricePerSession: 0,
-      bio: "",
+      servicePricing: {
+        oneOnOneSession: { enabled: false, price: 0, hasFreeDemo: false },
+        chatAdvice: { enabled: false, price: 0, hasFreeDemo: false },
+        digitalProducts: { enabled: false, price: 0 },
+        notes: { enabled: false, price: 0 },
+      },
+      profilePictureUrl: "",
       socialLinks: {
         linkedin: "",
         instagram: "",

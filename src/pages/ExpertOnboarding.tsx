@@ -84,10 +84,12 @@ export default function ExpertOnboarding() {
           isValid = true; // Availability is optional
           break;
         case 7:
-          isValid = await form.trigger(['isPaid', 'pricePerSession']);
+          // Pricing validation - check if any service has pricing enabled
+          const servicePricing = form.getValues('servicePricing');
+          isValid = true; // Pricing is optional, mentors can offer free services
           break;
         case 8:
-          isValid = await form.trigger(['bio', 'socialLinks']);
+          isValid = await form.trigger(['socialLinks']);
           
           if (isValid) {
             await form.handleSubmit(onSubmit)();
