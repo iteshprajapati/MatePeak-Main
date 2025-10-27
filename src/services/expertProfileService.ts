@@ -41,6 +41,8 @@ export async function updateExpertProfile(data: FormValues) {
     motivation: data.motivation,
     headline: data.headline,
     education: data.education,
+    teaching_certifications: data.hasNoCertificate ? [] : (data.teachingCertifications || []),
+    has_no_certificate: data.hasNoCertificate || false,
   };
 
   if (existingProfile) {

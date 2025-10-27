@@ -58,6 +58,23 @@ const profileDescriptionSchema = z.object({
   headline: z.string().min(10, "Headline must be at least 10 characters").max(100, "Headline must be less than 100 characters"),
 });
 
+const teachingCertificationSchema = z.object({
+  hasNoCertificate: z.boolean().optional(),
+  teachingCertifications: z.array(
+    z.object({
+      subject: z.string().min(1, "Subject is required"),
+      certificateName: z.string().min(1, "Certificate name is required"),
+      description: z.string().optional(),
+      issuedBy: z.string().min(1, "Issued by is required"),
+      yearFrom: z.string().min(1, "Start year is required"),
+      yearTo: z.string().optional(),
+      certificateFile: z.any().optional(),
+      certificateUrl: z.string().optional(),
+      isVerified: z.boolean().optional(),
+    })
+  ).optional(),
+});
+
 const educationSchema = z.object({
   education: z.array(
     z.object({
@@ -83,8 +100,9 @@ const profileSetupSchema = z.object({
 
 export const formSchema = z.object({
   ...basicInfoSchema.shape,
-  ...profileDescriptionSchema.shape,
+  ...teachingCertificationSchema.shape,
   ...educationSchema.shape,
+  ...profileDescriptionSchema.shape,
   ...serviceTypesSchema.shape,
   ...availabilitySchema.shape,
   ...pricingSchema.shape,
@@ -106,11 +124,13 @@ export function useExpertOnboardingForm() {
       languages: [],
       phoneNumber: "",
       ageConfirmation: false,
+      hasNoCertificate: false,
+      teachingCertifications: [],
+      education: [],
       introduction: "",
       teachingExperience: "",
       motivation: "",
       headline: "",
-      education: [],
       oneOnOneSession: false,
       chatAdvice: false,
       digitalProducts: false,

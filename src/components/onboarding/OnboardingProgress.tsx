@@ -8,12 +8,13 @@ interface OnboardingProgressProps {
 
 const steps = [
   { number: 1, title: "Basic Info" },
-  { number: 2, title: "Description" },
+  { number: 2, title: "Certification" },
   { number: 3, title: "Education" },
-  { number: 4, title: "Services" },
-  { number: 5, title: "Availability" },
-  { number: 6, title: "Pricing" },
-  { number: 7, title: "Profile" },
+  { number: 4, title: "Description" },
+  { number: 5, title: "Services" },
+  { number: 6, title: "Availability" },
+  { number: 7, title: "Pricing" },
+  { number: 8, title: "Profile" },
 ];
 
 export default function OnboardingProgress({ currentStep, totalSteps }: OnboardingProgressProps) {

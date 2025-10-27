@@ -7,8 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import OnboardingHeader from "@/components/onboarding/OnboardingHeader";
 import BasicInfoStep from "@/components/onboarding/BasicInfoStep";
-import ProfileDescriptionStep from "@/components/onboarding/ProfileDescriptionStep";
+import TeachingCertificationStep from "@/components/onboarding/TeachingCertificationStep";
 import EducationStep from "@/components/onboarding/EducationStep";
+import ProfileDescriptionStep from "@/components/onboarding/ProfileDescriptionStep";
 import ServiceTypesStep from "@/components/onboarding/ServiceTypesStep";
 import AvailabilityStep from "@/components/onboarding/AvailabilityStep";
 import PricingStep from "@/components/onboarding/PricingStep";
@@ -24,7 +25,7 @@ export default function ExpertOnboarding() {
   const navigate = useNavigate();
   const form = useExpertOnboardingForm();
   
-  const totalSteps = 7;
+  const totalSteps = 8;
   
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
@@ -56,21 +57,36 @@ export default function ExpertOnboarding() {
           isValid = await form.trigger(['firstName', 'lastName', 'email', 'username', 'category', 'countryOfBirth', 'languages', 'ageConfirmation']);
           break;
         case 2:
-          isValid = await form.trigger(['introduction', 'teachingExperience', 'motivation', 'headline']);
+          // Teaching Certification - validate only if not skipped
+          const hasNoCertificate = form.getValues('hasNoCertificate');
+          if (hasNoCertificate) {
+            isValid = true;
+          } else {
+            const certs = form.getValues('teachingCertifications');
+            if (!certs || certs.length === 0) {
+              toast.error("Please add at least one certificate or check 'I don't have a teaching certificate'");
+              isValid = false;
+            } else {
+              isValid = await form.trigger(['teachingCertifications']);
+            }
+          }
           break;
         case 3:
           isValid = await form.trigger(['education']);
           break;
         case 4:
-          isValid = true; // All fields are optional here
+          isValid = await form.trigger(['introduction', 'teachingExperience', 'motivation', 'headline']);
           break;
         case 5:
-          isValid = true; // Availability is optional
+          isValid = true; // All fields are optional here
           break;
         case 6:
-          isValid = await form.trigger(['isPaid', 'pricePerSession']);
+          isValid = true; // Availability is optional
           break;
         case 7:
+          isValid = await form.trigger(['isPaid', 'pricePerSession']);
+          break;
+        case 8:
           isValid = await form.trigger(['bio', 'socialLinks']);
           
           if (isValid) {
@@ -97,16 +113,18 @@ export default function ExpertOnboarding() {
       case 1:
         return <BasicInfoStep form={form} />;
       case 2:
-        return <ProfileDescriptionStep form={form} />;
+        return <TeachingCertificationStep form={form} />;
       case 3:
         return <EducationStep form={form} />;
       case 4:
-        return <ServiceTypesStep form={form} />;
+        return <ProfileDescriptionStep form={form} />;
       case 5:
-        return <AvailabilityStep form={form} />;
+        return <ServiceTypesStep form={form} />;
       case 6:
-        return <PricingStep form={form} />;
+        return <AvailabilityStep form={form} />;
       case 7:
+        return <PricingStep form={form} />;
+      case 8:
         return <ProfileSetupStep form={form} />;
       default:
         return null;
