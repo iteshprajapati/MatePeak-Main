@@ -1,0 +1,16 @@
+project_id = "hnevrdlcqhmsfubakljg"
+
+[functions.book-session]
+verify_jwt = true
+
+[functions.manage-session]
+verify_jwt = true
+
+[functions.ai-search]
+verify_jwt = false
+
+[functions.wallet-withdraw]
+verify_jwt = true
+
+[functions.admin-metrics]
+verify_jwt = true

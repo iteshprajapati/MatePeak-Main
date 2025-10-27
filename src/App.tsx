@@ -1,0 +1,58 @@
+
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import MentorSearch from "./pages/MentorSearch";
+import Explore from "./pages/Explore";
+import MentorProfile from "./pages/MentorProfile";
+import MentorProfileByUsername from "./pages/MentorProfileByUsername";
+import BookingPage from "./pages/BookingPage";
+import BookingSuccess from "./pages/BookingSuccess";
+import Dashboard from "./pages/Dashboard";
+import HowItWorks from "./pages/HowItWorks";
+import NotFound from "./pages/NotFound";
+import RoleSelection from "./pages/RoleSelection";
+import StudentSignup from "./pages/StudentSignup";
+import StudentLogin from "./pages/StudentLogin";
+import MentorSignup from "./pages/MentorSignup";
+import ExpertLogin from "./pages/ExpertLogin";
+import ExpertOnboarding from "./pages/ExpertOnboarding";
+import ExpertDashboard from "./pages/ExpertDashboard";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/mentors" element={<MentorSearch />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/mentors/:id" element={<MentorProfile />} />
+          <Route path="/mentor/:username" element={<MentorProfileByUsername />} />
+          <Route path="/book/:id" element={<BookingPage />} />
+          <Route path="/booking-success" element={<BookingSuccess />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/signup" element={<RoleSelection />} />
+          <Route path="/student/signup" element={<StudentSignup />} />
+          <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/mentor/signup" element={<MentorSignup />} />
+          <Route path="/expert/signup" element={<MentorSignup />} />
+          <Route path="/expert/login" element={<ExpertLogin />} />
+          <Route path="/expert/onboarding" element={<ExpertOnboarding />} />
+          <Route path="/expert/dashboard" element={<ExpertDashboard />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
