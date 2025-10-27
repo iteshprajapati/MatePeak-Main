@@ -1,7 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { User, AtSign, Briefcase, HelpCircle, Mail, Globe, Languages as LanguagesIcon, Phone, Trash2, Plus, CheckCircle2, GraduationCap, Heart, Code, BookOpen, Palette, TrendingUp, Users } from "lucide-react";
+import { User, AtSign, Briefcase, HelpCircle, Mail, Globe, Languages as LanguagesIcon, Phone, Trash2, Plus, CheckCircle2, GraduationCap, Heart, Code, BookOpen, Palette, TrendingUp, Users, Check, X, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   FormField,
   FormItem,
@@ -111,10 +113,136 @@ const LANGUAGES = [
 
 const LANGUAGE_LEVELS = ["Native", "Fluent", "Advanced", "Intermediate", "Basic"];
 
+const COUNTRY_CODES = [
+  { code: "+1", country: "US/Canada", flag: "🇺🇸" },
+  { code: "+44", country: "United Kingdom", flag: "🇬🇧" },
+  { code: "+91", country: "India", flag: "🇮🇳" },
+  { code: "+86", country: "China", flag: "🇨🇳" },
+  { code: "+81", country: "Japan", flag: "🇯🇵" },
+  { code: "+49", country: "Germany", flag: "🇩🇪" },
+  { code: "+33", country: "France", flag: "🇫🇷" },
+  { code: "+39", country: "Italy", flag: "🇮🇹" },
+  { code: "+34", country: "Spain", flag: "🇪🇸" },
+  { code: "+61", country: "Australia", flag: "🇦🇺" },
+  { code: "+7", country: "Russia", flag: "🇷🇺" },
+  { code: "+82", country: "South Korea", flag: "🇰🇷" },
+  { code: "+55", country: "Brazil", flag: "🇧🇷" },
+  { code: "+52", country: "Mexico", flag: "🇲🇽" },
+  { code: "+27", country: "South Africa", flag: "🇿🇦" },
+  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
+  { code: "+20", country: "Egypt", flag: "🇪🇬" },
+  { code: "+254", country: "Kenya", flag: "🇰🇪" },
+  { code: "+65", country: "Singapore", flag: "🇸🇬" },
+  { code: "+60", country: "Malaysia", flag: "🇲🇾" },
+  { code: "+66", country: "Thailand", flag: "🇹🇭" },
+  { code: "+62", country: "Indonesia", flag: "🇮🇩" },
+  { code: "+63", country: "Philippines", flag: "🇵🇭" },
+  { code: "+84", country: "Vietnam", flag: "🇻🇳" },
+  { code: "+92", country: "Pakistan", flag: "🇵🇰" },
+  { code: "+880", country: "Bangladesh", flag: "🇧🇩" },
+  { code: "+64", country: "New Zealand", flag: "🇳🇿" },
+  { code: "+353", country: "Ireland", flag: "🇮🇪" },
+  { code: "+351", country: "Portugal", flag: "🇵🇹" },
+  { code: "+30", country: "Greece", flag: "🇬🇷" },
+  { code: "+420", country: "Czech Republic", flag: "🇨🇿" },
+  { code: "+31", country: "Netherlands", flag: "🇳🇱" },
+  { code: "+32", country: "Belgium", flag: "🇧🇪" },
+  { code: "+41", country: "Switzerland", flag: "🇨🇭" },
+  { code: "+43", country: "Austria", flag: "🇦🇹" },
+  { code: "+46", country: "Sweden", flag: "🇸🇪" },
+  { code: "+47", country: "Norway", flag: "🇳🇴" },
+  { code: "+45", country: "Denmark", flag: "🇩🇰" },
+  { code: "+358", country: "Finland", flag: "🇫🇮" },
+  { code: "+48", country: "Poland", flag: "🇵🇱" },
+  { code: "+90", country: "Turkey", flag: "🇹🇷" },
+  { code: "+972", country: "Israel", flag: "🇮🇱" },
+  { code: "+971", country: "UAE", flag: "🇦🇪" },
+  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+];
+
 export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
   const languages = form.watch("languages") || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllExpertise, setShowAllExpertise] = useState(false);
+  const [countryCode, setCountryCode] = useState("+1");
+  
+  // Username availability state
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [suggestedUsernames, setSuggestedUsernames] = useState<string[]>([]);
+  const username = form.watch("username");
+  
+  // Get form errors for visual feedback
+  const errors = form.formState.errors;
+  
+  // Debounced username check
+  useEffect(() => {
+    if (!username || username.length < 3) {
+      setUsernameStatus('idle');
+      setSuggestedUsernames([]);
+      return;
+    }
+    
+    // Validate username format first
+    const usernameRegex = /^[a-z0-9_-]+$/;
+    if (!usernameRegex.test(username)) {
+      setUsernameStatus('idle');
+      setSuggestedUsernames([]);
+      return;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      checkUsernameAvailability(username);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [username]);
+  
+  const checkUsernameAvailability = async (username: string) => {
+    setUsernameStatus('checking');
+    
+    try {
+      const { data, error } = await supabase
+        .from('expert_profiles')
+        .select('username')
+        .eq('username', username.toLowerCase())
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking username:', error);
+        setUsernameStatus('idle');
+        return;
+      }
+      
+      if (data) {
+        setUsernameStatus('taken');
+        generateUsernameSuggestions(username);
+      } else {
+        setUsernameStatus('available');
+        setSuggestedUsernames([]);
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setUsernameStatus('idle');
+    }
+  };
+  
+  const generateUsernameSuggestions = (baseUsername: string) => {
+    const suggestions: string[] = [];
+    const randomNum = Math.floor(Math.random() * 999) + 1;
+    const year = new Date().getFullYear();
+    
+    suggestions.push(`${baseUsername}${randomNum}`);
+    suggestions.push(`${baseUsername}_${randomNum}`);
+    suggestions.push(`${baseUsername}${year}`);
+    suggestions.push(`${baseUsername}_official`);
+    suggestions.push(`the_${baseUsername}`);
+    
+    setSuggestedUsernames(suggestions.slice(0, 3));
+  };
+  
+  const handleSuggestionClick = (suggestion: string) => {
+    form.setValue('username', suggestion);
+  };
   
   const addLanguage = () => {
     const currentLanguages = form.getValues("languages") || [];
@@ -146,13 +274,16 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 <User className="w-4 h-4 text-matepeak-primary" />
-                First Name
+                First Name <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input 
                   placeholder="John" 
                   {...field} 
-                  className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
+                  className={cn(
+                    "h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
+                    errors.firstName && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200"
+                  )}
                 />
               </FormControl>
               <FormMessage />
@@ -167,13 +298,16 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 <User className="w-4 h-4 text-matepeak-primary" />
-                Last Name
+                Last Name <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input 
                   placeholder="Doe" 
                   {...field} 
-                  className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
+                  className={cn(
+                    "h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
+                    errors.lastName && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200"
+                  )}
                 />
               </FormControl>
               <FormMessage />
@@ -189,14 +323,17 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
           <FormItem>
             <FormLabel className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-matepeak-primary" />
-              Email
+              Email <span className="text-red-500">*</span>
             </FormLabel>
             <FormControl>
               <Input 
                 type="email"
                 placeholder="your@email.com" 
                 {...field} 
-                className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
+                className={cn(
+                  "h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
+                  errors.email && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200"
+                )}
               />
             </FormControl>
             <FormDescription className="text-xs">
@@ -215,7 +352,7 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             <div className="flex items-center gap-2">
               <FormLabel className="flex items-center gap-2">
                 <AtSign className="w-4 h-4 text-matepeak-primary" />
-                Username
+                Username <span className="text-red-500">*</span>
               </FormLabel>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -228,18 +365,76 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             </div>
             <FormControl>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm z-10">
                   matepeak.com/
                 </span>
                 <Input 
                   placeholder="johndoe" 
                   {...field} 
-                  className="pl-[140px] h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
+                  onChange={(e) => {
+                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                    field.onChange(value);
+                  }}
+                  className={cn(
+                    "pl-[140px] pr-10 h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
+                    errors.username && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200",
+                    usernameStatus === 'available' && "border-green-500 bg-green-50",
+                    usernameStatus === 'taken' && "border-red-500 bg-red-50"
+                  )}
                 />
+                {/* Status indicator */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {usernameStatus === 'checking' && (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  )}
+                  {usernameStatus === 'available' && (
+                    <Check className="w-5 h-5 text-green-600" strokeWidth={3} />
+                  )}
+                  {usernameStatus === 'taken' && (
+                    <X className="w-5 h-5 text-red-600" strokeWidth={3} />
+                  )}
+                </div>
               </div>
             </FormControl>
+            
+            {/* Status messages */}
+            {usernameStatus === 'available' && field.value && field.value.length >= 3 && (
+              <div className="flex items-center gap-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md px-3 py-2 mt-2">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                <span>Username is available!</span>
+              </div>
+            )}
+            
+            {usernameStatus === 'taken' && (
+              <div className="space-y-2 mt-2">
+                <div className="flex items-start gap-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                  <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>Username is already taken</span>
+                </div>
+                
+                {suggestedUsernames.length > 0 && (
+                  <div className="px-1 py-2">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Try these suggestions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedUsernames.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-blue-300 text-blue-700 rounded-md hover:bg-blue-100 transition-colors text-sm font-medium"
+                        >
+                          <AtSign className="w-3 h-3" />
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <FormDescription className="text-xs">
-              Choose a unique username for your profile
+              Choose a unique username for your profile (lowercase letters, numbers, - and _ only)
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -253,11 +448,14 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
           <FormItem>
             <FormLabel className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-matepeak-primary" />
-              Country of Birth
+              Country of Birth <span className="text-red-500">*</span>
             </FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
-                <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                <SelectTrigger className={cn(
+                  "h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
+                  errors.countryOfBirth && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200"
+                )}>
 
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
@@ -279,11 +477,11 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
         control={form.control}
         name="category"
         render={({ field }) => (
-          <FormItem>
+          <FormItem data-field="category">
             <div className="flex items-center gap-2 mb-4">
               <FormLabel className="flex items-center gap-2 text-lg font-semibold">
                 <Briefcase className="w-5 h-5 text-matepeak-primary" />
-                Choose Your Expertise
+                Choose Your Expertise <span className="text-red-500">*</span>
               </FormLabel>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -394,90 +592,106 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
         )}
       />
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <FormLabel className="flex items-center gap-2">
+      <div className={cn(
+        "space-y-4 transition-all",
+        errors.languages && "border-2 border-red-500 bg-red-50 rounded-lg p-4"
+      )} data-field="languages">
+        <div className="flex items-center justify-between mb-2">
+          <FormLabel className="flex items-center gap-2 text-base">
             <LanguagesIcon className="w-4 h-4 text-matepeak-primary" />
-            Languages You Speak
+            Languages You Speak <span className="text-red-500">*</span>
           </FormLabel>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={addLanguage}
-            className="h-8 text-xs"
+            className="h-9 text-xs font-medium"
           >
-            <Plus className="w-3 h-3 mr-1" />
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
             Add Language
           </Button>
         </div>
 
-        {languages.map((_, index: number) => (
-          <div key={index} className="flex gap-2 items-start">
-            <FormField
-              control={form.control}
-              name={`languages.${index}.language`}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+        <div className="space-y-3">
+          {languages.map((_, index: number) => (
+            <div key={index} className="flex gap-3 items-center">
+              <FormField
+                control={form.control}
+                name={`languages.${index}.language`}
+                render={({ field }) => (
+                  <FormItem className="flex-1 space-y-1">
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white z-50 max-h-60">
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang} value={lang}>
+                            {lang}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white z-50 max-h-60">
-                      {LANGUAGES.map((lang) => (
-                        <SelectItem key={lang} value={lang}>
-                          {lang}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name={`languages.${index}.level`}
+                render={({ field }) => (
+                  <FormItem className="flex-1 space-y-1">
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                          <SelectValue placeholder="Proficiency level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white z-50">
+                        {LANGUAGE_LEVELS.map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name={`languages.${index}.level`}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
-                        <SelectValue placeholder="Level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-white z-50">
-                      {LANGUAGE_LEVELS.map((level) => (
-                        <SelectItem key={level} value={level}>
-                          {level}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeLanguage(index)}
-              className="h-11 w-11 hover:bg-red-50 hover:text-red-600"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeLanguage(index)}
+                className="h-11 w-11 flex-shrink-0 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
         
         {languages.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+          <p className={cn(
+            "text-sm text-center py-4 border-2 border-dashed rounded-lg",
+            errors.languages ? "text-red-600 border-red-300 bg-red-50" : "text-gray-500 border-gray-200"
+          )}>
             Click "Add Language" to add languages you speak
+          </p>
+        )}
+        
+        {errors.languages && (
+          <p className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mt-2 flex items-start gap-2">
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>Please add at least one language you speak</span>
           </p>
         )}
       </div>
@@ -491,14 +705,41 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
               <Phone className="w-4 h-4 text-matepeak-primary" />
               Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
             </FormLabel>
-            <FormControl>
-              <Input 
-                type="tel"
-                placeholder="+1 234 567 8900" 
-                {...field} 
-                className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
-              />
-            </FormControl>
+            <div className="flex gap-2">
+              <Select value={countryCode} onValueChange={setCountryCode}>
+                <SelectTrigger className="h-11 w-32 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50 max-h-60">
+                  {COUNTRY_CODES.map((item) => (
+                    <SelectItem key={item.code} value={item.code}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{item.flag}</span>
+                        <span className="font-medium">{item.code}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormControl>
+                <div className="relative flex-1">
+                  <Input 
+                    type="tel"
+                    placeholder="234 567 8900" 
+                    {...field}
+                    value={field.value?.replace(/^\+\d+\s*/, '') || ''}
+                    onChange={(e) => {
+                      const phoneNumber = e.target.value.replace(/[^\d\s]/g, '');
+                      field.onChange(`${countryCode} ${phoneNumber}`);
+                    }}
+                    className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
+                  />
+                </div>
+              </FormControl>
+            </div>
+            <FormDescription className="text-xs">
+              Select country code and enter your phone number
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -508,7 +749,7 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
         control={form.control}
         name="ageConfirmation"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-gray-200 p-4 bg-gray-50">
+          <FormItem data-field="ageConfirmation" className="flex flex-row items-start space-x-3 space-y-0">
             <FormControl>
               <Checkbox
                 checked={field.value}
@@ -518,7 +759,7 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             </FormControl>
             <div className="space-y-1 leading-none">
               <FormLabel className="text-sm font-medium cursor-pointer">
-                I confirm I'm over 18
+                I confirm I'm over 18 <span className="text-red-500">*</span>
               </FormLabel>
               <FormDescription className="text-xs">
                 You must be at least 18 years old to become a mentor on MatePeak

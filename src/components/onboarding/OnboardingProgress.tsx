@@ -7,14 +7,14 @@ interface OnboardingProgressProps {
 }
 
 const steps = [
-  { number: 1, title: "Basic Info" },
-  { number: 2, title: "Certification" },
-  { number: 3, title: "Education" },
-  { number: 4, title: "Description" },
-  { number: 5, title: "Services" },
-  { number: 6, title: "Availability" },
-  { number: 7, title: "Pricing" },
-  { number: 8, title: "Profile" },
+  { number: 1, title: "Basic Info", icon: "1" },
+  { number: 2, title: "Certification", icon: "2" },
+  { number: 3, title: "Education", icon: "3" },
+  { number: 4, title: "Description", icon: "4" },
+  { number: 5, title: "Services", icon: "5" },
+  { number: 6, title: "Availability", icon: "6" },
+  { number: 7, title: "Pricing", icon: "7" },
+  { number: 8, title: "Profile", icon: "8" },
 ];
 
 export default function OnboardingProgress({ currentStep, totalSteps }: OnboardingProgressProps) {
@@ -22,46 +22,126 @@ export default function OnboardingProgress({ currentStep, totalSteps }: Onboardi
   
   return (
     <div className="mb-8">
-      <div className="flex justify-between items-center mb-6">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex flex-col items-center flex-1">
-            <div className="flex items-center w-full">
-              {index > 0 && (
-                <div className={`h-0.5 flex-1 transition-colors duration-300 ${
-                  currentStep > step.number - 1 ? 'bg-matepeak-primary' : 'bg-gray-200'
-                }`} />
-              )}
-              <div className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
-                currentStep > step.number 
-                  ? 'bg-matepeak-primary text-white scale-110' 
-                  : currentStep === step.number 
-                    ? 'bg-matepeak-primary text-white scale-110 ring-4 ring-matepeak-primary/20' 
-                    : 'bg-gray-200 text-gray-500'
-              }`}>
-                {currentStep > step.number ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  <span className="font-semibold">{step.number}</span>
+      {/* Desktop view - horizontal */}
+      <div className="hidden md:block">
+        <div className="flex justify-between items-start mb-8">
+          {steps.map((step, index) => (
+            <div key={step.number} className="flex flex-col items-center flex-1 group">
+              <div className="flex items-center w-full mb-4">
+                {index > 0 && (
+                  <div className={`h-1 flex-1 transition-all duration-500 ${
+                    currentStep > step.number - 1 
+                      ? 'bg-gradient-to-r from-matepeak-primary to-matepeak-secondary' 
+                      : 'bg-gray-200'
+                  }`} />
+                )}
+                <div className="relative z-10">
+                  <div className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-500 border-2 ${
+                    currentStep > step.number 
+                      ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-600 text-white scale-100 shadow-lg shadow-green-500/30' 
+                      : currentStep === step.number 
+                        ? 'bg-white border-gray-900 text-gray-900 scale-110 shadow-xl shadow-gray-900/20 animate-pulse-subtle' 
+                        : 'bg-white border-gray-300 text-gray-400'
+                  }`}>
+                    {currentStep > step.number ? (
+                      <Check className="w-6 h-6 animate-scale-in" strokeWidth={3} />
+                    ) : (
+                      <span className="text-base font-bold">{step.icon}</span>
+                    )}
+                    
+                    {/* Outer ring for current step */}
+                    {currentStep === step.number && (
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-900/20 animate-ping"></div>
+                    )}
+                  </div>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={`h-1 flex-1 transition-all duration-500 ${
+                    currentStep > step.number 
+                      ? 'bg-gradient-to-r from-matepeak-secondary to-matepeak-primary' 
+                      : 'bg-gray-200'
+                  }`} />
                 )}
               </div>
-              {index < steps.length - 1 && (
-                <div className={`h-0.5 flex-1 transition-colors duration-300 ${
-                  currentStep > step.number ? 'bg-matepeak-primary' : 'bg-gray-200'
-                }`} />
+              <span className={`text-xs font-semibold transition-all duration-300 whitespace-nowrap text-center ${
+                currentStep === step.number 
+                  ? 'text-gray-900 scale-105' 
+                  : currentStep > step.number
+                    ? 'text-green-600'
+                    : 'text-gray-500'
+              }`}>
+                {step.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Mobile view - vertical */}
+      <div className="md:hidden space-y-3 mb-6">
+        {steps.map((step) => (
+          <div key={step.number} className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 border-2 ${
+            currentStep === step.number 
+              ? 'bg-white border-gray-900 shadow-md' 
+              : currentStep > step.number
+                ? 'bg-green-50 border-green-200'
+                : 'bg-gray-50 border-gray-200'
+          }`}>
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 border-2 ${
+              currentStep > step.number 
+                ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-600 text-white shadow-md' 
+                : currentStep === step.number 
+                  ? 'bg-white border-gray-900 text-gray-900 shadow-md' 
+                  : 'bg-white border-gray-300 text-gray-400'
+            }`}>
+              {currentStep > step.number ? (
+                <Check className="w-5 h-5" strokeWidth={3} />
+              ) : (
+                <span className="text-sm font-bold">{step.icon}</span>
               )}
             </div>
-            <span className={`text-xs mt-2 font-medium transition-colors duration-300 ${
-              currentStep === step.number ? 'text-matepeak-primary' : 'text-gray-500'
-            }`}>
-              {step.title}
-            </span>
+            <div className="flex-1">
+              <span className={`text-sm font-semibold ${
+                currentStep === step.number 
+                  ? 'text-gray-900' 
+                  : currentStep > step.number
+                    ? 'text-green-600'
+                    : 'text-gray-600'
+              }`}>
+                {step.title}
+              </span>
+            </div>
+            {currentStep === step.number && (
+              <span className="text-xs font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-full border border-gray-300">
+                In Progress
+              </span>
+            )}
+            {currentStep > step.number && (
+              <span className="text-xs font-medium text-green-600 bg-white px-2 py-1 rounded-full border border-green-300">
+                ✓ Done
+              </span>
+            )}
           </div>
         ))}
       </div>
       
-      <div className="flex justify-between text-sm text-gray-600 font-medium">
-        <span>Step {currentStep} of {totalSteps}</span>
-        <span className="text-matepeak-primary">{Math.round(progress)}% Complete</span>
+      {/* Progress summary */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-700">Step {currentStep} of {totalSteps}</span>
+          <span className="hidden sm:inline text-xs text-gray-500">• {steps[currentStep - 1]?.title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold bg-gradient-to-r from-matepeak-primary to-matepeak-secondary bg-clip-text text-transparent">
+            {Math.round(progress)}%
+          </span>
+          <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-matepeak-primary to-matepeak-secondary transition-all duration-700"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

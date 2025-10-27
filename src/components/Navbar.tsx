@@ -129,12 +129,12 @@ const Navbar = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-orange-500',
-      'bg-teal-500'
+      'bg-matepeak-primary',
+      'bg-matepeak-secondary',
+      'bg-gradient-to-br from-matepeak-primary to-matepeak-secondary',
+      'bg-gradient-to-br from-orange-500 to-red-500',
+      'bg-gradient-to-br from-purple-500 to-pink-500',
+      'bg-gradient-to-br from-teal-500 to-green-500'
     ];
     const index = (name?.charCodeAt(0) || 0) % colors.length;
     return colors[index];
@@ -142,107 +142,114 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className="bg-white py-4 shadow-sm border-b border-gray-200">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2 pl-8">
-          <img 
-            src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png" 
-            alt="MatePeak Logo"
-            className="h-10"
-          />
-          <span className="text-xl font-bold font-poppins text-matepeak-primary">MatePeak</span>
-        </Link>
+    <nav className="bg-white py-4 shadow-sm border-b border-gray-100">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center">
+          {/* Logo - Centered */}
+          <Link to="/" className="flex items-center gap-2 mx-auto md:mx-0 transition-transform duration-300 hover:scale-105">
+            <img 
+              src="/lovable-uploads/2b7c1b08-70d4-4252-b2ed-62d8989b1195.png" 
+              alt="MatePeak Logo"
+              className="h-10 drop-shadow-sm"
+            />
+            <span className="text-xl font-bold font-poppins text-gray-900">
+              MatePeak
+            </span>
+          </Link>
 
-        <div className="hidden md:flex items-center space-x-4">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || user.email} />
-                    <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white`}>
-                      {getInitials(profile?.full_name || user.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-white" align="end">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-4 absolute right-8">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:ring-2 hover:ring-matepeak-primary/20 transition-all">
+                    <Avatar className="h-10 w-10 ring-2 ring-white shadow-md">
+                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || user.email} />
+                      <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white font-semibold`}>
+                        {getInitials(profile?.full_name || user.email)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-white shadow-xl border-gray-200" align="end">
+                  <div className="flex items-center justify-start gap-2 p-3 bg-gradient-to-r from-matepeak-primary/5 to-matepeak-secondary/5">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold text-gray-900">{profile?.full_name || 'User'}</p>
+                      <p className="text-xs text-gray-600">{user.email}</p>
+                    </div>
                   </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDashboardClick}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleViewProfile}>
-                  <User className="mr-2 h-4 w-4" />
-                  {userRole === 'mentor' ? 'View Profile' : 'My Profile'}
-                </DropdownMenuItem>
-                {userRole === 'student' && (
-                  <DropdownMenuItem onClick={() => navigate('/bookings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    My Bookings
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleDashboardClick} className="cursor-pointer hover:bg-matepeak-primary/5">
+                    <Settings className="mr-2 h-4 w-4 text-matepeak-primary" />
+                    <span className="text-gray-700">Dashboard</span>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="flex items-center space-x-3 mr-8">
-              <Button 
-                variant="outline"
-                className="text-matepeak-primary border-matepeak-primary/20 hover:bg-gray-50 hover:border-matepeak-primary/40 font-medium h-10 transition-all duration-200"
-                onClick={handleSignInClick}
-              >
-                Sign In
-              </Button>
-              <Button 
-                className="bg-matepeak-primary text-white hover:bg-matepeak-secondary font-bold rounded-lg h-10 transition-colors duration-300"
-                onClick={handleGetStartedClick}
-              >
-                Get Started
-              </Button>
-            </div>
-          )}
-        </div>
+                  <DropdownMenuItem onClick={handleViewProfile} className="cursor-pointer hover:bg-matepeak-primary/5">
+                    <User className="mr-2 h-4 w-4 text-matepeak-primary" />
+                    <span className="text-gray-700">{userRole === 'mentor' ? 'View Profile' : 'My Profile'}</span>
+                  </DropdownMenuItem>
+                  {userRole === 'student' && (
+                    <DropdownMenuItem onClick={() => navigate('/bookings')} className="cursor-pointer hover:bg-matepeak-primary/5">
+                      <Settings className="mr-2 h-4 w-4 text-matepeak-primary" />
+                      <span className="text-gray-700">My Bookings</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-red-50 focus:bg-red-50">
+                    <LogOut className="mr-2 h-4 w-4 text-red-600" />
+                    <span className="text-red-600 font-medium">Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline"
+                  className="text-matepeak-primary border-2 border-matepeak-primary/30 hover:bg-matepeak-primary/5 hover:border-matepeak-primary font-semibold h-10 px-6 rounded-lg transition-all duration-300 hover:shadow-md"
+                  onClick={handleSignInClick}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 font-bold rounded-lg h-10 px-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+                  onClick={handleGetStartedClick}
+                >
+                  Get Started
+                </Button>
+              </div>
+            )}
+          </div>
 
-        <div className="md:hidden">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-matepeak-primary hover:text-matepeak-secondary"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile Menu Button */}
+          <div className="md:hidden absolute right-4">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-matepeak-primary hover:text-matepeak-secondary p-2 rounded-lg hover:bg-matepeak-primary/5 transition-all duration-300"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden bg-white py-4 px-4 mt-2 shadow-inner border-t border-gray-200">
+        <div className="md:hidden bg-gradient-to-br from-white to-matepeak-primary/5 py-4 px-4 mt-2 shadow-lg border-t-2 border-matepeak-primary/20 rounded-b-xl">
           {user ? (
             <div className="flex flex-col space-y-3">
-              <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
-                <Avatar className="h-10 w-10">
+              <div className="flex items-center gap-3 pb-3 border-b border-matepeak-primary/20">
+                <Avatar className="h-12 w-12 ring-2 ring-matepeak-primary/30 shadow-md">
                   <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || user.email} />
-                  <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white`}>
+                  <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white font-semibold`}>
                     {getInitials(profile?.full_name || user.email)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-matepeak-primary font-medium text-sm">{profile?.full_name || 'User'}</p>
+                  <p className="text-matepeak-primary font-semibold text-sm">{profile?.full_name || 'User'}</p>
                   <p className="text-gray-600 text-xs">{user.email}</p>
                 </div>
               </div>
               <Button 
                 variant="ghost"
-                className="text-matepeak-primary hover:text-matepeak-secondary hover:bg-gray-100 w-full font-medium justify-start"
+                className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
                 onClick={() => {
                   handleDashboardClick();
                   setIsMenuOpen(false);
@@ -253,7 +260,7 @@ const Navbar = () => {
               </Button>
               <Button 
                 variant="ghost"
-                className="text-matepeak-primary hover:text-matepeak-secondary hover:bg-gray-100 w-full font-medium justify-start"
+                className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
                 onClick={() => {
                   handleViewProfile();
                   setIsMenuOpen(false);
@@ -265,7 +272,7 @@ const Navbar = () => {
               {userRole === 'student' && (
                 <Button 
                   variant="ghost"
-                  className="text-matepeak-primary hover:text-matepeak-secondary hover:bg-gray-100 w-full font-medium justify-start"
+                  className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
                   onClick={() => {
                     navigate('/bookings');
                     setIsMenuOpen(false);
@@ -275,23 +282,25 @@ const Navbar = () => {
                   My Bookings
                 </Button>
               )}
-              <Button 
-                variant="ghost"
-                className="text-matepeak-primary hover:text-matepeak-secondary hover:bg-gray-100 w-full font-medium justify-start"
-                onClick={() => {
-                  handleLogout();
-                  setIsMenuOpen(false);
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              <div className="pt-2 border-t border-matepeak-primary/20">
+                <Button 
+                  variant="ghost"
+                  className="text-red-600 hover:text-white hover:bg-red-600 w-full font-semibold justify-start transition-all duration-300 rounded-lg"
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col space-y-3">
               <Button 
-                variant="ghost"
-                className="text-matepeak-primary hover:text-matepeak-secondary hover:bg-gray-100 w-full font-medium justify-start"
+                variant="outline"
+                className="text-matepeak-primary border-2 border-matepeak-primary/30 hover:bg-matepeak-primary hover:text-white w-full font-semibold justify-center transition-all duration-300 rounded-lg"
                 onClick={() => {
                   handleSignInClick();
                   setIsMenuOpen(false);
@@ -300,7 +309,7 @@ const Navbar = () => {
                 Sign In
               </Button>
               <Button 
-                className="bg-matepeak-primary text-white hover:bg-matepeak-secondary w-full font-bold rounded-lg"
+                className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 w-full font-bold rounded-lg shadow-lg transition-all duration-300"
                 onClick={() => {
                   handleGetStartedClick();
                   setIsMenuOpen(false);
