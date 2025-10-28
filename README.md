@@ -1,8 +1,5 @@
 <div align="center">
 
-<!-- Logo -->
-<img src="./public/matepeak-logo.svg" alt="MatePeak Logo" width="300" />
-
 <h3>🚀 Connect with Expert Mentors. Accelerate Your Growth.</h3>
 
 <p align="center">
