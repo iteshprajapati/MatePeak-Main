@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Plus, X } from "lucide-react";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -202,12 +203,17 @@ export default function AvailabilityStep({ form }: { form: UseFormReturn<any> })
           </p>
         </div>
 
-        {/* Days List */}
-        <div className="space-y-6">
+        {/* Days List with Inline Layout */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
           {dayAvailability.map((day, dayIndex) => (
-            <div key={day.day} className="space-y-3">
-              {/* Day Checkbox */}
-              <div className="flex items-center space-x-2">
+            <div 
+              key={day.day} 
+              className={`grid grid-cols-[180px_1fr] items-start gap-4 py-3 px-4 ${
+                dayIndex !== dayAvailability.length - 1 ? 'border-b border-gray-200' : ''
+              }`}
+            >
+              {/* Left: Day checkbox */}
+              <div className="flex items-center gap-3">
                 <Checkbox
                   id={`day-${dayIndex}`}
                   checked={day.enabled}
@@ -216,83 +222,107 @@ export default function AvailabilityStep({ form }: { form: UseFormReturn<any> })
                 />
                 <label
                   htmlFor={`day-${dayIndex}`}
-                  className="text-base font-medium text-gray-900 cursor-pointer select-none"
+                  className="text-sm font-medium text-gray-900 cursor-pointer select-none"
                 >
                   {day.day}
                 </label>
               </div>
 
-              {/* Timeslots - Only show when day is enabled */}
-              {day.enabled && (
-                <div className="ml-7 space-y-3">
-                  {day.timeslots.map((slot, slotIndex) => (
-                    <div key={slotIndex} className="space-y-2">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-medium text-gray-700">From</label>
+              {/* Right: Time slots or Unavailable */}
+              <div className="min-h-[40px]">
+                {day.enabled ? (
+                  <div className="space-y-3">
+                    {day.timeslots.map((slot, slotIndex) => (
+                      <div key={slotIndex} className="flex items-center gap-2 flex-wrap">
+                        {/* From selector */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">from</span>
                           <Select
                             value={slot.from}
                             onValueChange={(value) => updateTimeslot(dayIndex, slotIndex, 'from', value)}
                           >
-                            <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                            <SelectTrigger className="h-10 w-32 bg-gray-50 border-gray-300">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-background max-h-[200px]">
-                              {TIME_SLOTS.map((time) => (
-                                <SelectItem key={`from-${time}`} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))}
+                            <SelectContent 
+                              className="bg-background max-h-[200px] overflow-y-auto [&>*]:pointer-events-auto"
+                              position="popper"
+                              sideOffset={5}
+                              onWheel={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <div className="overflow-y-auto max-h-[200px]">
+                                {TIME_SLOTS.map((time) => (
+                                  <SelectItem key={`from-${time}`} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </div>
                             </SelectContent>
                           </Select>
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-sm font-medium text-gray-700">To</label>
+                        {/* Dash separator */}
+                        <span className="text-gray-400">-</span>
+
+                        {/* To selector */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">to</span>
                           <Select
                             value={slot.to}
                             onValueChange={(value) => updateTimeslot(dayIndex, slotIndex, 'to', value)}
                           >
-                            <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                            <SelectTrigger className="h-10 w-32 bg-gray-50 border-gray-300">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-background max-h-[200px]">
-                              {TIME_SLOTS.map((time) => (
-                                <SelectItem key={`to-${time}`} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))}
+                            <SelectContent 
+                              className="bg-background max-h-[200px] overflow-y-auto [&>*]:pointer-events-auto"
+                              position="popper"
+                              sideOffset={5}
+                              onWheel={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <div className="overflow-y-auto max-h-[200px]">
+                                {TIME_SLOTS.map((time) => (
+                                  <SelectItem key={`to-${time}`} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </div>
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
 
-                      {/* Remove timeslot button - only show if there's more than one */}
-                      {day.timeslots.length > 1 && (
-                        <Button
+                        {/* Remove button */}
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="sm"
                           onClick={() => removeTimeslot(dayIndex, slotIndex)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                          className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
+                          aria-label="Remove time slot"
                         >
-                          Remove timeslot
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                          <X className="w-4 h-4" />
+                        </button>
 
-                  {/* Add another timeslot button */}
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => addTimeslot(dayIndex)}
-                    className="text-gray-900 underline h-auto p-0 font-normal"
-                  >
-                    Add another timeslot
-                  </Button>
-                </div>
-              )}
+                        {/* Add button (show on first slot or after slots) */}
+                        {slotIndex === day.timeslots.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => addTimeslot(dayIndex)}
+                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors"
+                            aria-label="Add time slot"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-400">Unavailable</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
