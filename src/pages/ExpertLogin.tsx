@@ -34,8 +34,29 @@ export default function ExpertLogin() {
       const userRole = data.user?.user_metadata?.role;
       
       if (userRole === 'mentor') {
+        // Fetch the mentor's username from their profile
+        const { data: profile, error: profileError } = await supabase
+          .from("expert_profiles")
+          .select("username")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          toast.error("Failed to load profile");
+          return;
+        }
+
+        if (!profile || !profile.username) {
+          // No profile yet, redirect to onboarding
+          toast.success("Please complete your profile setup");
+          navigate("/expert/onboarding");
+          return;
+        }
+
         toast.success("Logged in successfully!");
-        navigate("/expert/dashboard");
+        // Redirect to username-based dashboard
+        navigate(`/dashboard/${profile.username}`);
       } else if (userRole === 'student') {
         toast.error("Please use the student sign-in page");
       } else {

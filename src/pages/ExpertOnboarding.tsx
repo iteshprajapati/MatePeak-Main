@@ -34,12 +34,8 @@ export default function ExpertOnboarding() {
       const result = await updateExpertProfile(data);
       toast.success("Profile created successfully!");
       
-      // Redirect to the mentor's profile page
-      if (result.username) {
-        navigate(`/mentor/${result.username}`);
-      } else {
-        navigate("/expert/dashboard");
-      }
+      // Redirect to the mentor's unique dashboard using their username
+      navigate(`/dashboard/${data.username}`);
     } catch (error: any) {
       console.error("Error creating profile:", error);
       toast.error(error.message || "Failed to create profile");

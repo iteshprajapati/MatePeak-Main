@@ -21,6 +21,7 @@ import MentorSignup from "./pages/MentorSignup";
 import ExpertLogin from "./pages/ExpertLogin";
 import ExpertOnboarding from "./pages/ExpertOnboarding";
 import ExpertDashboard from "./pages/ExpertDashboard";
+import MentorDashboard from "./pages/MentorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,8 @@ const App = () => (
           <Route path="/expert/login" element={<ExpertLogin />} />
           <Route path="/expert/onboarding" element={<ExpertOnboarding />} />
           <Route path="/expert/dashboard" element={<ExpertDashboard />} />
+          <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+          <Route path="/dashboard/:username" element={<MentorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
