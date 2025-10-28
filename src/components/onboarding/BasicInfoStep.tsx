@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { User, AtSign, Briefcase, HelpCircle, Mail, Globe, Languages as LanguagesIcon, Phone, Trash2, Plus, CheckCircle2, GraduationCap, Heart, Code, BookOpen, Palette, TrendingUp, Users, Check, X, Loader2 } from "lucide-react";
+import { User, AtSign, Briefcase, HelpCircle, Mail, Globe, Languages as LanguagesIcon, Phone, Trash2, Plus, CheckCircle2, GraduationCap, Heart, Code, BookOpen, Palette, TrendingUp, Users, Check, X, Loader2, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -27,8 +27,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
-// Define expertise options with icons
+// Define expertise options with icons and specialized tags
 const expertiseOptions = [
   { 
     value: "Career Coaching", 
@@ -36,7 +37,12 @@ const expertiseOptions = [
     description: "Resume, interviews, and job search tips",
     borderColor: "border-blue-300",
     hoverBg: "hover:bg-blue-50",
-    iconColor: "text-blue-500"
+    iconColor: "text-blue-500",
+    tags: [
+      "Resume Writing", "Interview Preparation", "LinkedIn Optimization", 
+      "Career Transition", "Salary Negotiation", "Personal Branding",
+      "Job Search Strategy", "Networking", "Professional Development"
+    ]
   },
   { 
     value: "Academic Support", 
@@ -44,7 +50,12 @@ const expertiseOptions = [
     description: "Study skills, tutoring, and academic guidance",
     borderColor: "border-purple-300",
     hoverBg: "hover:bg-purple-50",
-    iconColor: "text-purple-500"
+    iconColor: "text-purple-500",
+    tags: [
+      "Mathematics", "Science", "English Literature", "Essay Writing",
+      "Study Skills", "Time Management", "Exam Preparation", "Homework Help",
+      "Critical Thinking", "Research Methods"
+    ]
   },
   { 
     value: "Mental Health", 
@@ -52,7 +63,12 @@ const expertiseOptions = [
     description: "Wellness coaching and emotional support",
     borderColor: "border-pink-300",
     hoverBg: "hover:bg-pink-50",
-    iconColor: "text-pink-500"
+    iconColor: "text-pink-500",
+    tags: [
+      "Stress Management", "Anxiety Support", "Mindfulness", "Self-Care",
+      "Work-Life Balance", "Confidence Building", "Goal Setting",
+      "Emotional Intelligence", "Resilience Training"
+    ]
   },
   { 
     value: "Programming & Tech", 
@@ -60,7 +76,12 @@ const expertiseOptions = [
     description: "Coding, software development, and tech skills",
     borderColor: "border-green-300",
     hoverBg: "hover:bg-green-50",
-    iconColor: "text-green-500"
+    iconColor: "text-green-500",
+    tags: [
+      "Web Development", "Python", "JavaScript", "React", "Data Science",
+      "Machine Learning", "Mobile Development", "DevOps", "Database Design",
+      "Algorithms", "System Design", "Cloud Computing", "Cybersecurity"
+    ]
   },
   { 
     value: "Test Preparation", 
@@ -68,7 +89,11 @@ const expertiseOptions = [
     description: "SAT, GRE, and standardized test prep",
     borderColor: "border-teal-300",
     hoverBg: "hover:bg-teal-50",
-    iconColor: "text-teal-500"
+    iconColor: "text-teal-500",
+    tags: [
+      "SAT Prep", "GRE Prep", "GMAT Prep", "IELTS", "TOEFL",
+      "ACT Prep", "MCAT", "LSAT", "Test Strategy", "Time Management"
+    ]
   },
   { 
     value: "Creative Arts", 
@@ -76,7 +101,12 @@ const expertiseOptions = [
     description: "Design, music, writing, and creative skills",
     borderColor: "border-indigo-300",
     hoverBg: "hover:bg-indigo-50",
-    iconColor: "text-indigo-500"
+    iconColor: "text-indigo-500",
+    tags: [
+      "Graphic Design", "UI/UX Design", "Creative Writing", "Music Theory",
+      "Photography", "Video Editing", "Digital Art", "Animation",
+      "Content Creation", "Storytelling"
+    ]
   },
   { 
     value: "Business & Finance", 
@@ -84,7 +114,12 @@ const expertiseOptions = [
     description: "Entrepreneurship, investing, and business strategy",
     borderColor: "border-orange-300",
     hoverBg: "hover:bg-orange-50",
-    iconColor: "text-orange-500"
+    iconColor: "text-orange-500",
+    tags: [
+      "Entrepreneurship", "Business Strategy", "Financial Planning",
+      "Investment Basics", "Marketing", "Sales", "Accounting",
+      "Business Analytics", "Startup Advice", "Fundraising"
+    ]
   },
   { 
     value: "Leadership & Development", 
@@ -92,7 +127,12 @@ const expertiseOptions = [
     description: "Personal growth and leadership coaching",
     borderColor: "border-yellow-300",
     hoverBg: "hover:bg-yellow-50",
-    iconColor: "text-yellow-600"
+    iconColor: "text-yellow-600",
+    tags: [
+      "Leadership Skills", "Team Management", "Public Speaking",
+      "Communication Skills", "Conflict Resolution", "Decision Making",
+      "Personal Growth", "Productivity", "Coaching Skills"
+    ]
   },
 ];
 
@@ -164,7 +204,16 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
   const languages = form.watch("languages") || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllExpertise, setShowAllExpertise] = useState(false);
-  const [countryCode, setCountryCode] = useState("+1");
+  const [countryCode, setCountryCode] = useState("+91");
+  const selectedCategories = form.watch("category") || [];
+  const expertiseTags = form.watch("expertiseTags") || [];
+  
+  // Get available tags based on selected categories
+  const availableTags = selectedCategories.length > 0 
+    ? expertiseOptions
+        .filter(opt => selectedCategories.includes(opt.value))
+        .flatMap(opt => opt.tags)
+    : [];
   
   // Username availability state
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -481,19 +530,19 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             <div className="flex items-center gap-2 mb-4">
               <FormLabel className="flex items-center gap-2 text-lg font-semibold">
                 <Briefcase className="w-5 h-5 text-matepeak-primary" />
-                Choose Your Expertise <span className="text-red-500">*</span>
+                Choose Your Expertise Areas <span className="text-red-500">*</span>
               </FormLabel>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Select the main area where you provide mentorship</p>
+                  <p>Select one or more areas where you provide mentorship</p>
                 </TooltipContent>
               </Tooltip>
             </div>
             <FormDescription className="mb-4">
-              Choose one area that best describes your skills
+              Choose all areas that describe your expertise (select multiple)
             </FormDescription>
 
             <Input
@@ -513,12 +562,21 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
                 .slice(0, showAllExpertise ? undefined : 4)
                 .map((option) => {
                   const Icon = option.icon;
-                  const isSelected = field.value === option.value;
+                  const isSelected = field.value?.includes(option.value);
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => field.onChange(option.value)}
+                      onClick={() => {
+                        const currentValues = field.value || [];
+                        if (isSelected) {
+                          // Remove from selection
+                          field.onChange(currentValues.filter((v: string) => v !== option.value));
+                        } else {
+                          // Add to selection
+                          field.onChange([...currentValues, option.value]);
+                        }
+                      }}
                       className={`
                         group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 
                         bg-white shadow-sm transition-all duration-300 ease-in-out
@@ -591,6 +649,75 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
           </FormItem>
         )}
       />
+
+      {/* Expertise Tags Section - Only show if at least one category is selected */}
+      {selectedCategories.length > 0 && (
+        <FormField
+          control={form.control}
+          name="expertiseTags"
+          render={({ field }) => (
+            <FormItem data-field="expertiseTags">
+              <div className="flex items-center gap-2 mb-4">
+                <FormLabel className="flex items-center gap-2 text-lg font-semibold">
+                  <Tag className="w-5 h-5 text-matepeak-primary" />
+                  Specify Your Skills & Specializations
+                </FormLabel>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Select specific skills to help students find you more easily</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <FormDescription className="mb-4">
+                Select specific skills within your expertise areas (helps match you with the right students)
+              </FormDescription>
+
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag) => {
+                  const isSelected = field.value?.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        const currentTags = field.value || [];
+                        if (isSelected) {
+                          field.onChange(currentTags.filter((t: string) => t !== tag));
+                        } else {
+                          field.onChange([...currentTags, tag]);
+                        }
+                      }}
+                      className={cn(
+                        "px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-200",
+                        "hover:shadow-md hover:-translate-y-0.5",
+                        isSelected
+                          ? "bg-matepeak-primary text-white border-matepeak-primary"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-matepeak-primary"
+                      )}
+                    >
+                      {isSelected && <Check className="inline w-3 h-3 mr-1" />}
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {field.value && field.value.length > 0 && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✓ {field.value.length} skill{field.value.length !== 1 ? 's' : ''} selected
+                  </p>
+                </div>
+              )}
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <div className={cn(
         "space-y-4 transition-all",
@@ -725,7 +852,7 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
                 <div className="relative flex-1">
                   <Input 
                     type="tel"
-                    placeholder="234 567 8900" 
+                    placeholder="98765 43210" 
                     {...field}
                     value={field.value?.replace(/^\+\d+\s*/, '') || ''}
                     onChange={(e) => {

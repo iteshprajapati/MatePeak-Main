@@ -13,7 +13,8 @@ const basicInfoSchema = z.object({
     .min(3, "Username must be at least 3 characters")
     .max(30, "Username must be less than 30 characters")
     .regex(/^[a-z0-9_-]+$/, "Username can only contain lowercase letters, numbers, underscores, and hyphens"),
-  category: z.string().min(1, "Please select a category"),
+  category: z.array(z.string()).min(1, "Please select at least one expertise area"),
+  expertiseTags: z.array(z.string()).optional(),
   countryOfBirth: z.string().min(1, "Please select your country"),
   languages: z.array(
     z.object({
@@ -137,7 +138,8 @@ export function useExpertOnboardingForm() {
       lastName: "",
       email: "",
       username: "",
-      category: "",
+      category: [],
+      expertiseTags: [],
       countryOfBirth: "",
       languages: [],
       phoneNumber: "",

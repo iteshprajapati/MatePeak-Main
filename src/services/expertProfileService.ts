@@ -24,7 +24,10 @@ export async function updateExpertProfile(data: FormValues) {
   const profileData = {
     full_name: `${data.firstName} ${data.lastName}`,
     username: data.username,
-    category: data.category,
+    // Support both old single category and new multiple categories format
+    category: Array.isArray(data.category) ? data.category[0] : data.category, // For backward compatibility
+    categories: Array.isArray(data.category) ? data.category : [data.category],
+    expertise_tags: data.expertiseTags || [],
     services: {
       oneOnOneSession: data.oneOnOneSession,
       chatAdvice: data.chatAdvice,
