@@ -180,65 +180,56 @@ export default function ExpertOnboarding() {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-matepeak-primary/10 py-8 md:py-16 flex flex-col items-center px-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-matepeak-primary/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-matepeak-secondary/5 rounded-full blur-3xl animate-pulse delay-700"></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-orange-400/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <OnboardingHeader />
       
-      <div className="relative z-10 w-full max-w-4xl">
-        <OnboardingHeader />
-        
-        <Card className="w-full shadow-2xl bg-white/95 backdrop-blur-xl border-0 overflow-hidden transition-all duration-500 hover:shadow-3xl">
-          {/* Gradient top border */}
-          <div className="h-1.5 bg-gradient-to-r from-matepeak-primary via-matepeak-secondary to-orange-500"></div>
-          
-          <CardContent className="p-6 md:p-10 lg:p-12">
-            <OnboardingProgress currentStep={step} totalSteps={totalSteps} />
+      {/* Main Content Container */}
+      <div className="px-4 pb-8 flex flex-col items-center">
+        <div className="w-full max-w-4xl">
+          <Card className="w-full bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '8px 8px 16px rgba(0, 0, 0, 0.15)' }}>
+            {/* Gradient top border */}
+            <div className="h-1 bg-gradient-to-r from-matepeak-primary via-matepeak-secondary to-orange-500"></div>
             
-            {/* Enhanced progress bar with shimmer effect */}
-            <div className="mt-8 mb-8">
-              <div className="relative h-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full overflow-hidden shadow-inner">
-                <div 
-                  className="absolute inset-0 h-full bg-gradient-to-r from-matepeak-primary via-matepeak-secondary to-orange-500 transition-all duration-700 ease-out rounded-full shadow-lg"
-                  style={{ width: `${(step / totalSteps) * 100}%` }}
-                >
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            <CardContent className="p-6 md:p-8 lg:p-10">
+              <OnboardingProgress currentStep={step} totalSteps={totalSteps} />
+              
+              {/* Enhanced progress bar */}
+              <div className="mt-5 mb-6">
+                <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="absolute inset-0 h-full bg-gradient-to-r from-matepeak-primary via-matepeak-secondary to-orange-500 transition-all duration-700 ease-out rounded-full"
+                    style={{ width: `${(step / totalSteps) * 100}%` }}
+                  ></div>
                 </div>
               </div>
-            </div>
-            
-            <TooltipProvider>
-              <Form {...form}>
-                <form className="space-y-8">
-                  <div className="animate-fade-in">
-                    {renderStep()}
-                  </div>
-                  
-                  <StepNavigation
-                    currentStep={step}
-                    totalSteps={totalSteps}
-                    onBack={handleBack}
-                    onNext={handleNext}
-                    isSubmitting={isSubmitting}
-                  />
-                </form>
-              </Form>
-            </TooltipProvider>
-          </CardContent>
-        </Card>
-        
-        {/* Security badge */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
-          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span className="font-medium">Secure & Encrypted</span>
-          <span className="text-gray-400">•</span>
-          <span>Your data is protected with industry-standard encryption</span>
+              
+              <TooltipProvider>
+                <Form {...form}>
+                  <form className="space-y-6">
+                    <div className="animate-fade-in">
+                      {renderStep()}
+                    </div>
+                    
+                    <StepNavigation
+                      currentStep={step}
+                      totalSteps={totalSteps}
+                      onBack={handleBack}
+                      onNext={handleNext}
+                      isSubmitting={isSubmitting}
+                    />
+                  </form>
+                </Form>
+              </TooltipProvider>
+            </CardContent>
+          </Card>
+          
+          {/* Security badge */}
+          <div className="mt-4 mb-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+            <svg className="w-3.5 h-3.5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">Secure & Encrypted</span>
+          </div>
         </div>
       </div>
     </div>

@@ -177,13 +177,10 @@ export default function AvailabilityStep({ form }: { form: UseFormReturn<any> })
             Choose your timezone
           </label>
           <Select value={timeZone} onValueChange={setTimeZone}>
-            <SelectTrigger 
-              id="timezone" 
-              className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all"
-            >
+            <SelectTrigger id="timezone">
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
-            <SelectContent className="bg-background max-h-[300px]">
+            <SelectContent>
               {TIMEZONES.map((tz) => (
                 <SelectItem key={tz.value} value={tz.value}>
                   {tz.label}
@@ -236,61 +233,43 @@ export default function AvailabilityStep({ form }: { form: UseFormReturn<any> })
                       <div key={slotIndex} className="flex items-center gap-2 flex-wrap">
                         {/* From selector */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">from</span>
+                          <span className="text-xs text-gray-500 font-medium">from</span>
                           <Select
                             value={slot.from}
                             onValueChange={(value) => updateTimeslot(dayIndex, slotIndex, 'from', value)}
                           >
-                            <SelectTrigger className="h-10 w-32 bg-gray-50 border-gray-300">
+                            <SelectTrigger className="h-10 w-32">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent 
-                              className="bg-background max-h-[200px] overflow-y-auto [&>*]:pointer-events-auto"
-                              position="popper"
-                              sideOffset={5}
-                              onWheel={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              <div className="overflow-y-auto max-h-[200px]">
-                                {TIME_SLOTS.map((time) => (
-                                  <SelectItem key={`from-${time}`} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </div>
+                            <SelectContent className="max-h-[240px]">
+                              {TIME_SLOTS.map((time) => (
+                                <SelectItem key={`from-${time}`} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
 
                         {/* Dash separator */}
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400 font-medium">-</span>
 
                         {/* To selector */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">to</span>
+                          <span className="text-xs text-gray-500 font-medium">to</span>
                           <Select
                             value={slot.to}
                             onValueChange={(value) => updateTimeslot(dayIndex, slotIndex, 'to', value)}
                           >
-                            <SelectTrigger className="h-10 w-32 bg-gray-50 border-gray-300">
+                            <SelectTrigger className="h-10 w-32">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent 
-                              className="bg-background max-h-[200px] overflow-y-auto [&>*]:pointer-events-auto"
-                              position="popper"
-                              sideOffset={5}
-                              onWheel={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              <div className="overflow-y-auto max-h-[200px]">
-                                {TIME_SLOTS.map((time) => (
-                                  <SelectItem key={`to-${time}`} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </div>
+                            <SelectContent className="max-h-[240px]">
+                              {TIME_SLOTS.map((time) => (
+                                <SelectItem key={`to-${time}`} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>

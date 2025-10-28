@@ -423,7 +423,7 @@ const SessionMessaging = ({ mentorProfile }: MessagingProps) => {
                     value={messageTemplate}
                     onValueChange={handleTemplateSelect}
                   >
-                    <SelectTrigger className="w-full border-gray-300">
+                    <SelectTrigger className="w-full">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
                         <span>Use a template...</span>

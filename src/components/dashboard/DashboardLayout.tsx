@@ -172,7 +172,7 @@ const DashboardLayout = ({
     <div className="min-h-screen bg-gray-50">
       {/* Clean Top Bar */}
       <nav className="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-6 sm:px-8 lg:px-12">
           <div className="flex justify-between h-16">
             {/* Left side */}
             <div className="flex items-center gap-4">
@@ -190,11 +190,11 @@ const DashboardLayout = ({
               
               <Link to="/" className="flex items-center group">
                 <img
-                  src="/lovable-uploads/2b7c1b08-70d4-4252-b2ed-62d8989b1195.png"
+                  src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png"
                   alt="MatePeak"
-                  className="h-8 w-auto transition-transform group-hover:scale-105"
+                  className="h-9 w-auto transition-transform group-hover:scale-105"
                 />
-                <span className="ml-2 text-xl font-bold text-gray-900">
+                <span className="ml-3 text-2xl font-extrabold font-poppins text-gray-900">
                   MatePeak
                 </span>
               </Link>

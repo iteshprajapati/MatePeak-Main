@@ -104,7 +104,7 @@ export default function ExpertLogin() {
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-4">
             <img 
-              src="/lovable-uploads/2b7c1b08-70d4-4252-b2ed-62d8989b1195.png" 
+              src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png" 
               alt="MatePeak Logo"
               className="h-12 mx-auto"
             />

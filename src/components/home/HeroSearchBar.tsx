@@ -53,10 +53,10 @@ const HeroSearchBar = () => {
 
         {/* Expertise Dropdown */}
         <Select value={selectedExpertise} onValueChange={setSelectedExpertise}>
-          <SelectTrigger className="w-full md:w-[140px] bg-white border-0 hover:bg-gray-50 transition-colors rounded-xl font-semibold text-sm h-9">
+          <SelectTrigger className="w-full md:w-[140px] border-0 hover:bg-gray-50 h-9 text-sm">
             <SelectValue placeholder="Expertise" />
           </SelectTrigger>
-          <SelectContent className="bg-white z-50">
+          <SelectContent>
             <SelectItem value="all">All Expertise</SelectItem>
             {expertiseOptions.map((option) => (
               <SelectItem key={option} value={option.toLowerCase().replace(/\s+/g, "-")}>

@@ -726,7 +726,7 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           value={sortBy}
           onValueChange={(value) => setSortBy(value as SortOption)}
         >
-          <SelectTrigger className="w-full md:w-52 border-gray-200 rounded-xl h-11">
+          <SelectTrigger className="w-full md:w-52">
             <div className="flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 text-gray-600" />
               <SelectValue placeholder="Sort by" />

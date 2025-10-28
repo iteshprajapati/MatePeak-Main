@@ -163,16 +163,16 @@ const Navbar = () => {
   return (
     <>
     <nav className="bg-white py-4 shadow-sm border-b border-gray-100">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center">
           {/* Logo - Centered */}
           <Link to="/" className="flex items-center gap-2 mx-auto md:mx-0 transition-transform duration-300 hover:scale-105">
             <img 
-              src="/lovable-uploads/2b7c1b08-70d4-4252-b2ed-62d8989b1195.png" 
+              src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png" 
               alt="MatePeak Logo"
               className="h-10 drop-shadow-sm"
             />
-            <span className="text-xl font-bold font-poppins text-gray-900">
+            <span className="text-2xl font-extrabold font-poppins text-gray-900">
               MatePeak
             </span>
           </Link>

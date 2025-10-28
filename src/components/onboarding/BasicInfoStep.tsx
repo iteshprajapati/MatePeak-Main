@@ -502,14 +502,12 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger className={cn(
-                  "h-11 bg-gray-50 border-gray-300 focus:border-black transition-all",
                   errors.countryOfBirth && "border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200"
                 )}>
-
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="max-h-60 overflow-y-auto bg-white z-50">
+              <SelectContent className="max-h-60">
                 {COUNTRIES.map((country) => (
                   <SelectItem key={country} value={country}>
                     {country}
@@ -750,11 +748,11 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
                   <FormItem className="flex-1 space-y-1">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white z-50 max-h-60">
+                      <SelectContent className="max-h-60">
                         {LANGUAGES.map((lang) => (
                           <SelectItem key={lang} value={lang}>
                             {lang}
@@ -774,11 +772,11 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
                   <FormItem className="flex-1 space-y-1">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-11 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                        <SelectTrigger>
                           <SelectValue placeholder="Proficiency level" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white z-50">
+                      <SelectContent>
                         {LANGUAGE_LEVELS.map((level) => (
                           <SelectItem key={level} value={level}>
                             {level}
@@ -834,10 +832,10 @@ export default function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
             </FormLabel>
             <div className="flex gap-2">
               <Select value={countryCode} onValueChange={setCountryCode}>
-                <SelectTrigger className="h-11 w-32 bg-gray-50 border-gray-300 focus:border-black transition-all">
+                <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white z-50 max-h-60">
+                <SelectContent className="max-h-60">
                   {COUNTRY_CODES.map((item) => (
                     <SelectItem key={item.code} value={item.code}>
                       <div className="flex items-center gap-2">
