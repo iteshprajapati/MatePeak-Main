@@ -35,6 +35,31 @@ const ProfileManagement = ({
     motivation: mentorProfile.motivation || "",
   });
 
+  // Calculate profile completeness
+  const calculateCompleteness = () => {
+    const fields = {
+      'Profile Picture': mentorProfile.profile_picture_url,
+      'Headline': mentorProfile.headline,
+      'Introduction': mentorProfile.introduction,
+      'Teaching Experience': mentorProfile.teaching_experience,
+      'Motivation': mentorProfile.motivation,
+      'Expertise': mentorProfile.expertise?.length > 0,
+      'Hourly Rate': mentorProfile.hourly_rate,
+      'Languages': mentorProfile.languages?.length > 0,
+    };
+
+    const completed = Object.values(fields).filter(Boolean).length;
+    const totalFields = Object.keys(fields).length;
+    const percentage = Math.round((completed / totalFields) * 100);
+    const missingFields = Object.entries(fields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    return { completed, totalFields, percentage, missingFields };
+  };
+
+  const completeness = calculateCompleteness();
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -100,11 +125,14 @@ const ProfileManagement = ({
         .from("profile-pictures")
         .getPublicUrl(fileName);
 
+      // Add cache-busting parameter to force refresh
+      const publicUrlWithCache = `${publicUrl}?t=${Date.now()}`;
+
       // Update profile in database
       const { data, error } = await supabase
         .from("expert_profiles")
         .update({
-          profile_picture_url: publicUrl,
+          profile_picture_url: publicUrlWithCache,
           updated_at: new Date().toISOString(),
         })
         .eq("id", mentorProfile.id)

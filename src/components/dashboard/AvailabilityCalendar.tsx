@@ -463,12 +463,11 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                   <Button
                     variant="outline"
                     onClick={() => handleBlockDate(selectedDate)}
-                    className={
+                    className={`w-full ${
                       availability.blocked
                         ? "border-green-300 text-green-700 hover:bg-green-50"
                         : "border-red-300 text-red-700 hover:bg-red-50"
-                    }
-                    fullWidth
+                    }`}
                   >
                     {availability.blocked ? "Unblock This Date" : "Block This Date"}
                   </Button>

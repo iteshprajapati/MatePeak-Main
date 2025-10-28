@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, Star, TrendingUp, Clock, Edit, Eye, MessageCircle, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, Star, TrendingUp, Clock, Edit, Eye, MessageCircle, ArrowRight, IndianRupee } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,30 +136,26 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
       title: "Total Sessions",
       value: stats.totalSessions,
       icon: Calendar,
-      bgColor: "bg-blue-50",
-      iconColor: "text-blue-600",
+      iconColor: "text-rose-400",
     },
     {
       title: "Upcoming",
       value: stats.upcomingSessions,
       icon: Clock,
-      bgColor: "bg-green-50",
-      iconColor: "text-green-600",
+      iconColor: "text-rose-400",
     },
     {
       title: "Earnings",
       value: "Coming Soon",
-      icon: Sparkles,
-      bgColor: "bg-gradient-to-br from-purple-50 to-pink-50",
-      iconColor: "text-purple-600",
+      icon: IndianRupee,
+      iconColor: "text-rose-400",
       isComingSoon: true,
     },
     {
       title: "Average Rating",
       value: stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "N/A",
       icon: Star,
-      bgColor: "bg-yellow-50",
-      iconColor: "text-yellow-600",
+      iconColor: "text-rose-400",
       suffix: stats.averageRating > 0 ? "/ 5.0" : "",
     },
   ];
@@ -179,44 +175,66 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="space-y-6">
+      {/* Clean Welcome Section - No Background */}
+      <div className="py-4">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Welcome back, {mentorProfile.full_name?.split(' ')[0] || mentorProfile.full_name || 'Mentor'}!
         </h1>
-        <p className="text-gray-600 mt-1">
-          Here's what's happening with your mentoring sessions today
+        <p className="text-gray-600 text-sm">
+          Here's what's happening with your mentoring sessions
         </p>
       </div>
 
-      {/* Time Period Filters */}
-      <Card className="border-gray-200">
-        <CardContent className="p-4">
-          <Tabs value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-            <TabsList className="grid w-full grid-cols-4 bg-gray-100">
-              <TabsTrigger value="today" className="data-[state=active]:bg-white">
-                Today
-              </TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-white">
-                This Week
-              </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-white">
-                This Month
-              </TabsTrigger>
-              <TabsTrigger value="all" className="data-[state=active]:bg-white">
-                All Time
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
+      {/* Time Period Filters - Improved Design */}
+      <div className="flex items-center gap-2 pb-2">
+        <button
+          onClick={() => setTimePeriod("today")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            timePeriod === "today"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Today
+        </button>
+        <button
+          onClick={() => setTimePeriod("week")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            timePeriod === "week"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          This Week
+        </button>
+        <button
+          onClick={() => setTimePeriod("month")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            timePeriod === "month"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          This Month
+        </button>
+        <button
+          onClick={() => setTimePeriod("all")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            timePeriod === "all"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          All Time
+        </button>
+      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - MentorLoop Style */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="border-gray-200">
+              <Card key={i} className="bg-gray-100 border-0 rounded-2xl shadow-none">
                 <CardContent className="p-6">
                   <Skeleton className="h-20 w-full" />
                 </CardContent>
@@ -225,32 +243,40 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
           : statCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card key={index} className={`border-gray-200 hover:shadow-md transition-shadow ${stat.isComingSoon ? 'relative overflow-hidden' : ''}`}>
+                <Card 
+                  key={index} 
+                  className={`
+                    group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200
+                    ${stat.isComingSoon ? 'relative overflow-hidden' : ''}
+                  `}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           {stat.title}
                         </p>
-                        <div className="flex items-baseline mt-2">
-                          <p className={`text-2xl font-semibold ${stat.isComingSoon ? 'text-purple-600' : 'text-gray-900'}`}>
+                        <div className="flex items-baseline mt-3">
+                          <p className={`${stat.isComingSoon ? 'text-2xl font-extrabold' : 'text-3xl font-bold'} ${stat.isComingSoon ? 'text-gray-700' : 'text-gray-900'}`}>
                             {stat.value}
                           </p>
                           {stat.suffix && (
-                            <span className="ml-2 text-sm text-gray-500">
+                            <span className="ml-2 text-sm font-medium text-gray-500">
                               {stat.suffix}
                             </span>
                           )}
                         </div>
                         {stat.isComingSoon && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-600 mt-2 font-medium">
                             Feature under development
                           </p>
                         )}
                       </div>
-                      <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                        <Icon className={`h-6 w-6 ${stat.iconColor} ${stat.isComingSoon ? 'animate-pulse' : ''}`} />
-                      </div>
+                      {!stat.isComingSoon && (
+                        <div className="flex items-center justify-center group-hover:scale-105 transition-transform">
+                          <Icon className={`h-6 w-6 ${stat.iconColor}`} />
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -258,37 +284,27 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
             })}
       </div>
 
-      {/* Quick Actions Card */}
-      <Card className="border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Common tasks to manage your mentoring profile
-          </p>
-        </div>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Quick Actions - Compact Design */}
+      <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
+        <CardContent className="p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {/* Update Availability */}
             <button
               onClick={() => {
-                // Navigate to profile management with availability section
                 const event = new CustomEvent('navigateToTab', { detail: 'profile' });
                 window.dispatchEvent(event);
               }}
-              className="flex items-start gap-4 p-4 rounded-lg border border-gray-200 hover:border-gray-900 hover:shadow-md transition-all text-left group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
             >
-              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gray-900 transition-colors">
-                <Edit className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" />
+              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
+                <Edit className="h-4 w-4 text-rose-400" />
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900 mb-1">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
                   Update Availability
-                </h4>
-                <p className="text-xs text-gray-600">
-                  Manage your calendar and time slots
                 </p>
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
 
             {/* View Public Profile */}
@@ -298,20 +314,16 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
                   window.open(`/mentor/${mentorProfile.username}`, '_blank');
                 }
               }}
-              className="flex items-start gap-4 p-4 rounded-lg border border-gray-200 hover:border-gray-900 hover:shadow-md transition-all text-left group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
             >
-              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gray-900 transition-colors">
-                <Eye className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" />
+              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
+                <Eye className="h-4 w-4 text-rose-400" />
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900 mb-1">
-                  View Public Profile
-                </h4>
-                <p className="text-xs text-gray-600">
-                  See how students view your profile
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  View Profile
                 </p>
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
 
             {/* Message Support */}
@@ -319,35 +331,32 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
               onClick={() => {
                 window.location.href = 'mailto:support@sparkmentorconnect.com';
               }}
-              className="flex items-start gap-4 p-4 rounded-lg border border-gray-200 hover:border-gray-900 hover:shadow-md transition-all text-left group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
             >
-              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gray-900 transition-colors">
-                <MessageCircle className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors" />
+              <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
+                <MessageCircle className="h-4 w-4 text-rose-400" />
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900 mb-1">
-                  Message Support
-                </h4>
-                <p className="text-xs text-gray-600">
-                  Get help from our support team
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  Get Support
                 </p>
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Two Column Layout */}
+      {/* Two Column Layout for Sessions and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Sessions */}
-        <Card className="border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-none hover:shadow-sm transition-shadow">
+          <div className="p-5 border-b border-gray-200">
+            <h3 className="text-base font-bold text-gray-900">
               Upcoming Sessions
             </h3>
+            <p className="text-sm text-gray-600 mt-1">Your next confirmed bookings</p>
           </div>
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             {loading ? (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -355,24 +364,24 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
                 ))}
               </div>
             ) : upcomingSessions.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                 {upcomingSessions.map((session) => (
                   <div
                     key={session.id}
-                    className="flex items-start gap-4 p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                    className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-white hover:shadow-sm hover:border-gray-300 transition-all"
                   >
                     <div className="p-2 rounded-lg bg-gray-100">
                       <Calendar className="h-5 w-5 text-gray-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
                         {session.session_type || "1-on-1 Session"}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs text-gray-600 mt-1">
                         {formatDate(session.scheduled_date, session.scheduled_time)}
                       </p>
                     </div>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                       {session.status}
                     </span>
                   </div>
@@ -380,11 +389,13 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-sm font-medium text-gray-900">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                  <Calendar className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900 mb-1">
                   No upcoming sessions
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs text-gray-500">
                   Your upcoming sessions will appear here
                 </p>
               </div>
@@ -392,69 +403,74 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
           </CardContent>
         </Card>
 
-        {/* Performance Summary */}
-        <Card className="border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">
+        {/* Performance Summary - Improved Visual Design */}
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-none hover:shadow-sm transition-shadow">
+          <div className="p-5 border-b border-gray-200">
+            <h3 className="text-base font-bold text-gray-900">
               Performance Summary
             </h3>
+            <p className="text-sm text-gray-600 mt-1">Your session insights</p>
           </div>
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              {/* Completion Rate */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    Session Completion Rate
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">
+          <CardContent className="p-5">
+            <div className="space-y-4">
+              {/* Completion Rate - Visual Card */}
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      <TrendingUp className="h-4 w-4 text-rose-400" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Completion Rate
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900">
                     {stats.completionRate}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-gray-900 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-rose-400 to-rose-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${stats.completionRate}%` }}
                   />
                 </div>
               </div>
 
-              {/* Profile Status */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-green-100">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
+              {/* Profile Status - Icon Card */}
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Profile Status
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">
+                      Profile Active
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Your profile is active and visible to students
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Visible to students
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Tips */}
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm font-medium text-gray-900 mb-3">
-                  Quick Tips
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-400 mt-0.5">•</span>
-                    <span>Keep your availability updated for more bookings</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-400 mt-0.5">•</span>
-                    <span>Respond to inquiries within 24 hours</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-400 mt-0.5">•</span>
-                    <span>Complete your profile to attract more students</span>
-                  </li>
-                </ul>
+              {/* Quick Insights - Icon Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-center">
+                  <div className="inline-flex p-2 rounded-lg bg-white mb-2">
+                    <Calendar className="h-4 w-4 text-rose-400" />
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">{stats.totalSessions}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">Total</p>
+                </div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-center">
+                  <div className="inline-flex p-2 rounded-lg bg-white mb-2">
+                    <Star className="h-4 w-4 text-rose-400" />
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">
+                    {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "N/A"}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-0.5">Rating</p>
+                </div>
               </div>
             </div>
           </CardContent>

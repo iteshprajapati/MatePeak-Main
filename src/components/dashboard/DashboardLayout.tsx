@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,6 +13,13 @@ import {
   MessageSquare,
   Users,
   Clock,
+  Search,
+  Command,
+  Home,
+  ChevronRight,
+  Zap,
+  Settings,
+  Eye,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -22,6 +29,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "./NotificationBell";
@@ -44,51 +53,94 @@ const DashboardLayout = ({
   children,
 }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const navigationItems = [
+  // Grouped navigation structure for better organization
+  const navigationGroups = [
     {
-      id: "overview" as DashboardView,
-      label: "Overview",
-      icon: LayoutDashboard,
+      label: "Main",
+      items: [
+        {
+          id: "overview" as DashboardView,
+          label: "Overview",
+          icon: LayoutDashboard,
+          badge: null,
+        },
+      ],
     },
     {
-      id: "sessions" as DashboardView,
-      label: "Sessions",
-      icon: Calendar,
+      label: "Schedule",
+      items: [
+        {
+          id: "sessions" as DashboardView,
+          label: "Sessions",
+          icon: Calendar,
+          badge: null,
+        },
+        {
+          id: "calendar" as DashboardView,
+          label: "Calendar",
+          icon: CalendarCheck,
+          badge: null,
+        },
+        {
+          id: "availability" as DashboardView,
+          label: "Availability",
+          icon: Clock,
+          badge: null,
+        },
+      ],
     },
     {
-      id: "calendar" as DashboardView,
-      label: "Calendar",
-      icon: CalendarCheck,
+      label: "Engage",
+      items: [
+        {
+          id: "messages" as DashboardView,
+          label: "Messages",
+          icon: MessageSquare,
+          badge: null, // Can add unread count here
+        },
+        {
+          id: "students" as DashboardView,
+          label: "Students",
+          icon: Users,
+          badge: null,
+        },
+        {
+          id: "reviews" as DashboardView,
+          label: "Reviews",
+          icon: Star,
+          badge: null,
+        },
+      ],
     },
     {
-      id: "messages" as DashboardView,
-      label: "Messages",
-      icon: MessageSquare,
-    },
-    {
-      id: "students" as DashboardView,
-      label: "Students",
-      icon: Users,
-    },
-    {
-      id: "availability" as DashboardView,
-      label: "Availability",
-      icon: Clock,
-    },
-    {
-      id: "reviews" as DashboardView,
-      label: "Reviews",
-      icon: Star,
-    },
-    {
-      id: "profile" as DashboardView,
-      label: "Profile",
-      icon: User,
+      label: "Settings",
+      items: [
+        {
+          id: "profile" as DashboardView,
+          label: "Profile",
+          icon: User,
+          badge: null,
+        },
+      ],
     },
   ];
+
+  // Keyboard shortcut for command palette
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -118,83 +170,94 @@ const DashboardLayout = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
+      {/* Clean Top Bar */}
       <nav className="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            {/* Left side - Logo and menu button */}
-            <div className="flex items-center">
+            {/* Left side */}
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                 aria-label="Toggle menu"
               >
                 {sidebarOpen ? (
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5" />
                 )}
               </button>
-              <Link to="/" className="flex items-center ml-2 lg:ml-0">
+              
+              <Link to="/" className="flex items-center group">
                 <img
                   src="/lovable-uploads/2b7c1b08-70d4-4252-b2ed-62d8989b1195.png"
                   alt="MatePeak"
-                  className="h-8 w-auto"
+                  className="h-8 w-auto transition-transform group-hover:scale-105"
                 />
-                <span className="ml-2 text-xl font-semibold text-gray-900">
+                <span className="ml-2 text-xl font-bold text-gray-900">
                   MatePeak
                 </span>
               </Link>
             </div>
 
-            {/* Right side - User menu */}
-            <div className="flex items-center gap-4">
+            {/* Right side */}
+            <div className="flex items-center gap-3">
+
               <NotificationBell mentorId={mentorProfile.id} />
               
+              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage
-                        src={mentorProfile?.profile_picture_url || ""}
-                        alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
-                      />
-                      <AvatarFallback className="bg-gray-900 text-white text-sm font-medium">
-                        {getInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden sm:block text-left">
-                      <p className="text-sm font-medium text-gray-900">
+                  <button className="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                    <div className="relative">
+                      <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm" key={mentorProfile?.profile_picture_url}>
+                        <AvatarImage
+                          src={mentorProfile?.profile_picture_url || ""}
+                          alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                        />
+                        <AvatarFallback className="bg-gray-900 text-white text-sm font-semibold">
+                          {getInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white" />
+                    </div>
+                    <div className="hidden md:block text-left">
+                      <p className="text-sm font-semibold text-gray-900">
                         {mentorProfile?.first_name} {mentorProfile?.last_name}
                       </p>
-                      <p className="text-xs text-gray-500">Mentor</p>
+                      <p className="text-xs text-gray-500">Mentor Dashboard</p>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                    <ChevronDown className="hidden md:block h-4 w-4 text-gray-400 group-hover:text-gray-600" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="px-3 py-2 bg-gray-50">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {mentorProfile?.full_name || `${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5 truncate">
                       {user?.email}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-1">
                       @{mentorProfile?.username}
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(`/mentor/${mentorProfile?.username}`)}>
-                    <span>View public profile</span>
+                  <DropdownMenuItem onClick={() => navigate(`/mentor/${mentorProfile?.username}`)} className="cursor-pointer">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span>View Public Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onViewChange("profile")}>
-                    <span>Settings</span>
+                  <DropdownMenuItem onClick={() => onViewChange("profile")} className="cursor-pointer">
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span>Settings & Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className="text-red-600 focus:text-red-600"
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    <span>Sign out</span>
+                    <span>Sign Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -203,77 +266,285 @@ const DashboardLayout = ({
         </div>
       </nav>
 
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col pt-16">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
-          <nav className="flex-1 px-4 space-y-1">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onViewChange(item.id)}
-                  className={`
-                    w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
-                    ${
-                      isActive
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }
-                  `}
-                >
-                  <Icon className="h-5 w-5 mr-3" />
-                  {item.label}
-                </button>
-              );
-            })}
+      {/* Sidebar - Desktop (MentorLoop Style) */}
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col pt-16">
+        <div className="flex flex-col flex-grow bg-gray-50 overflow-y-auto">
+          
+          {/* Enhanced Profile Card */}
+          <div className="p-6 m-4 rounded-2xl bg-gray-100">
+            <div className="flex flex-col items-center text-center mb-4">
+              <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3" key={mentorProfile?.profile_picture_url}>
+                <AvatarImage
+                  src={mentorProfile?.profile_picture_url || ""}
+                  alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                />
+                <AvatarFallback className="bg-gray-800 text-white text-xl font-bold">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-base font-bold text-gray-900">
+                {mentorProfile?.first_name} {mentorProfile?.last_name}
+              </h3>
+              <p className="text-sm text-gray-600 font-medium mt-1">Mentor</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                @{mentorProfile?.username}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(`/mentor/${mentorProfile?.username}`)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+            >
+              <Eye className="h-4 w-4" />
+              <span>View Public Profile</span>
+            </button>
+          </div>
+
+          {/* Navigation Groups */}
+          <nav className="flex-1 px-3 space-y-6 py-4">
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={groupIdx}>
+                <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {group.label}
+                </h3>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => onViewChange(item.id)}
+                        className={`
+                          w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all group
+                          ${
+                            isActive
+                              ? "bg-gray-300 text-gray-900"
+                              : "text-gray-700 hover:bg-gray-200"
+                          }
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-5 w-5 text-rose-400" />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
+
+          {/* Log Out Footer */}
+          <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-red-600 rounded-xl text-sm font-medium transition-all group"
+            >
+              <LogOut className="h-5 w-5 text-rose-400 group-hover:text-red-600 transition-colors" />
+              <span>Log Out</span>
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Sidebar - Mobile */}
+      {/* Mobile Sidebar (MentorLoop Style) */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40 pt-16">
           <div
-            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <nav className="fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
-            <div className="px-4 py-5 space-y-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeView === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onViewChange(item.id);
-                      setSidebarOpen(false);
-                    }}
-                    className={`
-                      w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
-                      ${
-                        isActive
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }
-                    `}
-                  >
-                    <Icon className="h-5 w-5 mr-3" />
-                    {item.label}
-                  </button>
-                );
-              })}
+          <nav className="fixed top-16 left-0 bottom-0 w-80 bg-gray-50 shadow-xl overflow-y-auto">
+            
+            {/* Enhanced Mobile Profile Card */}
+            <div className="p-6 border-b border-gray-200 bg-gray-100">
+              <div className="flex flex-col items-center text-center mb-4">
+                <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3" key={mentorProfile?.profile_picture_url}>
+                  <AvatarImage
+                    src={mentorProfile?.profile_picture_url || ""}
+                    alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                  />
+                  <AvatarFallback className="bg-gray-800 text-white text-xl font-bold">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-base font-bold text-gray-900">
+                  {mentorProfile?.first_name} {mentorProfile?.last_name}
+                </h3>
+                <p className="text-sm text-gray-600 font-medium mt-1">Mentor</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  @{mentorProfile?.username}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  navigate(`/mentor/${mentorProfile?.username}`);
+                  setSidebarOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+              >
+                <Eye className="h-4 w-4" />
+                <span>View Public Profile</span>
+              </button>
+            </div>
+
+            {/* Mobile Navigation */}
+            <div className="px-3 py-4 space-y-6">
+              {navigationGroups.map((group, groupIdx) => (
+                <div key={groupIdx}>
+                  <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeView === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onViewChange(item.id);
+                            setSidebarOpen(false);
+                          }}
+                          className={`
+                            w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all
+                            ${
+                              isActive
+                                ? "bg-gray-300 text-gray-900"
+                                : "text-gray-700 hover:bg-gray-200"
+                            }
+                          `}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-5 w-5 text-rose-400" />
+                            <span>{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <Badge variant="secondary">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </nav>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="lg:pl-64 pt-16">
-        <div className="py-8 px-4 sm:px-6 lg:px-8">{children}</div>
+      {/* Main Content Area - White Background */}
+      <main className="lg:pl-72 pt-16 bg-white min-h-screen">
+        <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-[1600px]">
+          {/* Breadcrumb */}
+          <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
+            <Home className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
+            <span className="font-medium text-gray-900 capitalize">
+              {activeView}
+            </span>
+          </div>
+          
+          {/* Content */}
+          <div className="min-h-[calc(100vh-180px)]">
+            {children}
+          </div>
+        </div>
       </main>
+
+      {/* Command Palette Modal */}
+      {showCommandPalette && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+          <div
+            className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm"
+            onClick={() => setShowCommandPalette(false)}
+          />
+          <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <Search className="h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Quick search for sessions, students, or navigate..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 border-0 focus:ring-0 text-base"
+                  autoFocus
+                />
+                <kbd className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 rounded border border-gray-200">
+                  ESC
+                </kbd>
+              </div>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto p-2">
+              {/* Quick Navigation */}
+              <div className="mb-3">
+                <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Quick Navigation
+                </p>
+                <div className="space-y-1">
+                  {navigationGroups.flatMap(group => group.items).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onViewChange(item.id);
+                          setShowCommandPalette(false);
+                          setSearchQuery("");
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors text-left"
+                      >
+                        <Icon className="h-4 w-4 text-gray-400" />
+                        <span className="flex-1 text-gray-700">{item.label}</span>
+                        <ChevronRight className="h-4 w-4 text-gray-300" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div>
+                <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Quick Actions
+                </p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      navigate(`/mentor/${mentorProfile?.username}`);
+                      setShowCommandPalette(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors text-left"
+                  >
+                    <Eye className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-700">View Public Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setShowCommandPalette(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-red-50 text-red-600 rounded-lg transition-colors text-left"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
