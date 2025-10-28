@@ -208,9 +208,9 @@ const DashboardLayout = ({
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                  <button className="flex items-center gap-2 px-3 h-11 rounded-xl hover:bg-gray-100 transition-all border-2 border-transparent data-[state=open]:border-black focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 group">
                     <div className="relative">
-                      <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm" key={mentorProfile?.profile_picture_url}>
+                      <Avatar className="h-8 w-8 ring-2 ring-gray-200" key={mentorProfile?.profile_picture_url}>
                         <AvatarImage
                           src={mentorProfile?.profile_picture_url || ""}
                           alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
@@ -225,40 +225,73 @@ const DashboardLayout = ({
                       <p className="text-sm font-semibold text-gray-900">
                         {mentorProfile?.first_name} {mentorProfile?.last_name}
                       </p>
-                      <p className="text-xs text-gray-500">Mentor Dashboard</p>
                     </div>
-                    <ChevronDown className="hidden md:block h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                    <ChevronDown className="hidden md:block h-4 w-4 text-gray-600 group-hover:text-gray-900 transition-colors" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="px-3 py-2 bg-gray-50">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {mentorProfile?.full_name || `${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-0.5 truncate">
-                      {user?.email}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      @{mentorProfile?.username}
-                    </p>
+                <DropdownMenuContent align="end" className="w-72 bg-white shadow-lg border border-gray-200 rounded-xl p-0">
+                  {/* User Info Header */}
+                  <div className="px-4 py-4 bg-gray-50 rounded-t-xl">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 ring-2 ring-gray-200" key={mentorProfile?.profile_picture_url}>
+                        <AvatarImage
+                          src={mentorProfile?.profile_picture_url || ""}
+                          alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                        />
+                        <AvatarFallback className="bg-gray-900 text-white font-semibold">
+                          {getInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {mentorProfile?.full_name || `${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          @{mentorProfile?.username}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-gray-600 font-medium">Active</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(`/mentor/${mentorProfile?.username}`)} className="cursor-pointer">
-                    <Eye className="h-4 w-4 mr-2" />
-                    <span>View Public Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onViewChange("profile")} className="cursor-pointer">
-                    <Settings className="h-4 w-4 mr-2" />
-                    <span>Settings & Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    className="text-red-600 focus:text-red-600 cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
+                  
+                  <div className="p-1.5">
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/mentor/${mentorProfile?.username}`)} 
+                      className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 focus:bg-gray-50"
+                    >
+                      <Eye className="h-4 w-4 mr-3 text-gray-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">View Public Profile</p>
+                        <p className="text-xs text-gray-500 mt-0.5">See how students see you</p>
+                      </div>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => onViewChange("profile")} 
+                      className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 focus:bg-gray-50"
+                    >
+                      <Settings className="h-4 w-4 mr-3 text-gray-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Settings & Profile</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Manage your account</p>
+                      </div>
+                    </DropdownMenuItem>
+                  </div>
+                  
+                  <DropdownMenuSeparator className="my-1.5 bg-gray-200" />
+                  
+                  <div className="p-1.5">
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="cursor-pointer hover:bg-red-50 rounded-lg px-3 py-2.5 focus:bg-red-50 text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      <span className="text-sm font-medium">Log Out</span>
+                    </DropdownMenuItem>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

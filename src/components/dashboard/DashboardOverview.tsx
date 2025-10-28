@@ -6,11 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 type TimePeriod = "today" | "week" | "month" | "all";
 
 interface DashboardOverviewProps {
   mentorProfile: any;
+  onNavigate?: (view: string) => void;
 }
 
 interface Stats {
@@ -21,8 +23,9 @@ interface Stats {
   completionRate: number;
 }
 
-const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
+const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
     totalSessions: 0,
     upcomingSessions: 0,
@@ -292,10 +295,17 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
             {/* Update Availability */}
             <button
               onClick={() => {
-                const event = new CustomEvent('navigateToTab', { detail: 'profile' });
-                window.dispatchEvent(event);
+                if (onNavigate) {
+                  onNavigate('availability');
+                } else {
+                  toast({
+                    title: "Error",
+                    description: "Navigation function not available",
+                    variant: "destructive",
+                  });
+                }
               }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group cursor-pointer"
             >
               <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
                 <Edit className="h-4 w-4 text-rose-400" />
@@ -327,10 +337,8 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
             </button>
 
             {/* Message Support */}
-            <button
-              onClick={() => {
-                window.location.href = 'mailto:support@sparkmentorconnect.com';
-              }}
+            <a
+              href="mailto:support@sparkmentorconnect.com"
               className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
             >
               <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
@@ -341,7 +349,7 @@ const DashboardOverview = ({ mentorProfile }: DashboardOverviewProps) => {
                   Get Support
                 </p>
               </div>
-            </button>
+            </a>
           </div>
         </CardContent>
       </Card>

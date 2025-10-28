@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, Settings } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -118,13 +118,33 @@ const Navbar = () => {
   const handleDashboardClick = () => {
     if (userRole === 'mentor') {
       navigate('/expert/dashboard');
-    } else {
+    } else if (userRole === 'student') {
       navigate('/dashboard');
+    } else {
+      // Fallback: try to determine from profile type
+      if (profile?.type === 'mentor') {
+        navigate('/expert/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 
   const getInitials = (name: string) => {
     return name?.charAt(0)?.toUpperCase() || 'U';
+  };
+
+  const getDisplayName = () => {
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    // Fallback to role-based display
+    if (userRole === 'mentor') {
+      return 'Mentor';
+    } else if (userRole === 'student') {
+      return 'Student';
+    }
+    return 'User';
   };
 
   const getAvatarColor = (name: string) => {
@@ -162,41 +182,36 @@ const Navbar = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:ring-2 hover:ring-matepeak-primary/20 transition-all">
-                    <Avatar className="h-10 w-10 ring-2 ring-white shadow-md">
-                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || user.email} />
-                      <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white font-semibold`}>
-                        {getInitials(profile?.full_name || user.email)}
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center gap-2 h-11 px-3 rounded-xl hover:bg-gray-100 transition-all border-2 border-transparent data-[state=open]:border-black focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                  >
+                    <Avatar className="h-8 w-8 ring-2 ring-gray-200">
+                      <AvatarImage src={profile?.avatar_url} alt={getDisplayName()} />
+                      <AvatarFallback className={`${getAvatarColor(getDisplayName())} text-white font-semibold text-sm`}>
+                        {getInitials(getDisplayName())}
                       </AvatarFallback>
                     </Avatar>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {getDisplayName()}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-white shadow-xl border-gray-200" align="end">
-                  <div className="flex items-center justify-start gap-2 p-3 bg-gradient-to-r from-matepeak-primary/5 to-matepeak-secondary/5">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold text-gray-900">{profile?.full_name || 'User'}</p>
-                      <p className="text-xs text-gray-600">{user.email}</p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleDashboardClick} className="cursor-pointer hover:bg-matepeak-primary/5">
-                    <Settings className="mr-2 h-4 w-4 text-matepeak-primary" />
-                    <span className="text-gray-700">Dashboard</span>
+                <DropdownMenuContent className="w-48 bg-white shadow-lg border border-gray-200 rounded-xl" align="end">
+                  <DropdownMenuItem 
+                    onClick={handleDashboardClick} 
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg m-1 text-gray-700 focus:bg-gray-50"
+                  >
+                    <span className="text-sm">Dashboard</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleViewProfile} className="cursor-pointer hover:bg-matepeak-primary/5">
-                    <User className="mr-2 h-4 w-4 text-matepeak-primary" />
-                    <span className="text-gray-700">{userRole === 'mentor' ? 'View Profile' : 'My Profile'}</span>
-                  </DropdownMenuItem>
-                  {userRole === 'student' && (
-                    <DropdownMenuItem onClick={() => navigate('/bookings')} className="cursor-pointer hover:bg-matepeak-primary/5">
-                      <Settings className="mr-2 h-4 w-4 text-matepeak-primary" />
-                      <span className="text-gray-700">My Bookings</span>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-red-50 focus:bg-red-50">
+                  <DropdownMenuSeparator className="bg-gray-200" />
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="cursor-pointer hover:bg-red-50 focus:bg-red-50 rounded-lg m-1"
+                  >
                     <LogOut className="mr-2 h-4 w-4 text-red-600" />
-                    <span className="text-red-600 font-medium">Logout</span>
+                    <span className="text-red-600 font-medium text-sm">Log Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -232,67 +247,41 @@ const Navbar = () => {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden bg-gradient-to-br from-white to-matepeak-primary/5 py-4 px-4 mt-2 shadow-lg border-t-2 border-matepeak-primary/20 rounded-b-xl">
+        <div className="md:hidden bg-white py-4 px-4 mt-2 shadow-lg border-t border-gray-200 rounded-b-xl">
           {user ? (
-            <div className="flex flex-col space-y-3">
-              <div className="flex items-center gap-3 pb-3 border-b border-matepeak-primary/20">
-                <Avatar className="h-12 w-12 ring-2 ring-matepeak-primary/30 shadow-md">
-                  <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || user.email} />
-                  <AvatarFallback className={`${getAvatarColor(profile?.full_name || user.email)} text-white font-semibold`}>
-                    {getInitials(profile?.full_name || user.email)}
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+                <Avatar className="h-10 w-10 ring-2 ring-gray-200">
+                  <AvatarImage src={profile?.avatar_url} alt={getDisplayName()} />
+                  <AvatarFallback className={`${getAvatarColor(getDisplayName())} text-white font-semibold`}>
+                    {getInitials(getDisplayName())}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-matepeak-primary font-semibold text-sm">{profile?.full_name || 'User'}</p>
-                  <p className="text-gray-600 text-xs">{user.email}</p>
+                  <p className="text-gray-900 font-semibold text-sm">{getDisplayName()}</p>
                 </div>
               </div>
               <Button 
                 variant="ghost"
-                className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
+                className="text-gray-700 hover:bg-gray-100 w-full font-medium justify-start transition-all duration-200 rounded-xl h-11"
                 onClick={() => {
                   handleDashboardClick();
                   setIsMenuOpen(false);
                 }}
               >
-                <Settings className="mr-2 h-4 w-4" />
                 Dashboard
               </Button>
-              <Button 
-                variant="ghost"
-                className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
-                onClick={() => {
-                  handleViewProfile();
-                  setIsMenuOpen(false);
-                }}
-              >
-                <User className="mr-2 h-4 w-4" />
-                {userRole === 'mentor' ? 'View Profile' : 'My Profile'}
-              </Button>
-              {userRole === 'student' && (
+              <div className="pt-2 border-t border-gray-200">
                 <Button 
                   variant="ghost"
-                  className="text-matepeak-primary hover:text-white hover:bg-matepeak-primary w-full font-semibold justify-start transition-all duration-300 rounded-lg"
-                  onClick={() => {
-                    navigate('/bookings');
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  My Bookings
-                </Button>
-              )}
-              <div className="pt-2 border-t border-matepeak-primary/20">
-                <Button 
-                  variant="ghost"
-                  className="text-red-600 hover:text-white hover:bg-red-600 w-full font-semibold justify-start transition-all duration-300 rounded-lg"
+                  className="text-red-600 hover:bg-red-50 w-full font-medium justify-start transition-all duration-200 rounded-xl h-11"
                   onClick={() => {
                     handleLogout();
                     setIsMenuOpen(false);
                   }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  Log Out
                 </Button>
               </div>
             </div>

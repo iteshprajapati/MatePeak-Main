@@ -105,12 +105,57 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   const handleAddSlot = async () => {
     if (!selectedDate) return;
 
+    // Validate time slots
+    if (newSlot.start_time && newSlot.end_time) {
+      if (newSlot.start_time >= newSlot.end_time) {
+        toast({
+          title: "Invalid Time Range",
+          description: "End time must be after start time",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Check for overlapping slots
+    const dayOfWeek = selectedDate.getDay();
+    const specificDate = newSlot.is_recurring
+      ? null
+      : selectedDate.toISOString().split("T")[0];
+
+    const relevantSlots = availabilitySlots.filter((slot) => {
+      if (newSlot.is_recurring) {
+        return slot.is_recurring && slot.day_of_week === dayOfWeek;
+      } else {
+        return slot.specific_date === specificDate || 
+               (slot.is_recurring && slot.day_of_week === dayOfWeek);
+      }
+    });
+
+    const hasOverlap = relevantSlots.some((slot) => {
+      const newStart = newSlot.start_time!;
+      const newEnd = newSlot.end_time!;
+      const existingStart = slot.start_time;
+      const existingEnd = slot.end_time;
+
+      return (
+        (newStart >= existingStart && newStart < existingEnd) ||
+        (newEnd > existingStart && newEnd <= existingEnd) ||
+        (newStart <= existingStart && newEnd >= existingEnd)
+      );
+    });
+
+    if (hasOverlap) {
+      toast({
+        title: "Overlapping Time Slot",
+        description: "This time slot overlaps with an existing availability slot",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSaving(true);
-      const dayOfWeek = selectedDate.getDay();
-      const specificDate = newSlot.is_recurring
-        ? null
-        : selectedDate.toISOString().split("T")[0];
 
       const slotData = {
         expert_id: mentorProfile.id,
@@ -304,7 +349,38 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
             Manage your availability and block dates
           </p>
         </div>
+        <div className="text-right">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+            <Clock className="h-4 w-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
+              {Intl.DateTimeFormat().resolvedOptions().timeZone}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Your timezone</p>
+        </div>
       </div>
+
+      {/* Empty State */}
+      {!loading && availabilitySlots.length === 0 && blockedDates.length === 0 && (
+        <Card className="border-gray-200 bg-gradient-to-br from-rose-50 to-orange-50">
+          <CardContent className="p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white mb-4 shadow-sm">
+              <CalendarIcon className="h-8 w-8 text-rose-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No Availability Set Yet
+            </h3>
+            <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+              Set your available time slots so students can book sessions with you. 
+              Click any date on the calendar below to get started.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+              <Clock className="h-4 w-4" />
+              <span>Tip: Use recurring slots for weekly schedules</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Calendar Header */}
       <Card className="border-gray-200 max-w-2xl">
@@ -348,44 +424,54 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1">
-            {days.map((date, index) => {
-              if (!date) {
-                return <div key={`empty-${index}`} className="aspect-square" />;
-              }
-
-              const availability = getAvailabilityForDate(date);
-              const today = isToday(date);
-
-              return (
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 35 }).map((_, index) => (
                 <div
-                  key={date.toISOString()}
-                  className={`aspect-square border rounded-md p-1 transition-all cursor-pointer hover:shadow-sm ${
-                    today
-                      ? "border-2 border-gray-900 bg-gray-50"
-                      : availability.blocked
-                      ? "border border-red-300 bg-red-50"
-                      : availability.slots.length > 0
-                      ? "border border-green-300 bg-green-50"
-                      : "border border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                  onClick={() => {
-                    setSelectedDate(date);
-                    setDialogOpen(true);
-                  }}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="text-xs font-semibold text-gray-900">
-                      {date.getDate()}
+                  key={`skeleton-${index}`}
+                  className="aspect-square border border-gray-200 rounded-2xl bg-gray-50 animate-pulse"
+                />
+              ))
+            ) : (
+              days.map((date, index) => {
+                if (!date) {
+                  return <div key={`empty-${index}`} className="aspect-square" />;
+                }
+
+                const availability = getAvailabilityForDate(date);
+                const today = isToday(date);
+
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`aspect-square border rounded-2xl p-1 transition-all cursor-pointer hover:shadow-sm ${
+                      today
+                        ? "border-2 border-gray-900 bg-gray-50"
+                        : availability.blocked
+                        ? "border border-red-300 bg-red-50"
+                        : availability.slots.length > 0
+                        ? "border border-green-300 bg-green-50"
+                        : "border border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                    onClick={() => {
+                      setSelectedDate(date);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="text-xs font-semibold text-gray-900">
+                        {date.getDate()}
+                      </div>
+                      {availability.blocked ? (
+                        <div className="w-1 h-1 bg-red-500 rounded-full mt-0.5" />
+                      ) : availability.slots.length > 0 ? (
+                        <div className="w-1 h-1 bg-green-500 rounded-full mt-0.5" />
+                      ) : null}
                     </div>
-                    {availability.blocked ? (
-                      <div className="w-1 h-1 bg-red-500 rounded-full mt-0.5" />
-                    ) : availability.slots.length > 0 ? (
-                      <div className="w-1 h-1 bg-green-500 rounded-full mt-0.5" />
-                    ) : null}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* Legend */}
@@ -514,13 +600,18 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {timeSlots.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
+                    {timeSlots
+                      .filter((time) => time > (newSlot.start_time || "00:00"))
+                      .map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
+                {newSlot.start_time && newSlot.end_time && newSlot.start_time >= newSlot.end_time && (
+                  <p className="text-xs text-red-600">End time must be after start time</p>
+                )}
               </div>
 
               {/* Recurring */}

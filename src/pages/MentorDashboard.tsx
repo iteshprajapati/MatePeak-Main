@@ -127,7 +127,10 @@ const MentorDashboard = () => {
       user={user}
     >
       {activeView === "overview" && (
-        <DashboardOverview mentorProfile={mentorProfile} />
+        <DashboardOverview 
+          mentorProfile={mentorProfile} 
+          onNavigate={(view) => setActiveView(view as DashboardView)}
+        />
       )}
       {activeView === "profile" && (
         <ProfileManagement
