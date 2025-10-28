@@ -45,8 +45,8 @@ export default function ImageEditor({ open, onClose, imageUrl, onSave }: ImageEd
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas size (fixed square)
-    const size = 300;
+    // Set canvas size (fixed square for profile picture)
+    const size = 250;
     canvas.width = size;
     canvas.height = size;
 
@@ -63,16 +63,31 @@ export default function ImageEditor({ open, onClose, imageUrl, onSave }: ImageEd
     // Apply rotation (convert degrees to radians)
     ctx.rotate((rotation * Math.PI) / 180);
 
-    // Calculate scaled size
-    const scaledSize = size * zoom;
+    // Calculate aspect ratio and dimensions
+    const imgWidth = image.naturalWidth;
+    const imgHeight = image.naturalHeight;
+    const imgAspect = imgWidth / imgHeight;
 
-    // Draw image centered and scaled
+    // Calculate dimensions to fit the image in the canvas while maintaining aspect ratio
+    let drawWidth, drawHeight;
+    
+    if (imgAspect > 1) {
+      // Landscape image - width is larger
+      drawWidth = size * zoom;
+      drawHeight = drawWidth / imgAspect;
+    } else {
+      // Portrait or square image - height is larger or equal
+      drawHeight = size * zoom;
+      drawWidth = drawHeight * imgAspect;
+    }
+
+    // Draw image centered, scaled, and maintaining aspect ratio
     ctx.drawImage(
       image, 
-      -scaledSize / 2, 
-      -scaledSize / 2, 
-      scaledSize, 
-      scaledSize
+      -drawWidth / 2, 
+      -drawHeight / 2, 
+      drawWidth, 
+      drawHeight
     );
 
     // Restore context state
@@ -138,7 +153,7 @@ export default function ImageEditor({ open, onClose, imageUrl, onSave }: ImageEd
               <canvas
                 ref={canvasRef}
                 className="border-4 border-black rounded shadow-lg"
-                style={{ width: "300px", height: "300px" }}
+                style={{ width: "250px", height: "250px" }}
               />
               <img
                 ref={imageRef}
@@ -206,7 +221,7 @@ export default function ImageEditor({ open, onClose, imageUrl, onSave }: ImageEd
           {/* Save Button */}
           <Button
             onClick={handleSave}
-            className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
+            className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-2.5"
           >
             Save profile photo
           </Button>

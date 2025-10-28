@@ -390,7 +390,7 @@ const ProfileManagement = ({
                 value={formData.headline}
                 onChange={handleChange}
                 placeholder="e.g., Expert Software Engineer | 10+ Years Experience"
-                className="transition-all"
+                className="transition-all bg-gray-50 border-gray-300 focus:bg-white"
                 maxLength={100}
                 required
               />
@@ -411,7 +411,7 @@ const ProfileManagement = ({
                 onChange={handleChange}
                 placeholder="Tell students about yourself, your background, and expertise..."
                 rows={5}
-                className="transition-all resize-none"
+                className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
                 maxLength={1000}
                 required
               />
@@ -432,7 +432,7 @@ const ProfileManagement = ({
                 onChange={handleChange}
                 placeholder="Describe your teaching or mentoring experience..."
                 rows={4}
-                className="transition-all resize-none"
+                className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
                 maxLength={1000}
               />
               <p className="text-xs text-gray-500">
@@ -452,7 +452,7 @@ const ProfileManagement = ({
                 onChange={handleChange}
                 placeholder="Share what motivates you to teach and mentor others..."
                 rows={4}
-                className="transition-all resize-none"
+                className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
                 maxLength={500}
               />
               <p className="text-xs text-gray-500">
