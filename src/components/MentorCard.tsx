@@ -19,6 +19,7 @@ export interface MentorProfile {
   price: number;
   bio: string;
   connectionOptions: string[];
+  username?: string; // Optional username for new profile route
 }
 
 interface MentorCardProps {
@@ -113,7 +114,7 @@ const MentorCard = ({ mentor }: MentorCardProps) => {
 
         {/* View Profile button */}
         <div className="flex justify-end">
-          <Link to={`/mentors/${mentor.id}`}>
+          <Link to={mentor.username ? `/mentor/${mentor.username}` : `/mentors/${mentor.id}`}>
             <Button variant="outline" className="rounded-full bg-matepeak-primary text-white hover:bg-matepeak-yellow hover:text-matepeak-primary transition-all duration-200">
               View Profile
             </Button>

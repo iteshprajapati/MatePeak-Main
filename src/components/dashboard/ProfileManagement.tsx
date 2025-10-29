@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ImageEditor from "@/components/onboarding/ImageEditor";
 
 interface ProfileManagementProps {
@@ -21,6 +22,7 @@ const ProfileManagement = ({
   onProfileUpdate,
 }: ProfileManagementProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -230,11 +232,21 @@ const ProfileManagement = ({
   return (
     <div className="max-w-4xl space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
-        <p className="text-gray-600 mt-1">
-          Update your profile information and settings
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
+          <p className="text-gray-600 mt-1">
+            Update your profile information and settings
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/mentor/${mentorProfile.username}`)}
+          className="flex items-center gap-2 bg-white hover:bg-matepeak-yellow hover:border-matepeak-primary transition-all"
+        >
+          <Eye className="h-4 w-4" />
+          <span className="hidden sm:inline">View Public Profile</span>
+        </Button>
       </div>
 
       {/* Profile Completeness Indicator */}

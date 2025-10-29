@@ -9,6 +9,7 @@ import MentorSearch from "./pages/MentorSearch";
 import Explore from "./pages/Explore";
 import MentorProfile from "./pages/MentorProfile";
 import MentorProfileByUsername from "./pages/MentorProfileByUsername";
+import MentorPublicProfile from "./pages/MentorPublicProfile";
 import BookingPage from "./pages/BookingPage";
 import BookingSuccess from "./pages/BookingSuccess";
 import Dashboard from "./pages/Dashboard";
@@ -36,7 +37,8 @@ const App = () => (
           <Route path="/mentors" element={<MentorSearch />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/mentors/:id" element={<MentorProfile />} />
-          <Route path="/mentor/:username" element={<MentorProfileByUsername />} />
+          <Route path="/mentor/:username" element={<MentorPublicProfile />} />
+          <Route path="/profile/:username" element={<MentorPublicProfile />} />
           <Route path="/book/:id" element={<BookingPage />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
           <Route path="/dashboard" element={<Dashboard />} />
