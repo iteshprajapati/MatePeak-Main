@@ -5,7 +5,15 @@ import {
   Globe,
   Languages,
   MapPin,
-  Clock
+  Clock,
+  Heart,
+  Palette,
+  Briefcase,
+  GraduationCap,
+  Code,
+  BookOpen,
+  TrendingUp,
+  Users
 } from "lucide-react";
 
 interface ProfileAboutProps {
@@ -13,6 +21,22 @@ interface ProfileAboutProps {
 }
 
 export default function ProfileAbout({ mentor }: ProfileAboutProps) {
+  // Map categories to their icons
+  const categoryIcons: Record<string, any> = {
+    "Mental Health": Heart,
+    "Creative Arts": Palette,
+    "Career Coaching": Briefcase,
+    "Academic Support": GraduationCap,
+    "Programming & Tech": Code,
+    "Test Preparation": BookOpen,
+    "Business & Finance": TrendingUp,
+    "Leadership & Development": Users,
+  };
+
+  const getIconForCategory = (category: string) => {
+    return categoryIcons[category] || Briefcase;
+  };
+
   return (
     <div className="space-y-6">
       {/* Additional Information */}
@@ -39,15 +63,18 @@ export default function ProfileAbout({ mentor }: ProfileAboutProps) {
               <div>
                 <h3 className="font-medium text-gray-900 mb-3 text-sm">Areas of Expertise</h3>
                 <div className="flex flex-wrap gap-2">
-                  {mentor.categories.map((category: string) => (
-                    <Badge
-                      key={category}
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 bg-white text-xs"
-                    >
-                      {category}
-                    </Badge>
-                  ))}
+                  {mentor.categories.map((category: string) => {
+                    const IconComponent = getIconForCategory(category);
+                    return (
+                      <div
+                        key={category}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-sm font-medium hover:border-gray-400 transition-colors"
+                      >
+                        <IconComponent className="h-4 w-4" />
+                        <span>{category}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -179,9 +206,9 @@ export default function ProfileAbout({ mentor }: ProfileAboutProps) {
                   </div>
                 </a>
               )}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
       )}
     </div>
   );

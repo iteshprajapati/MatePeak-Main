@@ -69,31 +69,69 @@ interface DaySchedule {
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+// Helper to get date string in local timezone (avoids UTC conversion)
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Timezone utilities
 const getUserTimezone = () => {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
+const isValidTimezone = (timezone: string): boolean => {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 const getTimezoneOffset = (timezone: string) => {
-  const now = new Date();
-  const tzString = now.toLocaleString('en-US', { timeZone: timezone });
-  const tzDate = new Date(tzString);
-  const localDate = new Date(now.toLocaleString('en-US', { timeZone: getUserTimezone() }));
-  return (tzDate.getTime() - localDate.getTime()) / (1000 * 60 * 60);
+  // If timezone is not a valid IANA timezone, treat as UTC
+  if (!isValidTimezone(timezone)) {
+    console.warn(`Invalid timezone: ${timezone}, using UTC`);
+    return 0;
+  }
+  
+  try {
+    const now = new Date();
+    const tzString = now.toLocaleString('en-US', { timeZone: timezone });
+    const tzDate = new Date(tzString);
+    const localDate = new Date(now.toLocaleString('en-US', { timeZone: getUserTimezone() }));
+    return (tzDate.getTime() - localDate.getTime()) / (1000 * 60 * 60);
+  } catch (e) {
+    console.error(`Error calculating timezone offset for ${timezone}:`, e);
+    return 0;
+  }
 };
 
 const convertTime = (time: string, fromTz: string, toTz: string): string => {
-  const [hours, minutes] = time.split(':').map(Number);
-  const offset = getTimezoneOffset(toTz) - getTimezoneOffset(fromTz);
-  let newHours = hours + offset;
+  // If either timezone is invalid, return original time
+  if (!isValidTimezone(fromTz) || !isValidTimezone(toTz)) {
+    return time;
+  }
   
-  if (newHours < 0) newHours += 24;
-  if (newHours >= 24) newHours -= 24;
-  
-  return `${String(newHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  try {
+    const [hours, minutes] = time.split(':').map(Number);
+    const offset = getTimezoneOffset(toTz) - getTimezoneOffset(fromTz);
+    let newHours = hours + offset;
+    
+    if (newHours < 0) newHours += 24;
+    if (newHours >= 24) newHours -= 24;
+    
+    return `${String(Math.floor(newHours)).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  } catch (e) {
+    console.error('Error converting time:', e);
+    return time;
+  }
 };
 
-export default function ProfileAvailability({ mentorId, mentorName, mentorTimezone = "GMT+00:00" }: ProfileAvailabilityProps) {
+export default function ProfileAvailability({ mentorId, mentorName, mentorTimezone = "UTC" }: ProfileAvailabilityProps) {
   const [loading, setLoading] = useState(true);
   const [recurringSlots, setRecurringSlots] = useState<AvailabilitySlot[]>([]);
   const [specificSlots, setSpecificSlots] = useState<AvailabilitySlot[]>([]);
@@ -220,7 +258,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
     for (let i = 0; i < 7; i++) {
       const date = new Date(currentWeekStart);
       date.setDate(currentWeekStart.getDate() + i);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = getLocalDateString(date); // Use local timezone helper
       const dayOfWeek = date.getDay();
       
       // Check if date is blocked
@@ -610,7 +648,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                     <div className="flex items-start gap-2 p-2.5 bg-red-100/50 rounded-lg">
                       <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs font-semibold text-red-900">Unavailable</p>
+                        <p className="text-xs font-semibold text-red-900">Blocked</p>
                         {day.blockedReason && (
                           <p className="text-xs text-red-600 mt-0.5">{day.blockedReason}</p>
                         )}

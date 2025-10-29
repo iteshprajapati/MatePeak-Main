@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle, Eye, Globe, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ImageEditor from "@/components/onboarding/ImageEditor";
+import ExpertiseEditor from "@/components/dashboard/ExpertiseEditor";
 import {
   Select,
   SelectContent,
@@ -70,7 +71,7 @@ const ProfileManagement = ({
       'Introduction': mentorProfile.introduction,
       'Teaching Experience': mentorProfile.teaching_experience,
       'Motivation': mentorProfile.motivation,
-      'Expertise': mentorProfile.expertise?.length > 0,
+      'Expertise Areas': (mentorProfile.categories && mentorProfile.categories.length > 0) || mentorProfile.category,
       'Hourly Rate': mentorProfile.hourly_rate,
       'Languages': mentorProfile.languages?.length > 0,
     };
@@ -433,6 +434,12 @@ const ProfileManagement = ({
         onSave={handleSaveEditedImage}
       />
 
+      {/* Expertise Editor */}
+      <ExpertiseEditor
+        mentorProfile={mentorProfile}
+        onProfileUpdate={onProfileUpdate}
+      />
+
       {/* Basic Information */}
       <Card className="border-gray-200">
         <div className="p-6 border-b border-gray-200">
@@ -648,10 +655,37 @@ const ProfileManagement = ({
               <p className="text-sm font-medium text-gray-600">Username</p>
               <p className="text-sm text-gray-900 mt-1">@{mentorProfile.username}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Expertise</p>
-              <p className="text-sm text-gray-900 mt-1">{mentorProfile.category || "Not specified"}</p>
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-gray-600 mb-2">Expertise Areas</p>
+              <div className="flex flex-wrap gap-2">
+                {(mentorProfile.categories || [mentorProfile.category]).filter(Boolean).map((cat: string, idx: number) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300"
+                  >
+                    {cat}
+                  </span>
+                ))}
+                {(!mentorProfile.categories || mentorProfile.categories.length === 0) && !mentorProfile.category && (
+                  <span className="text-sm text-gray-500">No expertise areas set</span>
+                )}
+              </div>
             </div>
+            {mentorProfile.expertise_tags && mentorProfile.expertise_tags.length > 0 && (
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-gray-600 mb-2">Specific Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {mentorProfile.expertise_tags.map((tag: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <p className="text-sm font-medium text-gray-600">Profile Status</p>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 bg-green-100 text-green-800">

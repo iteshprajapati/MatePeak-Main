@@ -227,7 +227,7 @@ export default function MentorPublicProfile() {
                         <ProfileAvailability 
                           mentorId={mentor.id} 
                           mentorName={mentor.full_name}
-                          mentorTimezone={mentor.timezone || "GMT+00:00"}
+                          mentorTimezone={mentor.timezone || "UTC"}
                         />
                       )}
                       {activeTab === "experiences" && (
@@ -246,6 +246,7 @@ export default function MentorPublicProfile() {
                       <div className="lg:col-span-1">
                         <AvailabilityPreview 
                           mentorId={mentor.id}
+                          mentor={mentor}
                           onSeeMore={() => setActiveTab("availability")}
                         />
                       </div>

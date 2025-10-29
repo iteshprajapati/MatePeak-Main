@@ -65,6 +65,14 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
     return `${hour.toString().padStart(2, "0")}:${minute}`;
   });
 
+  // Helper to get date string in local timezone (avoids UTC conversion)
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     fetchAvailability();
   }, [mentorProfile]);
@@ -148,7 +156,7 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
     const dayOfWeek = selectedDate.getDay();
     const specificDate = newSlots[0].is_recurring
       ? null
-      : selectedDate.toISOString().split("T")[0];
+      : getLocalDateString(selectedDate); // Use local timezone helper
 
     const relevantSlots = availabilitySlots.filter((slot) => {
       if (newSlots[0].is_recurring) {
@@ -246,7 +254,7 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   };
 
   const handleBlockDate = async (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = getLocalDateString(date); // Use local timezone helper
 
     try {
       if (blockedDates.includes(dateStr)) {
@@ -340,7 +348,7 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
 
   const getAvailabilityForDate = (date: Date) => {
     const dayOfWeek = date.getDay();
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = getLocalDateString(date); // Use local timezone helper
 
     // Check if date is blocked
     if (blockedDates.includes(dateStr)) {

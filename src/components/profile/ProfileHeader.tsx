@@ -14,6 +14,13 @@ import {
   Globe,
   Share2,
   Users,
+  Heart,
+  Palette,
+  Briefcase,
+  GraduationCap,
+  Code,
+  BookOpen,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -56,6 +63,22 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
   };
 
   const memberSince = new Date(mentor.created_at).getFullYear();
+
+  // Map categories to their icons
+  const categoryIcons: Record<string, any> = {
+    "Mental Health": Heart,
+    "Creative Arts": Palette,
+    "Career Coaching": Briefcase,
+    "Academic Support": GraduationCap,
+    "Programming & Tech": Code,
+    "Test Preparation": BookOpen,
+    "Business & Finance": TrendingUp,
+    "Leadership & Development": Users,
+  };
+
+  const getIconForCategory = (category: string) => {
+    return categoryIcons[category] || Briefcase;
+  };
 
   return (
     <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
@@ -128,21 +151,24 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
 
         {/* Expertise Tags */}
         <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-700 mb-2">Expert in:</p>
+          <p className="text-xs font-semibold text-gray-700 mb-3">Expert in:</p>
           <div className="flex flex-wrap gap-2">
-            {mentor.categories?.slice(0, 3).map((category: string) => (
-              <Badge
-                key={category}
-                variant="outline"
-                className="border-gray-300 text-gray-700 bg-white text-xs"
-              >
-                {category}
-              </Badge>
-            ))}
+            {mentor.categories?.slice(0, 3).map((category: string) => {
+              const IconComponent = getIconForCategory(category);
+              return (
+                <div
+                  key={category}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-xs font-medium hover:border-gray-400 transition-colors"
+                >
+                  <IconComponent className="h-3.5 w-3.5" />
+                  <span>{category}</span>
+                </div>
+              );
+            })}
             {mentor.categories?.length > 3 && (
-              <Badge variant="outline" className="border-gray-300 text-gray-700 bg-white text-xs">
-                +{mentor.categories.length - 3}
-              </Badge>
+              <div className="inline-flex items-center px-4 py-2 rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-xs font-medium">
+                +{mentor.categories.length - 3} more
+              </div>
             )}
           </div>
         </div>
