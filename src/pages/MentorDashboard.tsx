@@ -11,9 +11,10 @@ import AvailabilityCalendar from "@/components/dashboard/AvailabilityCalendar";
 import SessionCalendar from "@/components/dashboard/SessionCalendar";
 import SessionMessaging from "@/components/dashboard/SessionMessaging";
 import StudentDirectory from "@/components/dashboard/StudentDirectory";
+import CustomTimeRequests from "@/components/dashboard/CustomTimeRequests";
 import { useToast } from "@/hooks/use-toast";
 
-type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students";
+type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students" | "requests";
 
 const MentorDashboard = () => {
   const navigate = useNavigate();
@@ -155,6 +156,9 @@ const MentorDashboard = () => {
       )}
       {activeView === "students" && (
         <StudentDirectory mentorProfile={mentorProfile} />
+      )}
+      {activeView === "requests" && (
+        <CustomTimeRequests mentorProfile={mentorProfile} />
       )}
     </DashboardLayout>
   );

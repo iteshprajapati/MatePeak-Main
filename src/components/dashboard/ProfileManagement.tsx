@@ -8,9 +8,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle, Eye } from "lucide-react";
+import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle, Eye, Globe, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ImageEditor from "@/components/onboarding/ImageEditor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const LANGUAGES = [
+  "English", "Spanish", "French", "German", "Italian", "Portuguese", "Dutch",
+  "Russian", "Chinese (Mandarin)", "Chinese (Cantonese)", "Japanese", "Korean",
+  "Arabic", "Hindi", "Bengali", "Punjabi", "Urdu", "Turkish", "Polish",
+  "Vietnamese", "Thai", "Indonesian", "Malay", "Tagalog", "Swahili", "Hebrew",
+  "Greek", "Swedish", "Norwegian", "Danish", "Finnish", "Czech", "Hungarian",
+  "Romanian", "Ukrainian", "Other"
+];
+
+const LANGUAGE_LEVELS = [
+  "Native",
+  "Fluent",
+  "Advanced",
+  "Intermediate",
+  "Basic"
+];
 
 interface ProfileManagementProps {
   mentorProfile: any;
@@ -35,6 +59,7 @@ const ProfileManagement = ({
     introduction: mentorProfile.introduction || "",
     teaching_experience: mentorProfile.teaching_experience || "",
     motivation: mentorProfile.motivation || "",
+    languages: mentorProfile.languages || [],
   });
 
   // Calculate profile completeness
@@ -67,6 +92,29 @@ const ProfileManagement = ({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddLanguage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      languages: [...prev.languages, { language: "", level: "" }],
+    }));
+  };
+
+  const handleRemoveLanguage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      languages: prev.languages.filter((_: any, i: number) => i !== index),
+    }));
+  };
+
+  const handleLanguageChange = (index: number, field: "language" | "level", value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      languages: prev.languages.map((lang: any, i: number) =>
+        i === index ? { ...lang, [field]: value } : lang
+      ),
+    }));
   };
 
   const handleProfilePictureClick = () => {
@@ -203,6 +251,9 @@ const ProfileManagement = ({
           introduction: formData.introduction.trim(),
           teaching_experience: formData.teaching_experience.trim(),
           motivation: formData.motivation.trim(),
+          languages: formData.languages.filter(
+            (lang: any) => lang.language && lang.level
+          ),
           updated_at: new Date().toISOString(),
         })
         .eq("id", mentorProfile.id)
@@ -470,6 +521,90 @@ const ProfileManagement = ({
               <p className="text-xs text-gray-500">
                 {formData.motivation.length}/500 characters
               </p>
+            </div>
+
+            {/* Languages Section */}
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-gray-600" />
+                  Languages You Speak
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddLanguage}
+                  className="border-gray-300 hover:border-gray-400"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Language
+                </Button>
+              </div>
+              
+              {formData.languages.length === 0 ? (
+                <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <Globe className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">No languages added yet</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Add languages to help students find you
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {formData.languages.map((lang: any, index: number) => (
+                    <div key={index} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Language</Label>
+                          <Select
+                            value={lang.language}
+                            onValueChange={(value) => handleLanguageChange(index, "language", value)}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              {LANGUAGES.map((language) => (
+                                <SelectItem key={language} value={language}>
+                                  {language}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">Proficiency</Label>
+                          <Select
+                            value={lang.level}
+                            onValueChange={(value) => handleLanguageChange(index, "level", value)}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LANGUAGE_LEVELS.map((level) => (
+                                <SelectItem key={level} value={level}>
+                                  {level}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveLanguage(index)}
+                        className="h-9 w-9 flex-shrink-0 hover:bg-red-50 hover:text-red-600 transition-colors mt-5"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}

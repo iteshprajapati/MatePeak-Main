@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AvailabilityPreviewProps {
@@ -15,14 +15,45 @@ interface AvailableDate {
   timeslotCount: number;
 }
 
+interface Language {
+  language: string;
+  level: string;
+}
+
 export default function AvailabilityPreview({ mentorId, onSeeMore }: AvailabilityPreviewProps) {
   const [loading, setLoading] = useState(true);
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   useEffect(() => {
     fetchAvailability();
+    fetchLanguages();
   }, [mentorId]);
+
+  const fetchLanguages = async () => {
+    try {
+      console.log("Fetching languages for mentor:", mentorId);
+      const { data: profileData, error } = await supabase
+        .from("expert_profiles")
+        .select("languages")
+        .eq("id", mentorId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching languages:", error);
+        throw error;
+      }
+
+      console.log("Languages data received:", profileData?.languages);
+      
+      if (profileData && profileData.languages) {
+        setLanguages(profileData.languages);
+      }
+    } catch (error) {
+      console.error("Error in fetchLanguages:", error);
+    }
+  };
 
   const fetchAvailability = async () => {
     try {
@@ -147,7 +178,7 @@ export default function AvailabilityPreview({ mentorId, onSeeMore }: Availabilit
             {availableDates.map((dateInfo, index) => (
               <div
                 key={index}
-                className="bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100"
+                className="bg-green-50/50 rounded-lg p-3 hover:bg-green-50 transition-colors cursor-pointer border-2 border-green-200"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -172,6 +203,35 @@ export default function AvailabilityPreview({ mentorId, onSeeMore }: Availabilit
             No availability in the next 60 days
           </div>
         )}
+
+        {/* Languages Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="h-4 w-4 text-gray-600" />
+            <h4 className="font-semibold text-sm text-gray-900">Languages</h4>
+          </div>
+          {languages && languages.length > 0 ? (
+            <div className="space-y-2">
+              {languages.map((lang, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-gray-100"
+                >
+                  <span className="text-sm font-medium text-gray-900">
+                    {lang.language}
+                  </span>
+                  <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">
+                    {lang.level}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-xs text-gray-400">
+              No languages specified
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

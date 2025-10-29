@@ -28,6 +28,7 @@ export async function updateExpertProfile(data: FormValues) {
     category: Array.isArray(data.category) ? data.category[0] : data.category, // For backward compatibility
     categories: Array.isArray(data.category) ? data.category : [data.category],
     expertise_tags: data.expertiseTags || [],
+    languages: data.languages || [],
     services: {
       oneOnOneSession: data.oneOnOneSession,
       chatAdvice: data.chatAdvice,

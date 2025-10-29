@@ -53,10 +53,10 @@ const Navbar = () => {
 
   const fetchProfile = async (userId: string, role: 'student' | 'mentor') => {
     if (role === 'mentor') {
-      // Get expert profile with avatar from profiles table
+      // Get expert profile with profile picture
       const { data: expertData, error } = await supabase
         .from("expert_profiles")
-        .select("username, full_name, id")
+        .select("username, full_name, profile_picture_url, id")
         .eq("id", userId)
         .single();
 
@@ -68,7 +68,7 @@ const Navbar = () => {
       if (expertData) {
         console.log('Navbar - Fetched expert profile:', expertData);
         
-        // Get avatar separately from profiles table
+        // Get avatar from profiles table as fallback
         const { data: profilesData } = await supabase
           .from("profiles")
           .select("avatar_url")
@@ -78,7 +78,8 @@ const Navbar = () => {
         const profileData = {
           username: expertData.username,
           full_name: expertData.full_name,
-          avatar_url: profilesData?.avatar_url || null,
+          // Use profile_picture_url from expert_profiles first, fallback to avatar_url from profiles
+          avatar_url: expertData.profile_picture_url || profilesData?.avatar_url || null,
           type: 'mentor' as const
         };
         console.log('Navbar - Setting profile state:', profileData);

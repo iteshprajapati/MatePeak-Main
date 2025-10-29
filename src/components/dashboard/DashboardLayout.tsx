@@ -35,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "./NotificationBell";
 
-type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students";
+type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students" | "requests";
 
 interface DashboardLayoutProps {
   activeView: DashboardView;
@@ -91,6 +91,12 @@ const DashboardLayout = ({
           label: "Availability",
           icon: Clock,
           badge: null,
+        },
+        {
+          id: "requests" as DashboardView,
+          label: "Time Requests",
+          icon: Clock,
+          badge: null, // Can add pending count here
         },
       ],
     },

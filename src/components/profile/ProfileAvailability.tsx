@@ -10,10 +10,32 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Globe
+  Globe,
+  Bell,
+  MessageSquare,
+  Filter
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProfileAvailabilityProps {
   mentorId: string;
@@ -81,6 +103,26 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
   const [selectedView, setSelectedView] = useState<'week' | 'recurring'>('week');
   const [showUserTimezone, setShowUserTimezone] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
+  
+  // Session Type Selector state
+  const [sessionTypes, setSessionTypes] = useState<string[]>([]);
+  const [selectedSessionType, setSelectedSessionType] = useState<string>("all");
+  
+  // Request Custom Time state
+  const [customTimeDialogOpen, setCustomTimeDialogOpen] = useState(false);
+  const [requestedDate, setRequestedDate] = useState("");
+  const [requestedStartTime, setRequestedStartTime] = useState("");
+  const [requestedEndTime, setRequestedEndTime] = useState("");
+  const [requestMessage, setRequestMessage] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  
+  // Availability Alerts state
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertDaysPreference, setAlertDaysPreference] = useState<string[]>([]);
+  const [submittingAlert, setSubmittingAlert] = useState(false);
+  
   const navigate = useNavigate();
 
   const userTimezone = getUserTimezone();
@@ -136,6 +178,24 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       setRecurringSlots(recurring || []);
       setSpecificSlots(specific || []);
       setBlockedDates(blocked || []);
+
+      // Check if user has active alert subscription
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: alertData } = await supabase
+          .from("availability_alerts")
+          .select("*")
+          .eq("mentee_id", user.id)
+          .eq("mentor_id", mentorId)
+          .eq("is_active", true)
+          .single();
+
+        if (alertData) {
+          setAlertsEnabled(true);
+          setAlertEmail(alertData.email);
+          setAlertDaysPreference(alertData.preferred_days || []);
+        }
+      }
     } catch (error) {
       console.error("Error fetching availability:", error);
     } finally {
@@ -238,6 +298,106 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
     });
   };
 
+  // Handle custom time request submission
+  const handleCustomTimeRequest = async () => {
+    if (!requestedDate || !requestedStartTime || !requestedEndTime) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setSubmittingRequest(true);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in to request custom time");
+        return;
+      }
+
+      // Create custom time request record
+      const { error } = await supabase
+        .from("booking_requests")
+        .insert({
+          mentee_id: user.id,
+          mentor_id: mentorId,
+          requested_date: requestedDate,
+          requested_start_time: requestedStartTime,
+          requested_end_time: requestedEndTime,
+          message: requestMessage,
+          status: "pending"
+        });
+
+      if (error) throw error;
+
+      toast.success("Time request sent successfully! The mentor will respond within 24 hours.");
+      setCustomTimeDialogOpen(false);
+      
+      // Reset form
+      setRequestedDate("");
+      setRequestedStartTime("");
+      setRequestedEndTime("");
+      setRequestMessage("");
+    } catch (error) {
+      console.error("Error submitting time request:", error);
+      toast.error("Failed to send request. Please try again.");
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
+
+  // Handle availability alert subscription
+  const handleAlertSubscription = async () => {
+    if (!alertEmail || alertDaysPreference.length === 0) {
+      toast.error("Please provide email and select preferred days");
+      return;
+    }
+
+    try {
+      setSubmittingAlert(true);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in to enable alerts");
+        return;
+      }
+
+      // Create or update alert subscription
+      const { error } = await supabase
+        .from("availability_alerts")
+        .upsert({
+          mentee_id: user.id,
+          mentor_id: mentorId,
+          email: alertEmail,
+          preferred_days: alertDaysPreference,
+          is_active: true
+        }, {
+          onConflict: 'mentee_id,mentor_id'
+        });
+
+      if (error) throw error;
+
+      setAlertsEnabled(true);
+      toast.success("Availability alerts enabled! You'll be notified when new slots are added.");
+      setAlertDialogOpen(false);
+    } catch (error) {
+      console.error("Error setting up alerts:", error);
+      toast.error("Failed to enable alerts. Please try again.");
+    } finally {
+      setSubmittingAlert(false);
+    }
+  };
+
+  // Toggle alert day preference
+  const toggleAlertDay = (day: string) => {
+    setAlertDaysPreference(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
+  };
+
   const groupSlotsByDay = (slots: AvailabilitySlot[]) => {
     const grouped: { [key: number]: AvailabilitySlot[] } = {};
     slots.forEach((slot) => {
@@ -317,44 +477,101 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
       {/* View Tabs */}
       {hasAnyAvailability && (
-        <div className="flex gap-2">
-          <Button
-            variant={selectedView === 'week' ? 'default' : 'outline'}
-            onClick={() => setSelectedView('week')}
-            className={selectedView === 'week' ? 'bg-matepeak-primary hover:bg-matepeak-secondary' : 'border-gray-300'}
-          >
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            Week View
-          </Button>
-          <Button
-            variant={selectedView === 'recurring' ? 'default' : 'outline'}
-            onClick={() => setSelectedView('recurring')}
-            className={selectedView === 'recurring' ? 'bg-matepeak-primary hover:bg-matepeak-secondary' : 'border-gray-300'}
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Recurring Schedule
-          </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View Toggle */}
+          <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+            <Button
+              variant={selectedView === 'week' ? 'default' : 'ghost'}
+              onClick={() => setSelectedView('week')}
+              size="sm"
+              className={`rounded-lg transition-all ${
+                selectedView === 'week' 
+                  ? 'bg-white text-gray-900 shadow-sm hover:bg-white' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Week View
+            </Button>
+            <Button
+              variant={selectedView === 'recurring' ? 'default' : 'ghost'}
+              onClick={() => setSelectedView('recurring')}
+              size="sm"
+              className={`rounded-lg transition-all ${
+                selectedView === 'recurring' 
+                  ? 'bg-white text-gray-900 shadow-sm hover:bg-white' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Recurring Schedule
+            </Button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCustomTimeDialogOpen(true)}
+              className="border-2 border-matepeak-primary text-matepeak-primary hover:bg-matepeak-primary hover:text-white transition-all duration-200 font-semibold"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Request Custom Time
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAlertDialogOpen(true)}
+              className={`border-2 transition-all duration-200 font-semibold ${
+                alertsEnabled
+                  ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-600'
+                  : 'border-gray-400 text-gray-700 hover:bg-gray-50 hover:border-gray-500'
+              }`}
+            >
+              <Bell className={`h-4 w-4 mr-2 ${alertsEnabled ? 'fill-green-600' : ''}`} />
+              {alertsEnabled ? 'Alerts Active' : 'Get Notified'}
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Week View */}
       {selectedView === 'week' && hasAnyAvailability && (
-        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
             {/* Week Navigation */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
-                {new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </h2>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
+                  {new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">Click on any time slot to book</p>
+              </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigateWeek('prev')} className="border-gray-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigateWeek('prev')} 
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={goToCurrentWeek} className="border-gray-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={goToCurrentWeek} 
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 px-4"
+                >
                   Today
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => navigateWeek('next')} className="border-gray-300">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigateWeek('next')} 
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -365,37 +582,37 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
               {weekSchedule.map((day) => (
                 <div
                   key={day.dateStr}
-                  className={`p-4 rounded-xl border ${
+                  className={`p-4 rounded-xl border-2 transition-all ${
                     day.isToday
-                      ? 'border-matepeak-primary bg-matepeak-yellow/10'
+                      ? 'border-matepeak-primary bg-matepeak-yellow/5 shadow-sm'
                       : day.isBlocked
-                      ? 'border-red-200 bg-red-50'
+                      ? 'border-red-200 bg-red-50/50'
                       : day.slots.length > 0
-                      ? 'border-gray-200 bg-white'
-                      : 'border-gray-200 bg-gray-50'
+                      ? 'border-green-200 bg-green-50/30 hover:border-green-300 hover:shadow-sm'
+                      : 'border-gray-100 bg-gray-50/50'
                   }`}
                 >
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 text-sm">{day.dayName.substring(0, 3).toUpperCase()}</h3>
+                  <div className="mb-3 pb-2.5 border-b border-gray-100">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <h3 className="font-bold text-gray-900 text-sm">{day.dayName}</h3>
                       {day.isToday && (
-                        <Badge variant="outline" className="border-matepeak-primary text-matepeak-primary text-xs">
+                        <Badge className="bg-matepeak-primary text-white text-xs px-1.5 py-0">
                           Today
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    <p className="text-xs text-gray-600">
+                      {day.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                     </p>
                   </div>
 
                   {day.isBlocked ? (
-                    <div className="flex items-start gap-2 text-red-600">
-                      <XCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start gap-2 p-2.5 bg-red-100/50 rounded-lg">
+                      <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs font-medium">Unavailable</p>
+                        <p className="text-xs font-semibold text-red-900">Unavailable</p>
                         {day.blockedReason && (
-                          <p className="text-xs text-red-500 mt-1">{day.blockedReason}</p>
+                          <p className="text-xs text-red-600 mt-0.5">{day.blockedReason}</p>
                         )}
                       </div>
                     </div>
@@ -407,30 +624,34 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                         return (
                           <div
                             key={idx}
-                            className={`group relative flex items-center gap-2 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                            className={`group relative flex items-center gap-2.5 p-2.5 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
                               hoveredSlot === slotKey
-                                ? 'bg-matepeak-yellow/20 border-matepeak-primary shadow-sm scale-105'
-                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                                ? 'bg-matepeak-yellow/10 border-matepeak-primary shadow-md transform scale-[1.02]'
+                                : 'bg-green-50/50 border-green-200 hover:bg-green-50 hover:border-green-300 hover:shadow-sm'
                             }`}
                             onMouseEnter={() => setHoveredSlot(slotKey)}
                             onMouseLeave={() => setHoveredSlot(null)}
                             onClick={() => handleBookSlot(day.dateStr, slot.start, slot.end)}
                           >
-                            <Clock className={`h-3.5 w-3.5 flex-shrink-0 transition-colors ${
-                              hoveredSlot === slotKey ? 'text-matepeak-primary' : 'text-gray-600'
-                            }`} />
+                            <div className={`p-1.5 rounded-lg transition-colors ${
+                              hoveredSlot === slotKey ? 'bg-matepeak-primary/10' : 'bg-gray-100'
+                            }`}>
+                              <Clock className={`h-3.5 w-3.5 transition-colors ${
+                                hoveredSlot === slotKey ? 'text-matepeak-primary' : 'text-gray-600'
+                              }`} />
+                            </div>
                             <div className="flex-grow">
-                              <span className="text-xs font-medium text-gray-900 block">
+                              <span className="text-xs font-semibold text-gray-900 block">
                                 {formatTime(slot.start)} - {formatTime(slot.end)}
                               </span>
                               <span className="text-xs text-gray-500">{duration} min</span>
                             </div>
                             <Button
                               size="sm"
-                              className={`opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs ${
+                              className={`opacity-0 group-hover:opacity-100 transition-all h-7 text-xs font-semibold ${
                                 hoveredSlot === slotKey
-                                  ? 'bg-matepeak-primary hover:bg-matepeak-secondary'
-                                  : ''
+                                  ? 'bg-matepeak-primary hover:bg-matepeak-secondary text-white'
+                                  : 'bg-gray-900 hover:bg-gray-800 text-white'
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -444,7 +665,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                       })}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">No availability</p>
+                    <div className="flex items-center justify-center py-4">
+                      <p className="text-xs text-gray-400">No availability</p>
+                    </div>
                   )}
                 </div>
               ))}
@@ -455,38 +678,52 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
       {/* Recurring Schedule View */}
       {selectedView === 'recurring' && recurringSlots.length > 0 && (
-        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Weekly Recurring Schedule</h2>
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="p-2.5 bg-matepeak-yellow/10 rounded-xl">
+                <Clock className="h-5 w-5 text-matepeak-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Weekly Recurring Schedule</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Regular availability that repeats every week</p>
+              </div>
             </div>
 
             <div className="space-y-3">
               {Object.entries(groupedRecurring).map(([dayNum, slots]) => (
                 <div
                   key={dayNum}
-                  className="p-5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                  className="group p-4 bg-green-50/30 rounded-xl border-2 border-green-200 hover:border-green-300 hover:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-grow">
-                      <h3 className="font-semibold text-gray-900 mb-3 text-sm">
-                        {DAYS_OF_WEEK[parseInt(dayNum)]}
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      </div>
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-bold text-gray-900 mb-2.5 text-sm">
+                        {DAYS_OF_WEEK[parseInt(dayNum)]}s
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {slots.map((slot) => {
                           const duration = calculateDuration(slot.start_time, slot.end_time);
                           return (
-                            <Badge
+                            <div
                               key={slot.id}
-                              variant="outline"
-                              className="group border-gray-300 text-gray-700 bg-white text-xs px-3 py-2 hover:bg-matepeak-yellow/20 hover:border-matepeak-primary transition-all duration-200 cursor-default"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-50/50 border-2 border-green-200 rounded-lg hover:bg-matepeak-yellow/10 hover:border-matepeak-primary transition-all duration-200 group/slot"
                             >
-                              <Clock className="h-3 w-3 mr-1.5" />
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                              <span className="ml-2 text-gray-500">({duration}m)</span>
-                            </Badge>
+                              <div className="p-1 bg-white rounded-md group-hover/slot:bg-matepeak-yellow/20 transition-colors">
+                                <Clock className="h-3 w-3 text-gray-600 group-hover/slot:text-matepeak-primary transition-colors" />
+                              </div>
+                              <div>
+                                <span className="text-xs font-semibold text-gray-900 block">
+                                  {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                                </span>
+                                <span className="text-xs text-gray-500">{duration} min</span>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
@@ -498,6 +735,184 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
           </CardContent>
         </Card>
       )}
+
+      {/* Custom Time Request Dialog */}
+      <Dialog open={customTimeDialogOpen} onOpenChange={setCustomTimeDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Request Custom Time</DialogTitle>
+            <DialogDescription>
+              Don't see a suitable time? Request a custom session time and {mentorName} will get back to you within 24 hours.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="request-date">Preferred Date</Label>
+              <Input
+                id="request-date"
+                type="date"
+                value={requestedDate}
+                onChange={(e) => setRequestedDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="border-gray-300"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="request-start">Start Time</Label>
+                <Input
+                  id="request-start"
+                  type="time"
+                  value={requestedStartTime}
+                  onChange={(e) => setRequestedStartTime(e.target.value)}
+                  className="border-gray-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-end">End Time</Label>
+                <Input
+                  id="request-end"
+                  type="time"
+                  value={requestedEndTime}
+                  onChange={(e) => setRequestedEndTime(e.target.value)}
+                  className="border-gray-300"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="request-message">Message (Optional)</Label>
+              <Textarea
+                id="request-message"
+                placeholder="Add any specific requirements or questions..."
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                className="border-gray-300 min-h-[100px]"
+              />
+            </div>
+
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <strong>Note:</strong> The mentor will review your request and respond via email. You'll be notified once they confirm availability.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCustomTimeDialogOpen(false)}
+              disabled={submittingRequest}
+              className="border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCustomTimeRequest}
+              disabled={submittingRequest}
+              className="bg-matepeak-primary hover:bg-matepeak-primary/90"
+            >
+              {submittingRequest ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Request'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Availability Alerts Dialog */}
+      <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Get Availability Alerts</DialogTitle>
+            <DialogDescription>
+              Receive notifications when {mentorName} adds new availability slots that match your preferences.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="alert-email">Email Address</Label>
+              <Input
+                id="alert-email"
+                type="email"
+                placeholder="your.email@example.com"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+                className="border-gray-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Preferred Days (Select at least one)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {DAYS_OF_WEEK.map((day, index) => (
+                  <Button
+                    key={day}
+                    type="button"
+                    variant="outline"
+                    onClick={() => toggleAlertDay(day)}
+                    className={`justify-start transition-all ${
+                      alertDaysPreference.includes(day)
+                        ? 'bg-matepeak-primary text-white border-matepeak-primary hover:bg-matepeak-primary/90 hover:text-white'
+                        : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <CheckCircle className={`h-4 w-4 mr-2 ${
+                      alertDaysPreference.includes(day) ? 'opacity-100' : 'opacity-0'
+                    }`} />
+                    {day}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Bell className="h-4 w-4 text-green-600 mt-0.5" />
+                <p className="text-sm text-green-900">
+                  <strong>You'll be notified when:</strong> New slots are added on your preferred days or existing slots become available.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAlertDialogOpen(false)}
+              disabled={submittingAlert}
+              className="border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAlertSubscription}
+              disabled={submittingAlert}
+              className="bg-matepeak-primary hover:bg-matepeak-primary/90"
+            >
+              {submittingAlert ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enabling...
+                </>
+              ) : (
+                <>
+                  <Bell className="h-4 w-4 mr-2" />
+                  Enable Alerts
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

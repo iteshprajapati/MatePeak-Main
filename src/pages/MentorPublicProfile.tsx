@@ -24,6 +24,7 @@ interface MentorProfileData {
   category: string;
   categories: string[];
   expertise_tags: string[];
+  languages: Array<{ language: string; level: string }>;
   bio: string;
   headline: string;
   introduction: string;
