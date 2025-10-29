@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import Hero from "@/components/home/Hero";
 import HowItWorks from "@/components/home/HowItWorks";
 import FeaturedMentors from "@/components/home/FeaturedMentors";
-import GetInTouch from "@/components/home/GetInTouch";
+import CallToActionSection from "@/components/CallToActionSection";
 
 const Index = () => {
   // Refs for scroll animation sections
@@ -49,7 +49,7 @@ const Index = () => {
       <Hero />
       <HowItWorks sectionRef={sectionRefs.howItWorks} />
       <FeaturedMentors sectionRef={sectionRefs.mentors} />
-      <GetInTouch />
+      <CallToActionSection />
       <Footer />
     </div>
   );
