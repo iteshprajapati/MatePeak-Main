@@ -181,23 +181,13 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
     <div className="space-y-6">
       {/* Clean Welcome Section - No Background */}
       <div className="py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Welcome back, {mentorProfile.full_name?.split(' ')[0] || mentorProfile.full_name || 'Mentor'}!
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Here's what's happening with your mentoring sessions
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/mentor/${mentorProfile.username}`)}
-            className="flex items-center gap-2 bg-white hover:bg-matepeak-yellow hover:border-matepeak-primary transition-all"
-          >
-            <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">View Public Profile</span>
-          </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Welcome back, {mentorProfile.full_name?.split(' ')[0] || mentorProfile.full_name || 'Mentor'}!
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Here's what's happening with your mentoring sessions
+          </p>
         </div>
       </div>
 

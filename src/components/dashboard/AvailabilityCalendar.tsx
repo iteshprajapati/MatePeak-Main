@@ -51,11 +51,11 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [newSlot, setNewSlot] = useState<Partial<AvailabilitySlot>>({
+  const [newSlots, setNewSlots] = useState<Partial<AvailabilitySlot>[]>([{
     start_time: "09:00",
     end_time: "10:00",
     is_recurring: false,
-  });
+  }]);
   const [saving, setSaving] = useState(false);
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -105,26 +105,53 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   const handleAddSlot = async () => {
     if (!selectedDate) return;
 
-    // Validate time slots
-    if (newSlot.start_time && newSlot.end_time) {
-      if (newSlot.start_time >= newSlot.end_time) {
-        toast({
-          title: "Invalid Time Range",
-          description: "End time must be after start time",
-          variant: "destructive",
-        });
-        return;
+    // Validate all slots
+    for (const newSlot of newSlots) {
+      if (newSlot.start_time && newSlot.end_time) {
+        if (newSlot.start_time >= newSlot.end_time) {
+          toast({
+            title: "Invalid Time Range",
+            description: "End time must be after start time for all slots",
+            variant: "destructive",
+          });
+          return;
+        }
       }
     }
 
-    // Check for overlapping slots
+    // Check for overlapping slots between new slots
+    for (let i = 0; i < newSlots.length; i++) {
+      for (let j = i + 1; j < newSlots.length; j++) {
+        const slot1 = newSlots[i];
+        const slot2 = newSlots[j];
+        
+        if (slot1.start_time && slot1.end_time && slot2.start_time && slot2.end_time) {
+          const overlap = (
+            (slot1.start_time >= slot2.start_time && slot1.start_time < slot2.end_time) ||
+            (slot1.end_time > slot2.start_time && slot1.end_time <= slot2.end_time) ||
+            (slot1.start_time <= slot2.start_time && slot1.end_time >= slot2.end_time)
+          );
+          
+          if (overlap) {
+            toast({
+              title: "Overlapping Time Slots",
+              description: "Your new slots overlap with each other",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+    }
+
+    // Check for overlapping with existing slots
     const dayOfWeek = selectedDate.getDay();
-    const specificDate = newSlot.is_recurring
+    const specificDate = newSlots[0].is_recurring
       ? null
       : selectedDate.toISOString().split("T")[0];
 
     const relevantSlots = availabilitySlots.filter((slot) => {
-      if (newSlot.is_recurring) {
+      if (newSlots[0].is_recurring) {
         return slot.is_recurring && slot.day_of_week === dayOfWeek;
       } else {
         return slot.specific_date === specificDate || 
@@ -132,59 +159,59 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
       }
     });
 
-    const hasOverlap = relevantSlots.some((slot) => {
-      const newStart = newSlot.start_time!;
-      const newEnd = newSlot.end_time!;
-      const existingStart = slot.start_time;
-      const existingEnd = slot.end_time;
+    for (const newSlot of newSlots) {
+      const hasOverlap = relevantSlots.some((slot) => {
+        const newStart = newSlot.start_time!;
+        const newEnd = newSlot.end_time!;
+        const existingStart = slot.start_time;
+        const existingEnd = slot.end_time;
 
-      return (
-        (newStart >= existingStart && newStart < existingEnd) ||
-        (newEnd > existingStart && newEnd <= existingEnd) ||
-        (newStart <= existingStart && newEnd >= existingEnd)
-      );
-    });
-
-    if (hasOverlap) {
-      toast({
-        title: "Overlapping Time Slot",
-        description: "This time slot overlaps with an existing availability slot",
-        variant: "destructive",
+        return (
+          (newStart >= existingStart && newStart < existingEnd) ||
+          (newEnd > existingStart && newEnd <= existingEnd) ||
+          (newStart <= existingStart && newEnd >= existingEnd)
+        );
       });
-      return;
+
+      if (hasOverlap) {
+        toast({
+          title: "Overlapping Time Slot",
+          description: "One or more slots overlap with existing availability",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
       setSaving(true);
 
-      const slotData = {
+      const slotsToInsert = newSlots.map(slot => ({
         expert_id: mentorProfile.id,
         day_of_week: dayOfWeek,
-        start_time: newSlot.start_time,
-        end_time: newSlot.end_time,
-        is_recurring: newSlot.is_recurring,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        is_recurring: slot.is_recurring,
         specific_date: specificDate,
-      };
+      }));
 
       const { error } = await supabase
         .from("availability_slots")
-        .insert([slotData]);
+        .insert(slotsToInsert);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: newSlot.is_recurring
-          ? "Recurring availability added"
-          : "Availability slot added",
+        description: `${newSlots.length} slot${newSlots.length > 1 ? 's' : ''} added successfully`,
       });
 
       setDialogOpen(false);
-      setNewSlot({
+      setNewSlots([{
         start_time: "09:00",
         end_time: "10:00",
         is_recurring: false,
-      });
+      }]);
       fetchAvailability();
     } catch (error: any) {
       console.error("Error adding slot:", error);
@@ -196,6 +223,26 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAddNewSlotField = () => {
+    setNewSlots([...newSlots, {
+      start_time: "09:00",
+      end_time: "10:00",
+      is_recurring: newSlots[0].is_recurring, // Use same recurring setting
+    }]);
+  };
+
+  const handleRemoveSlotField = (index: number) => {
+    if (newSlots.length > 1) {
+      setNewSlots(newSlots.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleUpdateSlotField = (index: number, field: keyof AvailabilitySlot, value: any) => {
+    const updated = [...newSlots];
+    updated[index] = { ...updated[index], [field]: value };
+    setNewSlots(updated);
   };
 
   const handleBlockDate = async (date: Date) => {
@@ -455,6 +502,12 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     }`}
                     onClick={() => {
                       setSelectedDate(date);
+                      // Reset slots when opening dialog
+                      setNewSlots([{
+                        start_time: "09:00",
+                        end_time: "10:00",
+                        is_recurring: false,
+                      }]);
                       setDialogOpen(true);
                     }}
                   >
@@ -563,65 +616,101 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
 
             {/* Add New Slot */}
             <div className="space-y-4 pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900">Add New Slot</h4>
-
-              {/* Start Time */}
-              <div className="space-y-2">
-                <Label>Start Time</Label>
-                <Select
-                  value={newSlot.start_time}
-                  onValueChange={(value) =>
-                    setNewSlot({ ...newSlot, start_time: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlots.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* End Time */}
-              <div className="space-y-2">
-                <Label>End Time</Label>
-                <Select
-                  value={newSlot.end_time}
-                  onValueChange={(value) =>
-                    setNewSlot({ ...newSlot, end_time: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlots
-                      .filter((time) => time > (newSlot.start_time || "00:00"))
-                      .map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                {newSlot.start_time && newSlot.end_time && newSlot.start_time >= newSlot.end_time && (
-                  <p className="text-xs text-red-600">End time must be after start time</p>
-                )}
-              </div>
-
-              {/* Recurring */}
               <div className="flex items-center justify-between">
-                <Label>Repeat weekly on this day</Label>
+                <h4 className="text-sm font-medium text-gray-900">Add New Slots</h4>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddNewSlotField}
+                  className="h-8"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Another
+                </Button>
+              </div>
+
+              {/* Multiple Slot Fields */}
+              {newSlots.map((slot, index) => (
+                <div key={index} className="space-y-3 p-4 bg-gray-50 rounded-lg relative">
+                  {newSlots.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRemoveSlotField(index)}
+                      className="absolute top-2 right-2 h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  
+                  {newSlots.length > 1 && (
+                    <div className="text-xs font-medium text-gray-600 mb-2">
+                      Slot {index + 1}
+                    </div>
+                  )}
+
+                  {/* Start Time */}
+                  <div className="space-y-2">
+                    <Label>Start Time</Label>
+                    <Select
+                      value={slot.start_time}
+                      onValueChange={(value) =>
+                        handleUpdateSlotField(index, 'start_time', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeSlots.map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* End Time */}
+                  <div className="space-y-2">
+                    <Label>End Time</Label>
+                    <Select
+                      value={slot.end_time}
+                      onValueChange={(value) =>
+                        handleUpdateSlotField(index, 'end_time', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeSlots
+                          .filter((time) => time > (slot.start_time || "00:00"))
+                          .map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {slot.start_time && slot.end_time && slot.start_time >= slot.end_time && (
+                      <p className="text-xs text-red-600">End time must be after start time</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Recurring - Applies to all slots */}
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div>
+                  <Label className="text-sm font-medium">Repeat weekly on this day</Label>
+                  <p className="text-xs text-gray-600 mt-1">Applies to all slots above</p>
+                </div>
                 <Switch
-                  checked={newSlot.is_recurring}
-                  onCheckedChange={(checked) =>
-                    setNewSlot({ ...newSlot, is_recurring: checked })
-                  }
+                  checked={newSlots[0].is_recurring}
+                  onCheckedChange={(checked) => {
+                    setNewSlots(newSlots.map(slot => ({ ...slot, is_recurring: checked })));
+                  }}
                 />
               </div>
 
@@ -638,8 +727,8 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                   </>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Availability Slot
+                    <Save className="h-4 w-4 mr-2" />
+                    Add {newSlots.length} Slot{newSlots.length > 1 ? 's' : ''}
                   </>
                 )}
               </Button>

@@ -54,25 +54,37 @@ const Navbar = () => {
   const fetchProfile = async (userId: string, role: 'student' | 'mentor') => {
     if (role === 'mentor') {
       // Get expert profile with avatar from profiles table
-      const { data: expertData } = await supabase
+      const { data: expertData, error } = await supabase
         .from("expert_profiles")
-        .select(`
-          username, 
-          full_name,
-          profiles (
-            avatar_url
-          )
-        `)
+        .select("username, full_name, id")
         .eq("id", userId)
-        .maybeSingle();
+        .single();
+
+      if (error) {
+        console.error('Navbar - Error fetching expert profile:', error);
+        return;
+      }
 
       if (expertData) {
-        setProfile({ 
-          ...expertData, 
-          // @ts-ignore - profiles is joined
-          avatar_url: expertData.profiles?.avatar_url,
-          type: 'mentor' 
-        });
+        console.log('Navbar - Fetched expert profile:', expertData);
+        
+        // Get avatar separately from profiles table
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("id", userId)
+          .single();
+        
+        const profileData = {
+          username: expertData.username,
+          full_name: expertData.full_name,
+          avatar_url: profilesData?.avatar_url || null,
+          type: 'mentor' as const
+        };
+        console.log('Navbar - Setting profile state:', profileData);
+        setProfile(profileData);
+      } else {
+        console.log('Navbar - No expert profile data found');
       }
     } else {
       // Get regular profile for student
@@ -116,13 +128,22 @@ const Navbar = () => {
   };
 
   const handleDashboardClick = () => {
-    if (userRole === 'mentor') {
+    console.log('Dashboard clicked - userRole:', userRole, 'profile:', profile);
+    if (userRole === 'mentor' && profile?.username) {
+      console.log('Navigating to:', `/dashboard/${profile.username}`);
+      navigate(`/dashboard/${profile.username}`);
+    } else if (userRole === 'mentor') {
+      // Fallback if username not loaded yet
+      console.log('Fallback: Navigating to /expert/dashboard');
       navigate('/expert/dashboard');
     } else if (userRole === 'student') {
       navigate('/dashboard');
     } else {
       // Fallback: try to determine from profile type
-      if (profile?.type === 'mentor') {
+      if (profile?.type === 'mentor' && profile?.username) {
+        console.log('Using profile type, navigating to:', `/dashboard/${profile.username}`);
+        navigate(`/dashboard/${profile.username}`);
+      } else if (profile?.type === 'mentor') {
         navigate('/expert/dashboard');
       } else {
         navigate('/dashboard');

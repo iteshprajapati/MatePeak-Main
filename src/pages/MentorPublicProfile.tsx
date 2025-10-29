@@ -39,6 +39,7 @@ interface MentorProfileData {
   education: any[];
   teaching_certifications: any[];
   has_no_certificate: boolean;
+  timezone?: string;
   created_at: string;
   profiles?: {
     avatar_url?: string;
@@ -53,6 +54,7 @@ export default function MentorPublicProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [stats, setStats] = useState({
     averageRating: 0,
     reviewCount: 0,
@@ -71,6 +73,9 @@ export default function MentorPublicProfile() {
       setLoading(true);
       
       console.log("Fetching profile for username:", username);
+      
+      // Check if user is logged in and get their profile
+      const { data: { user } } = await supabase.auth.getUser();
       
       // Fetch mentor profile by username
       const { data: profileData, error: profileError } = await supabase
@@ -93,6 +98,11 @@ export default function MentorPublicProfile() {
 
       console.log("Profile data fetched:", profileData);
       setMentor(profileData as any);
+      
+      // Check if the logged-in user is viewing their own profile
+      if (user && profileData.id === user.id) {
+        setIsOwnProfile(true);
+      }
 
       // Fetch reviews and calculate stats
       const { data: reviews, error: reviewsError } = await supabase
@@ -180,57 +190,67 @@ export default function MentorPublicProfile() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
-      <main className="flex-grow py-8 sm:py-12">
+      <main className="flex-grow py-8">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            {/* Left Sidebar - Profile Header */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Sidebar - Profile Header (Sticky) */}
             <div className="lg:col-span-3">
-              <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="lg:sticky lg:top-6">
                 <ProfileHeader 
                   mentor={mentor} 
                   stats={stats}
+                  isOwnProfile={isOwnProfile}
                 />
               </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="lg:col-span-6">
-              <div className="space-y-6">
-                <ProfileTabs 
-                  activeTab={activeTab} 
-                  onTabChange={setActiveTab}
-                />
+            {/* Main Content Area - White Background */}
+            <div className="lg:col-span-9">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="space-y-6">
+                  <ProfileTabs 
+                    activeTab={activeTab} 
+                    onTabChange={setActiveTab}
+                  />
 
-                <div className="animate-fade-in-up">
-                  {activeTab === "overview" && (
-                    <ProfileOverview mentor={mentor} stats={stats} />
-                  )}
-                  {activeTab === "availability" && (
-                    <ProfileAvailability mentorId={mentor.id} />
-                  )}
-                  {activeTab === "experiences" && (
-                    <ProfileExperiences mentor={mentor} />
-                  )}
-                  {activeTab === "reviews" && (
-                    <ProfileReviews mentorId={mentor.id} stats={stats} />
-                  )}
-                  {activeTab === "about" && (
-                    <ProfileAbout mentor={mentor} />
-                  )}
+                  <div className={activeTab === "overview" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : ""}>
+                    {/* Main Content */}
+                    <div className={activeTab === "overview" ? "lg:col-span-2" : ""}>
+                      {activeTab === "overview" && (
+                        <ProfileOverview mentor={mentor} stats={stats} />
+                      )}
+                      {activeTab === "availability" && (
+                        <ProfileAvailability 
+                          mentorId={mentor.id} 
+                          mentorName={mentor.full_name}
+                          mentorTimezone={mentor.timezone || "GMT+00:00"}
+                        />
+                      )}
+                      {activeTab === "experiences" && (
+                        <ProfileExperiences mentor={mentor} />
+                      )}
+                      {activeTab === "reviews" && (
+                        <ProfileReviews mentorId={mentor.id} stats={stats} />
+                      )}
+                      {activeTab === "about" && (
+                        <ProfileAbout mentor={mentor} />
+                      )}
+                    </div>
+
+                    {/* Right Sidebar - Availability (Only on Overview Tab) */}
+                    {activeTab === "overview" && (
+                      <div className="lg:col-span-1">
+                        <AvailabilityPreview 
+                          mentorId={mentor.id}
+                          onSeeMore={() => setActiveTab("availability")}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Right Sidebar - Quick Actions & Stats */}
-            <div className="lg:col-span-3">
-              <div className="lg:sticky lg:top-24 space-y-6">
-                <AvailabilityPreview 
-                  mentorId={mentor.id}
-                  expertiseTags={mentor.expertise_tags || []}
-                />
               </div>
             </div>
           </div>

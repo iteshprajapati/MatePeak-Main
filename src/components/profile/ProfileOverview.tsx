@@ -103,17 +103,15 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
   const services = getServicesList();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* How I'd Describe Myself */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-        <CardContent className="p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-gradient-to-br from-matepeak-yellow to-yellow-300 rounded-xl shadow-sm">
-              <Quote className="h-6 w-6 text-matepeak-primary" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">How I'd Describe Myself</h2>
+      <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Quote className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">How I'd Describe Myself</h2>
           </div>
-          <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+          <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
             {mentor.introduction || mentor.bio || "No introduction provided yet."}
           </p>
         </CardContent>
@@ -121,15 +119,13 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
 
       {/* Why I Became a Mentor */}
       {mentor.motivation && (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl shadow-sm">
-                <Heart className="h-6 w-6 text-red-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Why I Became a Mentor</h2>
+        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Heart className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Why I Became a Mentor</h2>
             </div>
-            <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+            <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
               {mentor.motivation}
             </p>
           </CardContent>
@@ -138,15 +134,13 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
 
       {/* Teaching Experience */}
       {mentor.teaching_experience && (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl shadow-sm">
-                <Target className="h-6 w-6 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Teaching Experience</h2>
+        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Target className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">An Ideal Relationship To Me</h2>
             </div>
-            <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+            <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
               {mentor.teaching_experience}
             </p>
           </CardContent>
@@ -155,39 +149,33 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
 
       {/* What I Offer */}
       {services.length > 0 && (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl shadow-sm">
-                <Handshake className="h-6 w-6 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Services & Pricing</h2>
+        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Handshake className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Services & Pricing</h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {services.map((service, index) => {
                 const ServiceIcon = service.icon;
                 return (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-5 bg-gradient-to-r from-gray-50 to-white rounded-xl 
-                      hover:from-matepeak-yellow/20 hover:to-matepeak-yellow/10 transition-all duration-300 
-                      border border-gray-100 hover:border-matepeak-yellow/30 group"
+                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-matepeak-primary rounded-lg group-hover:bg-matepeak-secondary transition-colors">
-                        <ServiceIcon className="h-5 w-5 text-white" />
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <ServiceIcon className="h-5 w-5 text-gray-600" />
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{service.name}</h3>
+                        <h3 className="font-medium text-gray-900 text-sm">{service.name}</h3>
                         {service.hasFreeDemo && (
-                          <Badge className="mt-2 bg-green-100 text-green-700 hover:bg-green-100 px-3 py-1">
+                          <Badge className="mt-1 bg-green-100 text-green-700 hover:bg-green-100 text-xs">
                             Free Demo Available
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xl font-bold text-matepeak-primary">
-                      <DollarSign className="h-6 w-6" />
+                    <div className="flex items-center gap-1 text-base font-semibold text-gray-900">
+                      <DollarSign className="h-4 w-4" />
                       <span>{service.price}</span>
                     </div>
                   </div>
@@ -200,64 +188,42 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
 
       {/* Featured Reviews */}
       {featuredReviews.length > 0 && (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-          <CardContent className="p-8">
+        <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl shadow-sm">
-                  <Star className="h-6 w-6 text-yellow-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Featured Reviews</h2>
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Asif's Community</h2>
               </div>
               {stats.averageRating > 0 && (
-                <div className="flex items-center gap-2 bg-matepeak-yellow/10 px-4 py-2 rounded-lg">
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-lg text-gray-900">
-                    {stats.averageRating.toFixed(1)}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    ({stats.reviewCount} reviews)
-                  </span>
+                <div className="text-sm text-gray-600">
+                  ({stats.reviewCount})
                 </div>
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {featuredReviews.map((review, index) => (
                 <div key={index}>
-                  <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-gray-50 to-white rounded-xl 
-                    hover:from-matepeak-yellow/10 hover:to-white transition-all duration-300 border border-gray-100">
+                  <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200">
                     <div className="flex-shrink-0">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-matepeak-primary to-matepeak-secondary 
-                        text-white flex items-center justify-center font-bold text-lg shadow-md">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-semibold text-sm">
                         {review.profiles?.full_name?.[0]?.toUpperCase() || "?"}
                       </div>
                     </div>
                     <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-lg text-gray-900">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900 text-sm">
                           {review.profiles?.full_name || "Anonymous"}
                         </span>
-                        <span className="text-sm text-gray-500">
-                          • {new Date(review.created_at).toLocaleDateString()}
+                        <span className="text-xs text-gray-500">
+                          {new Date(review.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-gray-700 text-base leading-relaxed">{review.comment}</p>
+                      <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
                     </div>
                   </div>
-                  {index < featuredReviews.length - 1 && <Separator className="my-4" />}
+                  {index < featuredReviews.length - 1 && <div className="my-2" />}
                 </div>
               ))}
             </div>

@@ -43,22 +43,23 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+    <div className="border-b border-gray-200">
       <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as ProfileTab)}>
-        <TabsList className="w-full grid grid-cols-5 bg-gray-50 h-auto p-1 gap-1 rounded-lg">
+        <TabsList className="w-full grid grid-cols-5 bg-transparent h-auto p-0 gap-0 border-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-matepeak-primary data-[state=active]:text-white 
-                  hover:bg-gray-100 data-[state=active]:hover:bg-matepeak-secondary transition-all rounded-lg py-3 px-3
-                  flex flex-col sm:flex-row items-center justify-center gap-2 text-gray-600 
-                  data-[state=active]:shadow-md font-medium"
+                className="data-[state=active]:bg-transparent data-[state=active]:text-matepeak-primary 
+                  data-[state=active]:border-b-2 data-[state=active]:border-matepeak-primary
+                  hover:text-matepeak-primary transition-colors rounded-none py-4 px-4
+                  flex items-center justify-center gap-2 text-gray-600 border-b-2 border-transparent
+                  font-medium text-sm"
               >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs sm:text-sm">{tab.label}</span>
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
               </TabsTrigger>
             );
           })}

@@ -1,81 +1,110 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Calendar, 
-  Clock,
-  Zap,
-  TrendingUp,
-  Loader2
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AvailabilityPreviewProps {
   mentorId: string;
-  expertiseTags: string[];
+  onSeeMore?: () => void;
 }
 
-interface NextSlot {
-  date: string;
-  time: string;
+interface AvailableDate {
+  date: Date;
   day: string;
+  dateStr: string;
+  timeslotCount: number;
 }
 
-export default function AvailabilityPreview({ mentorId, expertiseTags }: AvailabilityPreviewProps) {
+export default function AvailabilityPreview({ mentorId, onSeeMore }: AvailabilityPreviewProps) {
   const [loading, setLoading] = useState(true);
-  const [nextSlots, setNextSlots] = useState<NextSlot[]>([]);
+  const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
-    fetchNextAvailableSlots();
+    fetchAvailability();
   }, [mentorId]);
 
-  const fetchNextAvailableSlots = async () => {
+  const fetchAvailability = async () => {
     try {
       setLoading(true);
+      const now = new Date();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
 
       // Fetch recurring availability
-      const { data: recurring, error } = await supabase
+      const { data: recurring, error: recurringError } = await supabase
         .from("availability_slots")
         .select("*")
         .eq("expert_id", mentorId)
-        .eq("is_recurring", true)
-        .order("day_of_week", { ascending: true })
-        .order("start_time", { ascending: true });
+        .eq("is_recurring", true);
 
-      if (error) throw error;
+      if (recurringError) throw recurringError;
 
-      // Calculate next available slots based on recurring schedule
-      const today = new Date();
-      const slots: NextSlot[] = [];
-      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      // Fetch specific date slots
+      const { data: specific, error: specificError } = await supabase
+        .from("availability_slots")
+        .select("*")
+        .eq("expert_id", mentorId)
+        .eq("is_recurring", false)
+        .gte("specific_date", now.toISOString().split("T")[0])
+        .lte("specific_date", endOfMonth.toISOString().split("T")[0]);
 
+      if (specificError) throw specificError;
+
+      // Fetch blocked dates
+      const { data: blocked, error: blockedError } = await supabase
+        .from("blocked_dates")
+        .select("*")
+        .eq("expert_id", mentorId)
+        .gte("date", now.toISOString().split("T")[0])
+        .lte("date", endOfMonth.toISOString().split("T")[0]);
+
+      if (blockedError) throw blockedError;
+
+      const blockedDates = new Set(blocked?.map((b) => b.date) || []);
+      const dateMap = new Map<string, number>();
+
+      // Process specific dates
+      specific?.forEach((slot) => {
+        if (slot.specific_date && !blockedDates.has(slot.specific_date)) {
+          const count = dateMap.get(slot.specific_date) || 0;
+          dateMap.set(slot.specific_date, count + 1);
+        }
+      });
+
+      // Process recurring slots for the next 60 days
       if (recurring && recurring.length > 0) {
-        // Find next occurrences of each day
-        for (let i = 0; i < 7; i++) {
-          const targetDate = new Date(today);
-          targetDate.setDate(today.getDate() + i);
-          const dayOfWeek = targetDate.getDay();
-
-          const daySlots = recurring.filter(slot => slot.day_of_week === dayOfWeek);
+        for (let i = 0; i < 60; i++) {
+          const date = new Date(now);
+          date.setDate(now.getDate() + i);
+          const dateStr = date.toISOString().split("T")[0];
           
-          if (daySlots.length > 0) {
-            const firstSlot = daySlots[0];
-            slots.push({
-              date: targetDate.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              }),
-              time: formatTime(firstSlot.start_time),
-              day: daysOfWeek[dayOfWeek],
-            });
+          if (!blockedDates.has(dateStr)) {
+            const dayOfWeek = date.getDay();
+            const daySlots = recurring.filter((slot) => slot.day_of_week === dayOfWeek);
+            
+            if (daySlots.length > 0) {
+              const existingCount = dateMap.get(dateStr) || 0;
+              dateMap.set(dateStr, existingCount + daySlots.length);
+            }
           }
-
-          if (slots.length >= 4) break;
         }
       }
 
-      setNextSlots(slots);
+      // Convert to array and sort
+      const datesArray: AvailableDate[] = Array.from(dateMap.entries())
+        .map(([dateStr, count]) => {
+          const date = new Date(dateStr + "T00:00:00");
+          return {
+            date,
+            day: date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
+            dateStr: date.toLocaleDateString("en-US", { day: "numeric", month: "short" }),
+            timeslotCount: count,
+          };
+        })
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .slice(0, 6); // Show only next 6 available dates
+
+      setAvailableDates(datesArray);
     } catch (error) {
       console.error("Error fetching availability:", error);
     } finally {
@@ -83,130 +112,67 @@ export default function AvailabilityPreview({ mentorId, expertiseTags }: Availab
     }
   };
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+
+  const totalTimeslots = availableDates.reduce((sum, d) => sum + d.timeslotCount, 0);
 
   return (
-    <div className="space-y-8">
-      {/* Next Available Slots */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-gradient-to-br from-matepeak-yellow to-yellow-300 rounded-lg shadow-sm">
-              <Calendar className="h-5 w-5 text-matepeak-primary" />
-            </div>
-            <h3 className="font-bold text-lg text-gray-900">Next Available</h3>
+    <Card className="shadow-none border-0 bg-gray-50 rounded-2xl overflow-hidden">
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-gray-900 text-sm">
+              Availability On {monthNames[currentMonth.getMonth()]}
+            </h3>
+            <button 
+              onClick={onSeeMore}
+              className="text-xs text-blue-600 hover:underline font-medium"
+            >
+              See More
+            </button>
           </div>
+          <p className="text-xs text-gray-500">
+            Timeslots ({totalTimeslots})
+          </p>
+        </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-matepeak-primary" />
-            </div>
-          ) : nextSlots.length > 0 ? (
-            <>
-              <div className="space-y-3">
-                {nextSlots.map((slot, index) => (
-                  <div
-                    key={index}
-                    className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl 
-                      hover:from-matepeak-yellow/20 hover:to-matepeak-yellow/10 
-                      transition-all duration-300 cursor-pointer border border-gray-100 
-                      hover:border-matepeak-yellow/30 group hover:shadow-md"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-gray-900 group-hover:text-matepeak-primary transition-colors">
-                          {slot.day}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">{slot.date}</p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="bg-white border-matepeak-primary text-matepeak-primary px-3 py-1.5"
-                      >
-                        <Clock className="h-3 w-3 mr-1" />
-                        {slot.time}
-                      </Badge>
-                    </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        ) : availableDates.length > 0 ? (
+          <div className="space-y-2">
+            {availableDates.map((dateInfo, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-0.5">
+                      {dateInfo.day}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {dateInfo.dateStr}
+                    </p>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <p className="text-xs text-gray-600">
+                      {dateInfo.timeslotCount} Timeslot{dateInfo.timeslotCount !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
               </div>
-
-              <button className="w-full mt-4 py-3 text-sm text-matepeak-primary font-semibold 
-                hover:bg-matepeak-yellow/10 rounded-lg transition-colors">
-                See Full Calendar →
-              </button>
-            </>
-          ) : (
-            <p className="text-sm text-gray-600 text-center py-6 bg-gray-50 rounded-lg">
-              Contact mentor for availability
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Skills & Specializations */}
-      {expertiseTags && expertiseTags.length > 0 && (
-        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg shadow-sm">
-                <Zap className="h-5 w-5 text-purple-600" />
-              </div>
-              <h3 className="font-bold text-lg text-gray-900">Skills</h3>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {expertiseTags.slice(0, 8).map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="outline"
-                  className="border-matepeak-primary text-matepeak-primary 
-                    hover:bg-matepeak-yellow/20 px-3 py-1.5 text-sm transition-colors cursor-pointer"
-                >
-                  {tag}
-                </Badge>
-              ))}
-              {expertiseTags.length > 8 && (
-                <Badge variant="outline" className="text-gray-600 px-3 py-1.5 text-sm">
-                  +{expertiseTags.length - 8}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Stats */}
-      <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-gray-100 bg-white">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg shadow-sm">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-            </div>
-            <h3 className="font-bold text-lg text-gray-900">Quick Stats</h3>
+            ))}
           </div>
-
-          <div className="space-y-4 text-sm">
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white 
-              rounded-lg hover:from-matepeak-yellow/10 hover:to-white transition-colors">
-              <span className="text-gray-600 font-medium">Response Rate</span>
-              <span className="font-semibold text-matepeak-primary">~24hrs</span>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white 
-              rounded-lg hover:from-matepeak-yellow/10 hover:to-white transition-colors">
-              <span className="text-gray-600 font-medium">Session Format</span>
-              <span className="font-semibold text-matepeak-primary">Video/Chat</span>
-            </div>
+        ) : (
+          <div className="text-center py-8 text-sm text-gray-500">
+            No availability in the next 60 days
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
