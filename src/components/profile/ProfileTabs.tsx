@@ -1,4 +1,3 @@
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, 
   Calendar, 
@@ -43,28 +42,27 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
   ];
 
   return (
-    <div className="border-b border-gray-200">
-      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as ProfileTab)}>
-        <TabsList className="w-full grid grid-cols-5 bg-transparent h-auto p-0 gap-0 border-0">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-transparent data-[state=active]:text-matepeak-primary 
-                  data-[state=active]:border-b-2 data-[state=active]:border-matepeak-primary
-                  hover:text-matepeak-primary transition-colors rounded-none py-4 px-4
-                  flex items-center justify-center gap-2 text-gray-600 border-b-2 border-transparent
-                  font-medium text-sm"
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
+    <div className="border-b border-gray-200 mb-6">
+      <div className="w-full grid grid-cols-5 bg-transparent h-auto p-0 gap-0">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`py-4 px-4 flex items-center justify-center gap-2 font-medium text-sm border-b-2 transition-all ${
+                isActive
+                  ? 'text-matepeak-primary border-matepeak-primary bg-transparent'
+                  : 'text-gray-600 border-transparent hover:text-matepeak-primary hover:border-gray-300'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

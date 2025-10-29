@@ -181,7 +181,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
     try {
       setLoading(true);
 
-      // Fetch recurring availability slots
+      // Fetch recurring availability slots from availability_slots table
       const { data: recurring, error: recurringError } = await supabase
         .from("availability_slots")
         .select("*")
@@ -190,7 +190,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
 
-      if (recurringError) throw recurringError;
+      if (recurringError && recurringError.code !== 'PGRST116') {
+        console.error("Error fetching recurring slots:", recurringError);
+      }
 
       // Fetch specific date slots
       const { data: specific, error: specificError } = await supabase
@@ -202,7 +204,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .order("specific_date", { ascending: true })
         .order("start_time", { ascending: true });
 
-      if (specificError) throw specificError;
+      if (specificError && specificError.code !== 'PGRST116') {
+        console.error("Error fetching specific slots:", specificError);
+      }
 
       // Fetch blocked dates
       const { data: blocked, error: blockedError } = await supabase
@@ -211,10 +215,59 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .eq("expert_id", mentorId)
         .order("date", { ascending: true });
 
-      if (blockedError) throw blockedError;
+      if (blockedError && blockedError.code !== 'PGRST116') {
+        console.error("Error fetching blocked dates:", blockedError);
+      }
 
-      setRecurringSlots(recurring || []);
-      setSpecificSlots(specific || []);
+      // If no availability_slots found, try to load from old availability_json format
+      if ((!recurring || recurring.length === 0) && (!specific || specific.length === 0)) {
+        const { data: profile, error: profileError } = await supabase
+          .from("expert_profiles")
+          .select("availability_json")
+          .eq("id", mentorId)
+          .single();
+
+        if (!profileError && profile?.availability_json) {
+          try {
+            const oldAvailability = JSON.parse(profile.availability_json);
+            
+            // Convert old format to new format
+            const convertedSlots: AvailabilitySlot[] = [];
+            
+            if (Array.isArray(oldAvailability)) {
+              oldAvailability.forEach((slot: any, index: number) => {
+                // Map day names to day numbers
+                const dayMap: { [key: string]: number } = {
+                  'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+                  'Thursday': 4, 'Friday': 5, 'Saturday': 6
+                };
+                
+                const dayOfWeek = dayMap[slot.day] ?? dayMap[slot.dayOfWeek] ?? -1;
+                
+                if (dayOfWeek !== -1 && slot.from && slot.to) {
+                  convertedSlots.push({
+                    id: `legacy-${index}`,
+                    day_of_week: dayOfWeek,
+                    start_time: slot.from,
+                    end_time: slot.to,
+                    is_recurring: true,
+                    specific_date: null
+                  });
+                }
+              });
+            }
+            
+            setRecurringSlots(convertedSlots);
+            console.log("Loaded legacy availability:", convertedSlots);
+          } catch (parseError) {
+            console.error("Error parsing availability_json:", parseError);
+          }
+        }
+      } else {
+        setRecurringSlots(recurring || []);
+        setSpecificSlots(specific || []);
+      }
+      
       setBlockedDates(blocked || []);
 
       // Check if user has active alert subscription
@@ -486,6 +539,50 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
   return (
     <div className="space-y-6">
+      {/* No Availability Message */}
+      {!hasAnyAvailability && !loading && (
+        <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
+          <CardContent className="p-8">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  No Availability Set
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {mentorName || "This mentor"} hasn't added any availability slots yet.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setCustomTimeDialogOpen(true)}
+                  className="border-2 border-matepeak-primary text-matepeak-primary hover:bg-matepeak-primary hover:text-white"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Request Custom Time
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAlertDialogOpen(true)}
+                  className="border-2 border-gray-400 hover:bg-gray-50"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Get Notified When Available
+                </Button>
+              </div>
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+                <p className="text-sm text-blue-900">
+                  <strong>💡 Tip:</strong> You can request a custom session time or enable notifications to be alerted when this mentor adds availability.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Timezone Toggle */}
       {hasAnyAvailability && (
         <Card className="shadow-none border border-gray-200 bg-white rounded-xl">

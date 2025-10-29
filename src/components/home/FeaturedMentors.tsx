@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Users, Sparkles } from "lucide-react";
 import MentorCard from "@/components/MentorCard";
 import { mentors } from "@/data/mentors";
 import { useMemo, useState } from "react";
@@ -48,19 +48,40 @@ const FeaturedMentors = ({ sectionRef }: FeaturedMentorsProps) => {
         {categorizedMentors.slice(0, visibleCategories).map(({ category, mentors: categoryMentors }) => (
           <div key={category} className="mb-12">
             <h3 className="text-2xl font-bold mb-6 text-gray-800">{category}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {categoryMentors.map((mentor) => (
-                <MentorCard key={mentor.id} mentor={mentor} />
-              ))}
-            </div>
-            <div className="text-center mt-6">
-              <Link to={`/mentors?category=${encodeURIComponent(category)}`}>
-                <Button variant="outline" className="border-matepeak-primary text-matepeak-primary hover:bg-gray-100">
-                  View All {category} Mentors
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+            
+            {categoryMentors.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {categoryMentors.map((mentor) => (
+                    <MentorCard key={mentor.id} mentor={mentor} />
+                  ))}
+                </div>
+                <div className="text-center mt-6">
+                  <Link to={`/mentors?category=${encodeURIComponent(category)}`}>
+                    <Button variant="outline" className="border-matepeak-primary text-matepeak-primary hover:bg-gray-100">
+                      View All {category} Mentors
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="bg-gradient-to-br from-matepeak-primary/10 to-matepeak-yellow/10 rounded-full p-6">
+                    <Users className="h-12 w-12 text-matepeak-primary" />
+                  </div>
+                </div>
+                <h4 className="text-xl font-bold text-gray-800 mb-2">Mentors Coming Soon</h4>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  We're actively onboarding expert mentors in {category}. Check back soon for amazing mentors!
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <Sparkles className="h-4 w-4 text-matepeak-secondary" />
+                  <span>New mentors are joining every week</span>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         

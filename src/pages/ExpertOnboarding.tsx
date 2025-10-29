@@ -16,12 +16,15 @@ import PricingStep from "@/components/onboarding/PricingStep";
 import ProfileSetupStep from "@/components/onboarding/ProfileSetupStep";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
 import StepNavigation from "@/components/onboarding/StepNavigation";
+import OnboardingSuccessModal from "@/components/onboarding/OnboardingSuccessModal";
 import { useExpertOnboardingForm } from "@/hooks/useExpertOnboardingForm";
 import { updateExpertProfile } from "@/services/expertProfileService";
 
 export default function ExpertOnboarding() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [completedUsername, setCompletedUsername] = useState("");
   const navigate = useNavigate();
   const form = useExpertOnboardingForm();
   
@@ -34,14 +37,22 @@ export default function ExpertOnboarding() {
       const result = await updateExpertProfile(data);
       toast.success("Profile created successfully!");
       
-      // Redirect to the mentor's unique dashboard using their username
-      navigate(`/dashboard/${data.username}`);
+      // Store username and show success modal
+      setCompletedUsername(data.username);
+      setShowSuccessModal(true);
+      
     } catch (error: any) {
       console.error("Error creating profile:", error);
       toast.error(error.message || "Failed to create profile");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    // Navigate to dashboard after modal closes
+    navigate(`/dashboard/${completedUsername}`);
   };
   
   const handleNext = async () => {
@@ -232,6 +243,13 @@ export default function ExpertOnboarding() {
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <OnboardingSuccessModal
+        isOpen={showSuccessModal}
+        username={completedUsername}
+        onClose={handleCloseSuccessModal}
+      />
     </div>
   );
 }

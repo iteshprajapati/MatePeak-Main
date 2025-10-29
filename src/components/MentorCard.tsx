@@ -1,11 +1,10 @@
 
-import { Star, Phone, MessageSquare, Video, Users, FileText } from "lucide-react";
+import { Star, Phone, Users, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 
 // Update the MentorProfile type to include connectionOptions
 export interface MentorProfile {
@@ -20,6 +19,8 @@ export interface MentorProfile {
   bio: string;
   connectionOptions: string[];
   username?: string; // Optional username for new profile route
+  expertise_tags?: string[];
+  tagline?: string; // Generated tagline like "Senior @ IIT Delhi | Computer Science"
 }
 
 interface MentorCardProps {
@@ -33,89 +34,119 @@ const MentorCard = ({ mentor }: MentorCardProps) => {
     : mentor.name[0];
 
   const getConnectionIcon = (option: string) => {
-    switch (option.toLowerCase()) {
-      case '1:1 call':
-        return <Phone className="h-4 w-4" />;
-      case 'chat':
-      case 'dm':
-        return <MessageSquare className="h-4 w-4" />;
-      case 'group session':
-        return <Users className="h-4 w-4" />;
-      case 'mock interview':
-        return <Video className="h-4 w-4" />;
-      case 'resume review':
-      case 'document review':
-        return <FileText className="h-4 w-4" />;
-      default:
-        return <MessageSquare className="h-4 w-4" />;
+    const lowerOption = option.toLowerCase();
+    if (lowerOption.includes('call') || lowerOption.includes('1:1')) {
+      return <Phone className="h-3.5 w-3.5" />;
+    } else if (lowerOption.includes('group')) {
+      return <Users className="h-3.5 w-3.5" />;
+    } else if (lowerOption.includes('chat') || lowerOption.includes('doubt')) {
+      return <MessageCircle className="h-3.5 w-3.5" />;
     }
+    return <Phone className="h-3.5 w-3.5" />;
   };
 
   return (
-    <Card className="overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 h-full max-w-sm mx-auto">
-      <CardContent className="p-4">
-        {/* Profile section with avatar and name */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-16 w-16 border-2 border-gray-200">
-              <AvatarImage src={mentor.image} alt={mentor.name} className="object-cover" />
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-medium text-gray-900 line-clamp-1">{mentor.name}</h3>
-              <p className="text-gray-600 text-sm line-clamp-1">{mentor.title}</p>
-              <div className="flex items-center mt-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="ml-1 text-sm font-medium">{mentor.rating}</span>
-                <span className="text-gray-500 text-sm ml-1">({mentor.reviewCount})</span>
+    <Card className="overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[320px] mx-auto border border-gray-200 bg-white rounded-2xl">
+      <CardContent className="p-6">
+        {/* Header: Avatar, Name, Tagline, Rating */}
+        <div className="flex items-start gap-4 mb-4">
+          <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-gray-100">
+            <AvatarImage src={mentor.image} alt={mentor.name} className="object-cover" />
+            <AvatarFallback className="bg-matepeak-primary text-white font-semibold text-lg">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-gray-900 text-base mb-0.5 line-clamp-1">
+              {mentor.name}
+            </h3>
+            
+            {/* Tagline */}
+            {mentor.tagline && (
+              <p className="text-gray-600 text-xs mb-1.5 line-clamp-1">
+                {mentor.tagline}
+              </p>
+            )}
+            
+            {/* Rating or No Reviews Badge */}
+            {mentor.rating > 0 && mentor.reviewCount > 0 ? (
+              <div className="flex items-center gap-1.5">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                <span className="text-sm font-bold text-gray-900">
+                  {mentor.rating.toFixed(1)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  ({mentor.reviewCount})
+                </span>
               </div>
-            </div>
+            ) : (
+              <span className="text-xs text-gray-500 italic">
+                No reviews yet
+              </span>
+            )}
           </div>
-          <div className="text-right">
-            <p className="font-semibold text-gray-900">₹{mentor.price}</p>
-            <p className="text-sm text-gray-500">per session</p>
+        </div>
+
+        {/* Bio */}
+        {mentor.bio && (
+          <p className="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-2">
+            {mentor.bio}
+          </p>
+        )}
+
+        {/* Expertise Section */}
+        <div className="mb-4">
+          <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2.5">
+            EXPERTISE
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {mentor.categories.slice(0, 3).map((category, index) => (
+              <Badge 
+                key={index} 
+                variant="outline"
+                className="bg-white text-gray-700 border-gray-300 text-xs font-medium px-3 py-1 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                {category}
+              </Badge>
+            ))}
           </div>
         </div>
 
-        {/* Categories section */}
-        <div className="flex flex-wrap gap-1 mb-4">
-          {mentor.categories.slice(0, 2).map((category, index) => (
-            <Badge 
-              key={index} 
-              variant="outline" 
-              className="bg-gray-50 text-gray-700 border-gray-200 text-xs"
-            >
-              {category}
-            </Badge>
-          ))}
+        {/* Available Sessions */}
+        <div className="mb-6">
+          <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2.5">
+            AVAILABLE SESSIONS
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {mentor.connectionOptions.slice(0, 3).map((option, index) => (
+              <Badge 
+                key={index}
+                variant="outline"
+                className="bg-white text-gray-700 border-gray-300 text-xs font-medium px-3 py-1 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  {getConnectionIcon(option)}
+                  {option}
+                </span>
+              </Badge>
+            ))}
+          </div>
         </div>
 
-        {/* Connection options */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {mentor.connectionOptions.map((option, index) => (
-            <HoverCard key={index}>
-              <HoverCardTrigger>
-                <Badge 
-                  variant="outline" 
-                  className="bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                >
-                  <span className="flex items-center gap-1">
-                    {getConnectionIcon(option)}
-                    <span className="text-xs">{option}</span>
-                  </span>
-                </Badge>
-              </HoverCardTrigger>
-              <HoverCardContent>
-                Available for {option}
-              </HoverCardContent>
-            </HoverCard>
-          ))}
-        </div>
-
-        {/* View Profile button */}
-        <div className="flex justify-end">
+        {/* Footer: Price and CTA */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">Starting from</p>
+            <p className="text-xl font-bold text-gray-900">
+              ₹{mentor.price}
+              <span className="text-xs text-gray-500 font-normal ml-1">/session</span>
+            </p>
+          </div>
           <Link to={mentor.username ? `/mentor/${mentor.username}` : `/mentors/${mentor.id}`}>
-            <Button variant="outline" className="rounded-full bg-matepeak-primary text-white hover:bg-matepeak-yellow hover:text-matepeak-primary transition-all duration-200">
+            <Button 
+              className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold px-6 py-2 rounded-lg transition-colors"
+            >
               View Profile
             </Button>
           </Link>

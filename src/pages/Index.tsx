@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Hero from "@/components/home/Hero";
 import HowItWorks from "@/components/home/HowItWorks";
+import NewMentors from "@/components/home/NewMentors";
 import FeaturedMentors from "@/components/home/FeaturedMentors";
 import CallToActionSection from "@/components/CallToActionSection";
 
@@ -11,6 +12,7 @@ const Index = () => {
   // Refs for scroll animation sections
   const sectionRefs = {
     howItWorks: useRef<HTMLDivElement>(null),
+    newMentors: useRef<HTMLDivElement>(null),
     mentors: useRef<HTMLDivElement>(null),
   };
 
@@ -48,6 +50,7 @@ const Index = () => {
       <Navbar />
       <Hero />
       <HowItWorks sectionRef={sectionRefs.howItWorks} />
+      <NewMentors sectionRef={sectionRefs.newMentors} />
       <FeaturedMentors sectionRef={sectionRefs.mentors} />
       <CallToActionSection />
       <Footer />
