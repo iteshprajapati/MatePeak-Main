@@ -1,14 +1,13 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Save, Camera, Upload, CheckCircle2, AlertCircle, Eye, Globe, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Camera, Upload, Eye, Globe, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ImageEditor from "@/components/onboarding/ImageEditor";
 import ExpertiseEditor from "@/components/dashboard/ExpertiseEditor";
@@ -56,37 +55,14 @@ const ProfileManagement = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
+    first_name: mentorProfile.full_name?.split(' ')[0] || "",
+    last_name: mentorProfile.full_name?.split(' ').slice(1).join(' ') || "",
     headline: mentorProfile.headline || "",
     introduction: mentorProfile.introduction || "",
     teaching_experience: mentorProfile.teaching_experience || "",
     motivation: mentorProfile.motivation || "",
     languages: mentorProfile.languages || [],
   });
-
-  // Calculate profile completeness
-  const calculateCompleteness = () => {
-    const fields = {
-      'Profile Picture': mentorProfile.profile_picture_url,
-      'Headline': mentorProfile.headline,
-      'Introduction': mentorProfile.introduction,
-      'Teaching Experience': mentorProfile.teaching_experience,
-      'Motivation': mentorProfile.motivation,
-      'Expertise Areas': (mentorProfile.categories && mentorProfile.categories.length > 0) || mentorProfile.category,
-      'Hourly Rate': mentorProfile.hourly_rate,
-      'Languages': mentorProfile.languages?.length > 0,
-    };
-
-    const completed = Object.values(fields).filter(Boolean).length;
-    const totalFields = Object.keys(fields).length;
-    const percentage = Math.round((completed / totalFields) * 100);
-    const missingFields = Object.entries(fields)
-      .filter(([_, value]) => !value)
-      .map(([key]) => key);
-
-    return { completed, totalFields, percentage, missingFields };
-  };
-
-  const completeness = calculateCompleteness();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -215,6 +191,24 @@ const ProfileManagement = ({
     e.preventDefault();
 
     // Validation
+    if (!formData.first_name.trim()) {
+      toast({
+        title: "First name required",
+        description: "Please provide your first name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.last_name.trim()) {
+      toast({
+        title: "Last name required",
+        description: "Please provide your last name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.headline.trim()) {
       toast({
         title: "Headline required",
@@ -245,9 +239,12 @@ const ProfileManagement = ({
     try {
       setLoading(true);
 
+      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
+
       const { data, error } = await supabase
         .from("expert_profiles")
         .update({
+          full_name: fullName,
           headline: formData.headline.trim(),
           introduction: formData.introduction.trim(),
           teaching_experience: formData.teaching_experience.trim(),
@@ -300,62 +297,6 @@ const ProfileManagement = ({
           <span className="hidden sm:inline">View Public Profile</span>
         </Button>
       </div>
-
-      {/* Profile Completeness Indicator */}
-      <Card className="border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                {completeness.percentage === 100 ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    Profile Complete!
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-5 w-5 text-gray-600" />
-                    Complete Your Profile
-                  </>
-                )}
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {completeness.percentage === 100
-                  ? "Your profile is fully optimized to attract students"
-                  : "Complete your profile to increase visibility and bookings"}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-gray-900">
-                {completeness.percentage}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {completeness.completed}/{completeness.totalFields} fields
-              </p>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <Progress value={completeness.percentage} className="h-2" />
-            {completeness.percentage < 100 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                <p className="text-sm font-medium text-gray-700 w-full">
-                  Missing fields:
-                </p>
-                {completeness.missingFields.map((field, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300"
-                  >
-                    {field}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Profile Picture Section */}
       <Card className="border-gray-200">
@@ -449,6 +390,56 @@ const ProfileManagement = ({
         </div>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name" className="text-sm font-medium text-gray-900">
+                  First Name <span className="text-red-600">*</span>
+                </Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  placeholder="Enter your first name"
+                  className="transition-all bg-gray-50 border-gray-300 focus:bg-white"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name" className="text-sm font-medium text-gray-900">
+                  Last Name <span className="text-red-600">*</span>
+                </Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  placeholder="Enter your last name"
+                  className="transition-all bg-gray-50 border-gray-300 focus:bg-white"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email (Read-only) */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-900">
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                value={mentorProfile.email || "Not available"}
+                className="bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed"
+                disabled
+                readOnly
+              />
+              <p className="text-xs text-gray-500">
+                Email cannot be changed from this page
+              </p>
+            </div>
+
             {/* Headline */}
             <div className="space-y-2">
               <Label htmlFor="headline" className="text-sm font-medium text-gray-900">

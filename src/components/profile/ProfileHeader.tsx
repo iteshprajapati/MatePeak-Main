@@ -81,38 +81,38 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
   };
 
   return (
-    <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
+    <Card className="shadow-sm border-0 bg-white rounded-2xl overflow-hidden">
       <CardContent className="p-6">
         {/* Avatar */}
         <div className="flex justify-center mb-4">
           <div className="relative">
-            <Avatar className="h-32 w-32 border-2 border-gray-100">
+            <Avatar className="h-28 w-28 border-2 border-gray-100">
               <AvatarImage
                 src={mentor.profile_picture_url || mentor.profiles?.avatar_url}
                 alt={mentor.full_name}
                 className="object-cover"
               />
-              <AvatarFallback className="text-2xl bg-matepeak-primary text-white font-bold">
+              <AvatarFallback className="text-2xl bg-gray-900 text-white font-bold">
                 {getInitials(mentor.full_name)}
               </AvatarFallback>
             </Avatar>
             {/* Online indicator */}
-            <div className="absolute bottom-1 right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white"></div>
+            <div className="absolute bottom-1 right-1 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
         </div>
 
         {/* Name and Username */}
         <div className="text-center mb-4 space-y-1">
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-lg font-bold text-gray-900">
             {mentor.full_name}
           </h1>
           {mentor.headline && (
-            <p className="text-sm text-gray-600">{mentor.headline}</p>
+            <p className="text-sm text-gray-600 leading-tight">{mentor.headline}</p>
           )}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 pt-1">
             <p className="text-xs text-gray-500">@{mentor.username}</p>
             {isOwnProfile && (
-              <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 text-xs">
+              <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 text-xs py-0">
                 Your Profile
               </Badge>
             )}
@@ -124,7 +124,7 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
           {isOwnProfile ? (
             // Show dashboard button for own profile
             <Link to={`/dashboard/${mentor.username}`} className="block">
-              <Button className="w-full bg-matepeak-primary hover:bg-matepeak-secondary text-white font-medium shadow-sm">
+              <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm">
                 Go to Dashboard
               </Button>
             </Link>
@@ -132,13 +132,13 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
             // Show booking and message buttons for other mentors
             <>
               <Link to={`/book/${mentor.id}`} className="block">
-                <Button className="w-full bg-matepeak-primary hover:bg-matepeak-secondary text-white font-medium shadow-sm">
+                <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm">
                   Book {mentor.full_name.split(' ')[0]}
                 </Button>
               </Link>
               <Button
                 variant="outline"
-                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Message
@@ -149,42 +149,82 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
 
         <Separator className="my-4" />
 
-        {/* Expertise Tags */}
-        <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-700 mb-3">Expert in:</p>
-          <div className="flex flex-wrap gap-2">
-            {mentor.categories?.slice(0, 3).map((category: string) => {
-              const IconComponent = getIconForCategory(category);
-              return (
-                <div
-                  key={category}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-xs font-medium hover:border-gray-400 transition-colors"
-                >
-                  <IconComponent className="h-3.5 w-3.5" />
-                  <span>{category}</span>
-                </div>
-              );
-            })}
-            {mentor.categories?.length > 3 && (
-              <div className="inline-flex items-center px-4 py-2 rounded-xl border-2 border-gray-300 bg-white text-gray-700 text-xs font-medium">
-                +{mentor.categories.length - 3} more
+        {/* Expertise & Specializations - Two Column Layout */}
+        <div className="mb-4 space-y-4">
+          {/* Expert In (Categories) */}
+          {mentor.categories && mentor.categories.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Expert in:</p>
+              <div className="space-y-2">
+                {mentor.categories.slice(0, 2).map((category: string) => {
+                  const IconComponent = getIconForCategory(category);
+                  return (
+                    <div
+                      key={category}
+                      className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-gray-900 text-xs"
+                    >
+                      <div className="flex-shrink-0 h-6 w-6 rounded bg-white border border-gray-200 flex items-center justify-center">
+                        <IconComponent className="h-3.5 w-3.5 text-gray-700" />
+                      </div>
+                      <span className="font-medium">{category}</span>
+                    </div>
+                  );
+                })}
+                {mentor.categories.length > 2 && (
+                  <p className="text-xs text-gray-500 pl-2">
+                    +{mentor.categories.length - 2} more
+                  </p>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Specializations (Expertise Tags) */}
+          {mentor.expertise_tags && mentor.expertise_tags.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Specializations:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {mentor.expertise_tags.slice(0, 6).map((tag: string) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="px-2 py-0.5 bg-gray-100 text-gray-700 border-0 font-normal text-xs"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+                {mentor.expertise_tags.length > 6 && (
+                  <Badge
+                    variant="secondary"
+                    className="px-2 py-0.5 bg-gray-100 text-gray-500 border-0 font-normal text-xs"
+                  >
+                    +{mentor.expertise_tags.length - 6}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <Separator className="my-4" />
 
-        {/* Quick Stats - Simple format */}
-        <div className="space-y-3">
+        {/* Quick Stats */}
+        <div className="space-y-2.5">
+          {stats.averageRating > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Rating</span>
+              <div className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold text-gray-900">
+                  {stats.averageRating.toFixed(1)} <span className="text-gray-500 font-normal">({stats.reviewCount})</span>
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Sessions Completed</span>
+            <span className="text-gray-600">Sessions</span>
             <span className="font-semibold text-gray-900">{stats.completedSessions}</span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Member Since</span>
-            <span className="font-semibold text-gray-900">{memberSince}</span>
           </div>
 
           {mentor.experience > 0 && (
@@ -193,18 +233,11 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
               <span className="font-semibold text-gray-900">{mentor.experience}+ years</span>
             </div>
           )}
-
-          {stats.averageRating > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Rating</span>
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-gray-900">
-                  {stats.averageRating.toFixed(1)} ({stats.reviewCount})
-                </span>
-              </div>
-            </div>
-          )}
+          
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Member Since</span>
+            <span className="font-semibold text-gray-900">{memberSince}</span>
+          </div>
         </div>
 
         {/* Social Links */}

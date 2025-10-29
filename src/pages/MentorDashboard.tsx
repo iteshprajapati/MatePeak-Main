@@ -68,26 +68,39 @@ const MentorDashboard = () => {
         return;
       }
 
+      // Fetch email from profiles table
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", session.user.id)
+        .single();
+
+      // Flatten the email from profiles
+      const profileWithEmail = {
+        ...profile,
+        email: profileData?.email || session.user.email || ""
+      };
+
       // Check if accessing via old route (/mentor/dashboard or /expert/dashboard)
       // and redirect to username-based route
-      if (!username && profile.username) {
-        navigate(`/dashboard/${profile.username}`, { replace: true });
+      if (!username && profileWithEmail.username) {
+        navigate(`/dashboard/${profileWithEmail.username}`, { replace: true });
         return;
       }
 
       // Security check: Verify the username in URL matches the logged-in user's profile
-      if (username && profile.username !== username) {
+      if (username && profileWithEmail.username !== username) {
         toast({
           title: "Access Denied",
           description: "You can only access your own dashboard",
           variant: "destructive",
         });
         // Redirect to their own dashboard
-        navigate(`/dashboard/${profile.username}`, { replace: true });
+        navigate(`/dashboard/${profileWithEmail.username}`, { replace: true });
         return;
       }
 
-      setMentorProfile(profile);
+      setMentorProfile(profileWithEmail);
     } catch (error) {
       console.error("Error loading dashboard:", error);
       toast({
@@ -102,7 +115,11 @@ const MentorDashboard = () => {
   };
 
   const handleProfileUpdate = (updatedProfile: any) => {
-    setMentorProfile(updatedProfile);
+    // Preserve the email when updating the profile
+    setMentorProfile({
+      ...updatedProfile,
+      email: mentorProfile?.email || updatedProfile.email
+    });
   };
 
   if (loading) {
