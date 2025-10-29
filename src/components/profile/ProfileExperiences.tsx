@@ -40,7 +40,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
     <div className="space-y-6">
       {/* Years of Experience & Level */}
       {yearsOfExperience > 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-gray-600" />
@@ -64,7 +64,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* Teaching Experience Description */}
       {mentor.teaching_experience && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Target className="h-5 w-5 text-gray-600" />
@@ -79,7 +79,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* Skills & Expertise Tags */}
       {expertiseTags.length > 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Lightbulb className="h-5 w-5 text-gray-600" />
@@ -102,7 +102,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* Languages */}
       {languages.length > 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Languages className="h-5 w-5 text-gray-600" />
@@ -129,7 +129,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* Education Section */}
       {education.length > 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <GraduationCap className="h-5 w-5 text-gray-600" />
@@ -177,7 +177,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* Teaching Certifications */}
       {certifications.length > 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-6">
               <Award className="h-5 w-5 text-gray-600" />
@@ -221,7 +221,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* No Certificate Indicator */}
       {mentor.has_no_certificate && certifications.length === 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Award className="h-5 w-5 text-gray-600" />
@@ -239,7 +239,7 @@ export default function ProfileExperiences({ mentor }: ProfileExperiencesProps) 
 
       {/* No Information Available */}
       {education.length === 0 && certifications.length === 0 && !mentor.has_no_certificate && yearsOfExperience === 0 && (
-        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
           <CardContent className="p-6 text-center">
             <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600 text-sm">

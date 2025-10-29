@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Save, Camera, Upload, Eye, Globe, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Camera, Upload, Eye, Globe, Plus, Trash2, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ImageEditor from "@/components/onboarding/ImageEditor";
 import ExpertiseEditor from "@/components/dashboard/ExpertiseEditor";
+import DeleteAccountDialog from "@/components/dashboard/DeleteAccountDialog";
+import { deleteAccount } from "@/services/authService";
 import {
   Select,
   SelectContent,
@@ -52,6 +54,7 @@ const ProfileManagement = ({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -275,6 +278,37 @@ const ProfileManagement = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const result = await deleteAccount();
+
+      if (result.success) {
+        toast({
+          title: "Account Deleted",
+          description: result.message || "Your account has been permanently deleted.",
+        });
+
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to delete account. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -686,6 +720,51 @@ const ProfileManagement = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Danger Zone - Delete Account */}
+      <Card className="border-red-200 bg-red-50/50">
+        <div className="p-4 border-b border-red-200 bg-red-50">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <h3 className="text-base font-semibold text-red-900">
+              Danger Zone
+            </h3>
+          </div>
+        </div>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                Delete Your Account
+              </h4>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <div className="flex items-start gap-1.5 text-xs text-gray-500">
+                <ShieldAlert className="h-3.5 w-3.5 mt-0.5 text-red-500 flex-shrink-0" />
+                <span>All sessions, reviews, earnings history, and profile information will be removed.</span>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              size="sm"
+              className="gap-1.5 flex-shrink-0"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirmDelete={handleDeleteAccount}
+        mentorEmail={mentorProfile.email}
+      />
     </div>
   );
 };
