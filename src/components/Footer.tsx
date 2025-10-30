@@ -40,7 +40,7 @@ const Footer = () => {
   const handleBecomeMentor = (e: React.MouseEvent) => {
     e.preventDefault();
     if (userRole === 'mentor') {
-      if (profile && profile.onboarding_complete === false) {
+      if (profile && !profile.onboarding_complete) {
         navigate('/expert/onboarding');
       } else {
         navigate('/mentor/dashboard');
@@ -59,9 +59,9 @@ const Footer = () => {
             <div className="flex-1 min-w-[220px] max-w-xs">
               <Link to="/" className="flex items-center mb-4">
                 <img 
-                  src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png" 
+                  src="/lovable-uploads/MatePeak_logo_with_name (1).png" 
                   alt="MatePeak Logo" 
-                  className="h-8"
+                  className="h-16"
                 />
               </Link>
               <p className="text-sm text-gray-600 mb-6 leading-relaxed">
