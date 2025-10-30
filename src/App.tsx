@@ -15,6 +15,7 @@ import BookingSuccess from "./pages/BookingSuccess";
 import Dashboard from "./pages/Dashboard";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
+import AboutUs from "./pages/AboutUs";
 import RoleSelection from "./pages/RoleSelection";
 import StudentSignup from "./pages/StudentSignup";
 import StudentLogin from "./pages/StudentLogin";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/booking-success" element={<BookingSuccess />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/about-us" element={<AboutUs />} />
           <Route path="/signup" element={<RoleSelection />} />
           <Route path="/student/signup" element={<StudentSignup />} />
           <Route path="/student/login" element={<StudentLogin />} />

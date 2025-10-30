@@ -175,9 +175,7 @@ export default function MentorPublicProfile() {
               <p className="text-gray-600 mb-6">
                 {error || "We couldn't find the mentor profile you're looking for. The username may be incorrect or the profile may not exist."}
               </p>
-              <Button onClick={() => navigate("/mentors")} className="bg-matepeak-primary hover:bg-matepeak-secondary">
-                Browse All Mentors
-              </Button>
+              {/* Browse All Mentors button removed as per request */}
             </div>
           </div>
         </div>

@@ -149,8 +149,8 @@ const MentorSearch = () => {
                 {filteredMentors.length} {filteredMentors.length === 1 ? "Mentor" : "Mentors"} Available
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredMentors.map((mentor) => (
-                  <MentorCard key={mentor.id} mentor={mentor} />
+                {filteredMentors.map((mentor, idx) => (
+                  <MentorCard key={mentor.id} mentor={mentor} isNew={idx < 8} />
                 ))}
               </div>
             </div>

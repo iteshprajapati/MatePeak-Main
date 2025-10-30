@@ -121,15 +121,7 @@ const NewMentors = ({ sectionRef }: NewMentorsProps) => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {newMentors.map((mentor, index) => (
-                <div key={mentor.id || index} className="relative">
-                  {/* New Badge */}
-                  <div className="absolute -top-2 -right-2 z-10">
-                    <div className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                      NEW
-                    </div>
-                  </div>
-                  <MentorCard mentor={mentor} />
-                </div>
+                <MentorCard key={mentor.id || index} mentor={mentor} isNew={true} />
               ))}
             </div>
 

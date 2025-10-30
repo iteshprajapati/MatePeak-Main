@@ -98,14 +98,7 @@ const FeaturedMentors = ({ sectionRef }: FeaturedMentorsProps) => {
           </div>
         )}
         
-        <div className="text-center mt-12">
-          <Link to="/mentors">
-            <Button className="bg-matepeak-primary hover:bg-matepeak-yellow hover:text-matepeak-primary text-white transition-all duration-200">
-              View All Mentors
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+        {/* View All Mentors button removed as per request */}
       </div>
     </section>
   );

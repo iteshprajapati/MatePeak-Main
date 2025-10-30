@@ -23,11 +23,13 @@ export interface MentorProfile {
   tagline?: string; // Generated tagline like "Senior @ IIT Delhi | Computer Science"
 }
 
+
 interface MentorCardProps {
   mentor: MentorProfile;
+  isNew?: boolean;
 }
 
-const MentorCard = ({ mentor }: MentorCardProps) => {
+const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
   const nameParts = mentor.name.split(' ');
   const initials = nameParts.length > 1 
     ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
@@ -46,8 +48,15 @@ const MentorCard = ({ mentor }: MentorCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[320px] mx-auto border border-gray-200 bg-white rounded-2xl">
-      <CardContent className="p-6">
+    <Card className="overflow-visible shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[320px] mx-auto border border-gray-200 bg-white rounded-2xl">
+      <CardContent className="p-6 relative">
+        {isNew && (
+          <div className="absolute -top-2 -right-2 z-50 pointer-events-none">
+            <div className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+              RECENT
+            </div>
+          </div>
+        )}
         {/* Header: Avatar, Name, Tagline, Rating */}
         <div className="flex items-start gap-4 mb-4">
           <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-gray-100">

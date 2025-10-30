@@ -53,10 +53,10 @@ const Navbar = () => {
 
   const fetchProfile = async (userId: string, role: 'student' | 'mentor') => {
     if (role === 'mentor') {
-      // Get expert profile with profile picture
+      // Get expert profile with onboarding status
       const { data: expertData, error } = await supabase
         .from("expert_profiles")
-        .select("username, full_name, profile_picture_url, id")
+        .select("username, full_name, profile_picture_url, id, onboarding_complete")
         .eq("id", userId)
         .single();
 
@@ -67,20 +67,18 @@ const Navbar = () => {
 
       if (expertData) {
         console.log('Navbar - Fetched expert profile:', expertData);
-        
         // Get avatar from profiles table as fallback
         const { data: profilesData } = await supabase
           .from("profiles")
           .select("avatar_url")
           .eq("id", userId)
           .single();
-        
         const profileData = {
           username: expertData.username,
           full_name: expertData.full_name,
-          // Use profile_picture_url from expert_profiles first, fallback to avatar_url from profiles
           avatar_url: expertData.profile_picture_url || profilesData?.avatar_url || null,
-          type: 'mentor' as const
+          type: 'mentor' as const,
+          onboarding_complete: expertData.onboarding_complete
         };
         console.log('Navbar - Setting profile state:', profileData);
         setProfile(profileData);
@@ -221,12 +219,15 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 bg-white shadow-lg border border-gray-200 rounded-xl" align="end">
-                  <DropdownMenuItem 
-                    onClick={handleDashboardClick} 
-                    className="cursor-pointer hover:bg-gray-50 rounded-lg m-1 text-gray-700 focus:bg-gray-50"
-                  >
-                    <span className="text-sm">Dashboard</span>
-                  </DropdownMenuItem>
+                  {/* Only show Dashboard for mentors if onboarding is complete, always for students */}
+                  {((userRole === 'mentor' && profile?.onboarding_complete) || userRole === 'student') && (
+                    <DropdownMenuItem 
+                      onClick={handleDashboardClick} 
+                      className="cursor-pointer hover:bg-gray-50 rounded-lg m-1 text-gray-700 focus:bg-gray-50"
+                    >
+                      <span className="text-sm">Dashboard</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="bg-gray-200" />
                   <DropdownMenuItem 
                     onClick={handleLogout} 
@@ -283,16 +284,19 @@ const Navbar = () => {
                   <p className="text-gray-900 font-semibold text-sm">{getDisplayName()}</p>
                 </div>
               </div>
-              <Button 
-                variant="ghost"
-                className="text-gray-700 hover:bg-gray-100 w-full font-medium justify-start transition-all duration-200 rounded-xl h-11"
-                onClick={() => {
-                  handleDashboardClick();
-                  setIsMenuOpen(false);
-                }}
-              >
-                Dashboard
-              </Button>
+              {/* Only show Dashboard for mentors if onboarding is complete, always for students */}
+              {((userRole === 'mentor' && profile?.onboarding_complete) || userRole === 'student') && (
+                <Button 
+                  variant="ghost"
+                  className="text-gray-700 hover:bg-gray-100 w-full font-medium justify-start transition-all duration-200 rounded-xl h-11"
+                  onClick={() => {
+                    handleDashboardClick();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Dashboard
+                </Button>
+              )}
               <div className="pt-2 border-t border-gray-200">
                 <Button 
                   variant="ghost"
