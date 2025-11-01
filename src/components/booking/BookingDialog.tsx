@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -28,6 +28,7 @@ interface BookingDialogProps {
   timezone?: string;
   averageRating?: number;
   totalReviews?: number;
+  preSelectedDateTime?: SelectedDateTime | null;
 }
 
 export type BookingStep = 1 | 2 | 3;
@@ -65,6 +66,7 @@ export default function BookingDialog({
   timezone = "Asia/Kolkata",
   averageRating = 0,
   totalReviews = 0,
+  preSelectedDateTime = null,
 }: BookingDialogProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState<BookingStep>(1);
@@ -79,12 +81,25 @@ export default function BookingDialog({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<any>(null);
 
+  // Effect to handle pre-selected date/time
+  useEffect(() => {
+    if (open && preSelectedDateTime) {
+      setSelectedDateTime(preSelectedDateTime);
+      // If we have a pre-selected date/time, start at step 1 (service selection)
+      // After service is selected, it will auto-advance to step 3 (confirmation)
+      setStep(1);
+    }
+  }, [open, preSelectedDateTime]);
+
   const handleClose = () => {
     // Don't reset state if success modal is showing
     if (!showSuccessModal) {
       setStep(1);
       setSelectedService(null);
-      setSelectedDateTime(null);
+      // Only reset selectedDateTime if there's no preSelectedDateTime
+      if (!preSelectedDateTime) {
+        setSelectedDateTime(null);
+      }
       setBookingDetails(null);
     }
     onOpenChange(false);
@@ -103,7 +118,12 @@ export default function BookingDialog({
     }
     // Only video sessions need date/time selection
     else {
-      setStep(2);
+      // If we already have a pre-selected date/time, skip to confirmation
+      if (preSelectedDateTime || selectedDateTime) {
+        setStep(3);
+      } else {
+        setStep(2);
+      }
     }
   };
 

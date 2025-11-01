@@ -24,7 +24,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import BookingDialog from "@/components/booking/BookingDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProfileHeaderProps {
@@ -36,15 +35,16 @@ interface ProfileHeaderProps {
     completedSessions: number;
   };
   isOwnProfile?: boolean;
+  onOpenBooking?: () => void;
 }
 
 export default function ProfileHeader({
   mentor,
   stats,
   isOwnProfile = false,
+  onOpenBooking,
 }: ProfileHeaderProps) {
   const navigate = useNavigate();
-  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
 
   const handleBookingClick = async () => {
@@ -70,7 +70,9 @@ export default function ProfileHeader({
       }
 
       // User is authenticated, open booking dialog
-      setBookingDialogOpen(true);
+      if (onOpenBooking) {
+        onOpenBooking();
+      }
     } catch (error) {
       console.error("Auth check error:", error);
       toast.error("Something went wrong. Please try again.");
@@ -348,20 +350,6 @@ export default function ProfileHeader({
             </>
           )}
       </CardContent>
-
-      {/* Booking Dialog */}
-      <BookingDialog
-        open={bookingDialogOpen}
-        onOpenChange={setBookingDialogOpen}
-        mentorId={mentor.id}
-        mentorName={mentor.full_name}
-        mentorImage={mentor.profile_picture_url}
-        services={mentor.services}
-        servicePricing={mentor.service_pricing}
-        timezone={mentor.timezone}
-        averageRating={mentor.average_rating}
-        totalReviews={mentor.total_reviews}
-      />
     </Card>
   );
 }
