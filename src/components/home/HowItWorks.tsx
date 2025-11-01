@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Search, CalendarDays, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,11 @@ function mod(n: number, m: number) {
   return ((n % m) + m) % m;
 }
 
-const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement> }) => {
+const HowItWorks = ({
+  sectionRef,
+}: {
+  sectionRef: React.RefObject<HTMLDivElement>;
+}) => {
   const [active, setActive] = useState(0);
 
   const goLeft = () => setActive((prev) => mod(prev - 1, steps.length));
@@ -40,15 +43,16 @@ const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement
   return (
     <section
       ref={sectionRef}
-      className="py-16 md:py-20 bg-gradient-to-b from-white via-slate-50/30 to-white"
+      className="py-20 md:py-28 bg-gradient-to-b from-white via-slate-50/30 to-white"
     >
-      <div className="container mx-auto px-4">
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-8 xl:px-0">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-matepeak-primary mb-3 font-poppins tracking-tight">
             How MatePeak Works
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-base leading-relaxed">
-            Get mentorship in three easy steps—from browsing experts to growing your skills.
+            Get mentorship in three easy steps—from browsing experts to growing
+            your skills.
           </p>
         </div>
         <div className="relative flex items-center justify-center mb-10 select-none overflow-visible">
@@ -57,7 +61,20 @@ const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement
             onClick={goLeft}
             className="z-20 absolute left-4 md:left-20 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full w-10 h-10 flex items-center justify-center transition-all hover:shadow-xl hover:scale-110 hover:bg-white focus:outline-none active:scale-95"
           >
-            <svg width={20} height={20} viewBox="0 0 24 24" stroke="#555" fill="none"><path d="M15 18l-6-6 6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              stroke="#555"
+              fill="none"
+            >
+              <path
+                d="M15 18l-6-6 6-6"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
           <div className="flex w-full max-w-4xl items-center justify-center h-[320px] md:h-[280px] relative px-16 md:px-24">
             {[...Array(3)].map((_, i) => {
@@ -86,12 +103,7 @@ const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement
                     boxShadow
                   )}
                   style={{
-                    left:
-                      pos === -1
-                        ? "0%"
-                        : pos === 1
-                        ? "60%"
-                        : "30%",
+                    left: pos === -1 ? "0%" : pos === 1 ? "60%" : "30%",
                   }}
                 >
                   <div
@@ -132,14 +144,25 @@ const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement
             onClick={goRight}
             className="z-20 absolute right-4 md:right-20 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full w-10 h-10 flex items-center justify-center transition-all hover:shadow-xl hover:scale-110 hover:bg-white focus:outline-none active:scale-95"
           >
-            <svg width={20} height={20} viewBox="0 0 24 24" stroke="#555" fill="none"><path d="M9 6l6 6-6 6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              stroke="#555"
+              fill="none"
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         </div>
         <div className="text-center mt-8">
           <a href="/how-it-works">
-            <button
-              className="rounded-full border-2 border-matepeak-primary/80 text-matepeak-primary font-semibold px-10 py-3 text-sm group relative transition-all bg-white hover:bg-matepeak-primary hover:text-white hover:shadow-xl hover:border-matepeak-primary hover:-translate-y-0.5 active:translate-y-0"
-            >
+            <button className="rounded-full border-2 border-matepeak-primary/80 text-matepeak-primary font-semibold px-10 py-3 text-sm group relative transition-all bg-white hover:bg-matepeak-primary hover:text-white hover:shadow-xl hover:border-matepeak-primary hover:-translate-y-0.5 active:translate-y-0">
               <span className="relative z-10 flex items-center">
                 Learn More About How It Works
                 <svg
@@ -149,7 +172,11 @@ const HowItWorks = ({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement
                   strokeWidth={2.5}
                   viewBox="0 0 24 24"
                 >
-                  <path d="M5 12h14M13 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M5 12h14M13 18l6-6-6-6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </span>
             </button>

@@ -207,7 +207,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-white py-4 shadow-sm border-b border-gray-100">
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex justify-between items-center">
             {/* Logo - Centered */}
