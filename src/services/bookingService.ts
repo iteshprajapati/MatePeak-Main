@@ -12,7 +12,6 @@ export interface CreateBookingData {
   user_email?: string;
   user_phone?: string;
   add_recording?: boolean;
-  test_code?: string; // Beta test code for free bookings
 }
 
 export interface AvailabilitySlot {
@@ -91,72 +90,6 @@ async function validateBookingPrice(
 }
 
 /**
- * Check if user is a beta tester and can book for free
- */
-async function checkBetaTesterStatus(userEmail: string, testCode?: string) {
-  try {
-    const { data, error } = await supabase.rpc("get_beta_tester_info", {
-      user_email: userEmail,
-    });
-
-    if (error) {
-      console.error("Beta tester check error:", error);
-      return {
-        isBetaTester: false,
-        freeBookingsRemaining: 0,
-        testCode: null,
-      };
-    }
-
-    const testerInfo = data?.[0];
-    
-    if (!testerInfo || !testerInfo.has_access) {
-      return {
-        isBetaTester: false,
-        freeBookingsRemaining: 0,
-        testCode: null,
-      };
-    }
-
-    return {
-      isBetaTester: true,
-      freeBookingsRemaining: testerInfo.free_bookings_remaining || 0,
-      testCode: testerInfo.test_code,
-      expiresAt: testerInfo.expires_at,
-    };
-  } catch (error) {
-    console.error("Beta tester check error:", error);
-    return {
-      isBetaTester: false,
-      freeBookingsRemaining: 0,
-      testCode: null,
-    };
-  }
-}
-
-/**
- * Use a free booking credit for beta tester
- */
-async function useFreeBookingCredit(userEmail: string, testCode: string) {
-  try {
-    const { data, error } = await supabase.rpc("use_free_booking_credit", {
-      user_email: userEmail,
-      booking_code: testCode,
-    });
-
-    if (error) {
-      console.error("Error using free booking credit:", error);
-      return false;
-    }
-
-    return data === true;
-  } catch (error) {
-    console.error("Error using free booking credit:", error);
-    return false;
-  }
-}
-
-/**
  * Create a new booking
  */
 export async function createBooking(data: CreateBookingData) {
@@ -210,50 +143,35 @@ export async function createBooking(data: CreateBookingData) {
       };
     }
 
-    // 5. CHECK FOR BETA TESTER / FREE BOOKING
-    let isTestBooking = false;
-    let finalPrice = 0;
-    let betaTesterInfo = null;
+    // 5. SERVER-SIDE PRICE VALIDATION
+    const priceValidation = await validateBookingPrice(
+      data.expert_id,
+      data.session_type,
+      data.duration,
+      data.add_recording
+    );
 
-    if (data.user_email) {
-      betaTesterInfo = await checkBetaTesterStatus(data.user_email, data.test_code);
-      
-      if (betaTesterInfo.isBetaTester && betaTesterInfo.freeBookingsRemaining > 0) {
-        // User is a beta tester with free credits
-        isTestBooking = true;
-        finalPrice = 0; // FREE booking
-      }
+    if (!priceValidation.success) {
+      return {
+        success: false,
+        error: priceValidation.error || "Price validation failed",
+        data: null,
+      };
     }
 
-    // 6. SERVER-SIDE PRICE VALIDATION (if not a free test booking)
-    if (!isTestBooking) {
-      const priceValidation = await validateBookingPrice(
-        data.expert_id,
-        data.session_type,
-        data.duration,
-        data.add_recording
+    const serverCalculatedPrice = priceValidation.price!;
+
+    // Check if client-sent price matches server calculation
+    const priceDifference = Math.abs(data.total_amount - serverCalculatedPrice);
+    if (priceDifference > 0.01) {
+      console.warn(
+        `Price mismatch: Client sent ${data.total_amount}, Server calculated ${serverCalculatedPrice}`
       );
-
-      if (!priceValidation.success) {
-        return {
-          success: false,
-          error: priceValidation.error || "Price validation failed",
-          data: null,
-        };
-      }
-
-      finalPrice = priceValidation.price!;
-
-      // Check if client-sent price matches server calculation
-      const priceDifference = Math.abs(data.total_amount - finalPrice);
-      if (priceDifference > 0.01) {
-        console.warn(
-          `Price mismatch: Client sent ${data.total_amount}, Server calculated ${finalPrice}`
-        );
-      }
+      // Use server-calculated price
+      data.total_amount = serverCalculatedPrice;
     }
 
-    // 7. Validate email format if provided
+    // 6. Validate email format if provided
     if (data.user_email && !isValidEmail(data.user_email)) {
       return {
         success: false,
@@ -284,28 +202,25 @@ export async function createBooking(data: CreateBookingData) {
     }
 
     // 9. Create booking record with server-validated price
-    const bookingInsertData: any = {
-      user_id: user.id,
-      expert_id: data.expert_id,
-      session_type: data.session_type,
-      scheduled_date: data.scheduled_date,
-      scheduled_time: data.scheduled_time,
-      duration: data.duration,
-      message: sanitizedMessage,
-      total_amount: finalPrice, // Use server-calculated or FREE price
-      status: "pending",
-      user_name: sanitizedName,
-      user_email: data.user_email,
-      user_phone: sanitizedPhone,
-      price_verified: true, // Mark as server-validated
-      payment_status: isTestBooking ? "completed" : "pending", // Free bookings are pre-completed
-      is_test_booking: isTestBooking,
-      test_booking_code: isTestBooking ? betaTesterInfo?.testCode : null,
-    };
-
+    // During BETA: All bookings are FREE and auto-confirmed
     const { data: booking, error } = await supabase
       .from("bookings")
-      .insert(bookingInsertData)
+      .insert({
+        user_id: user.id,
+        expert_id: data.expert_id,
+        session_type: data.session_type,
+        scheduled_date: data.scheduled_date,
+        scheduled_time: data.scheduled_time,
+        duration: data.duration,
+        message: sanitizedMessage,
+        total_amount: serverCalculatedPrice, // Keep original price for records
+        status: "confirmed", // AUTO-CONFIRM during beta (was 'pending')
+        user_name: sanitizedName,
+        user_email: data.user_email,
+        user_phone: sanitizedPhone,
+        price_verified: true,
+        payment_status: "completed", // Use 'completed' for free beta bookings (temporary until DB updated)
+      })
       .select()
       .single();
 
@@ -318,21 +233,10 @@ export async function createBooking(data: CreateBookingData) {
       };
     }
 
-    // 10. If test booking, deduct free credit
-    if (isTestBooking && betaTesterInfo && data.user_email) {
-      await useFreeBookingCredit(data.user_email, betaTesterInfo.testCode);
-    }
-
     return {
       success: true,
       data: booking,
-      message: isTestBooking 
-        ? "Free test booking created successfully! No payment required." 
-        : "Booking created successfully",
-      isTestBooking,
-      freeBookingsRemaining: isTestBooking 
-        ? (betaTesterInfo?.freeBookingsRemaining || 1) - 1 
-        : undefined,
+      message: "Booking created successfully",
     };
   } catch (error: any) {
     console.error("Booking service error:", error);
@@ -512,6 +416,13 @@ export async function getAvailableTimeSlots(
     const dateStr = date.toISOString().split("T")[0];
     const dayOfWeek = date.getDay();
 
+    // Check if selected date is today
+    const today = new Date();
+    const isToday = dateStr === today.toISOString().split("T")[0];
+    const currentTimeInMinutes = isToday
+      ? today.getHours() * 60 + today.getMinutes()
+      : 0;
+
     // Get mentor's availability
     const availabilityResult = await getMentorAvailability(
       mentorId,
@@ -568,6 +479,13 @@ export async function getAvailableTimeSlots(
 
       while (currentTime + duration <= endTime) {
         const timeStr = formatTime(currentTime);
+
+        // Skip past time slots if it's today
+        if (isToday && currentTime <= currentTimeInMinutes) {
+          currentTime += slotInterval;
+          continue;
+        }
+
         const isBooked = isTimeBooked(timeStr, duration, bookedSlots);
 
         timeSlots.push({

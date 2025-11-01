@@ -108,18 +108,48 @@ export default function BookingConfirmation({
     if (isSubmitting) return "Processing...";
     switch (selectedService.type) {
       case "digitalProducts":
-        return "Complete Purchase";
+        return "Confirm Booking (FREE)";
       case "chatAdvice":
-        return "Send Message";
+        return "Confirm Booking (FREE)";
       case "notes":
-        return "Purchase Notes";
+        return "Confirm Booking (FREE)";
       default:
-        return "Confirm and Pay";
+        return "Confirm Booking (FREE)";
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl mx-auto">
+      {/* FREE Beta Banner */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="bg-green-500 text-white rounded-full p-2 flex-shrink-0">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-green-900 font-bold text-base">
+              🎉 Beta Launch Special - 100% FREE!
+            </p>
+            <p className="text-green-700 text-sm">
+              All sessions are completely free during our beta period. No
+              payment required!
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-1.5">
@@ -147,8 +177,9 @@ export default function BookingConfirmation({
               {selectedService.type === "notes" && "Session Notes & Materials"}
             </p>
           </div>
-          <div className="bg-white rounded-xl px-4 py-2 shadow-sm">
-            <p className="text-2xl font-bold text-gray-900">
+          <div className="bg-green-500 text-white rounded-xl px-4 py-2 shadow-sm">
+            <p className="text-xl font-bold">FREE</p>
+            <p className="text-xs opacity-90 line-through">
               ₹{total.toLocaleString("en-IN")}
             </p>
           </div>
@@ -290,19 +321,22 @@ export default function BookingConfirmation({
               <span className="text-gray-600 font-medium">
                 1 × {selectedService.name}
               </span>
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-400 line-through">
                 ₹{basePrice.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 font-medium">Platform fee</span>
-              <span className="font-semibold text-green-600">FREE</span>
+              <span className="text-gray-600 font-medium">Beta Discount</span>
+              <span className="font-semibold text-green-600">-100%</span>
             </div>
             <div className="pt-3 border-t border-gray-300 flex justify-between items-center">
               <span className="font-bold text-gray-900 text-base">Total</span>
-              <span className="font-bold text-gray-900 text-xl">
-                ₹{total.toLocaleString("en-IN")}
-              </span>
+              <div className="text-right">
+                <span className="font-bold text-green-600 text-2xl">FREE</span>
+                <p className="text-xs text-gray-400 line-through">
+                  ₹{total.toLocaleString("en-IN")}
+                </p>
+              </div>
             </div>
           </div>
         )}
