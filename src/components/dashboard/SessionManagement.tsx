@@ -34,8 +34,18 @@ interface SessionManagementProps {
   mentorProfile: any;
 }
 
-type SessionStatus = "all" | "pending" | "confirmed" | "completed" | "cancelled";
-type SortOption = "date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "status";
+type SessionStatus =
+  | "all"
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "cancelled";
+type SortOption =
+  | "date-desc"
+  | "date-asc"
+  | "amount-desc"
+  | "amount-asc"
+  | "status";
 type DateRange = "all" | "today" | "week" | "month";
 
 const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
@@ -68,37 +78,114 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     fetchSessions();
   }, [mentorProfile]);
 
+  // Helper function to format session type display name
+  const formatSessionType = (sessionType: string | null | undefined) => {
+    if (!sessionType) return "1 on 1 Session";
+
+    // Convert camelCase or other formats to readable format
+    const typeMap: Record<string, string> = {
+      oneonesession: "1 on 1 Session",
+      oneOnOneSession: "1 on 1 Session",
+      "one-on-one": "1 on 1 Session",
+      group: "Group Session",
+      groupsession: "Group Session",
+      workshop: "Workshop",
+      consultation: "Consultation",
+    };
+
+    // Check if we have a mapping (case-insensitive)
+    const lowerType = sessionType.toLowerCase();
+    if (typeMap[lowerType]) {
+      return typeMap[lowerType];
+    }
+
+    // Check exact match
+    if (typeMap[sessionType]) {
+      return typeMap[sessionType];
+    }
+
+    // Otherwise, format camelCase to Title Case with spaces
+    return sessionType
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  };
+
   // Helper function to check if date is within range
-  const isWithinDateRange = (scheduledDate: string, scheduledTime: string, range: DateRange) => {
+  const isWithinDateRange = (
+    scheduledDate: string,
+    scheduledTime: string,
+    range: DateRange
+  ) => {
     if (range === "all") return true;
-    
+
+    if (!scheduledDate) return false;
+
     try {
-      const sessionDate = new Date(`${scheduledDate}T${scheduledTime}`);
+      // Parse the session date and time
+      const sessionDateTime = new Date(
+        `${scheduledDate}T${scheduledTime || "00:00"}`
+      );
+
+      // Get current date components
       const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const currentDate = now.getDate();
+
+      // Get session date components
+      const sessionYear = sessionDateTime.getFullYear();
+      const sessionMonth = sessionDateTime.getMonth();
+      const sessionDate = sessionDateTime.getDate();
+
       switch (range) {
         case "today":
-          const todayEnd = new Date(todayStart);
-          todayEnd.setDate(todayEnd.getDate() + 1);
-          return sessionDate >= todayStart && sessionDate < todayEnd;
-          
+          // Check if same year, month, and date
+          return (
+            sessionYear === currentYear &&
+            sessionMonth === currentMonth &&
+            sessionDate === currentDate
+          );
+
         case "week":
-          const weekStart = new Date(todayStart);
-          weekStart.setDate(todayStart.getDate() - todayStart.getDay()); // Start of week (Sunday)
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 7);
-          return sessionDate >= weekStart && sessionDate < weekEnd;
-          
+          // Get start of current week (Monday)
+          const currentDay = now.getDay();
+          const diff = currentDay === 0 ? -6 : 1 - currentDay; // Adjust when Sunday (0)
+          const weekStart = new Date(
+            currentYear,
+            currentMonth,
+            currentDate + diff,
+            0,
+            0,
+            0,
+            0
+          );
+
+          // Get end of current week (Sunday)
+          const weekEnd = new Date(
+            currentYear,
+            currentMonth,
+            currentDate + diff + 6,
+            23,
+            59,
+            59,
+            999
+          );
+
+          return sessionDateTime >= weekStart && sessionDateTime <= weekEnd;
+
         case "month":
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          return sessionDate >= monthStart && sessionDate <= monthEnd;
-          
+          // Check if same year and month
+          return sessionYear === currentYear && sessionMonth === currentMonth;
+
         default:
           return true;
       }
-    } catch {
+    } catch (error) {
+      console.error("Date parsing error:", error, {
+        scheduledDate,
+        scheduledTime,
+      });
       return false;
     }
   };
@@ -112,12 +199,14 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     weekEnd.setDate(weekStart.getDate() + 7);
 
     // Filter sessions by current date range first
-    const dateFilteredSessions = sessions.filter(s => 
+    const dateFilteredSessions = sessions.filter((s) =>
       isWithinDateRange(s.scheduled_date, s.scheduled_time, dateRange)
     );
 
-    const pending = dateFilteredSessions.filter(s => s.status === "pending").length;
-    const thisWeek = dateFilteredSessions.filter(s => {
+    const pending = dateFilteredSessions.filter(
+      (s) => s.status === "pending"
+    ).length;
+    const thisWeek = dateFilteredSessions.filter((s) => {
       try {
         const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
         return sessionDate >= weekStart && sessionDate < weekEnd;
@@ -125,8 +214,8 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         return false;
       }
     }).length;
-    
-    const upcoming = dateFilteredSessions.filter(s => {
+
+    const upcoming = dateFilteredSessions.filter((s) => {
       try {
         const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
         return sessionDate > now && s.status === "confirmed";
@@ -145,16 +234,20 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
 
   // Get status counts for tab badges - respecting date range filter
   const statusCounts = useMemo(() => {
-    const dateFilteredSessions = sessions.filter(s => 
+    const dateFilteredSessions = sessions.filter((s) =>
       isWithinDateRange(s.scheduled_date, s.scheduled_time, dateRange)
     );
-    
+
     return {
       all: dateFilteredSessions.length,
-      pending: dateFilteredSessions.filter(s => s.status === "pending").length,
-      confirmed: dateFilteredSessions.filter(s => s.status === "confirmed").length,
-      completed: dateFilteredSessions.filter(s => s.status === "completed").length,
-      cancelled: dateFilteredSessions.filter(s => s.status === "cancelled").length,
+      pending: dateFilteredSessions.filter((s) => s.status === "pending")
+        .length,
+      confirmed: dateFilteredSessions.filter((s) => s.status === "confirmed")
+        .length,
+      completed: dateFilteredSessions.filter((s) => s.status === "completed")
+        .length,
+      cancelled: dateFilteredSessions.filter((s) => s.status === "cancelled")
+        .length,
     };
   }, [sessions, dateRange]);
 
@@ -162,13 +255,17 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
   const upcomingSessions = useMemo(() => {
     const now = new Date();
     return sessions
-      .filter(s => {
+      .filter((s) => {
         try {
-          const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
+          const sessionDate = new Date(
+            `${s.scheduled_date}T${s.scheduled_time}`
+          );
           // Must be future, confirmed, AND within selected date range
-          return sessionDate > now && 
-                 s.status === "confirmed" && 
-                 isWithinDateRange(s.scheduled_date, s.scheduled_time, dateRange);
+          return (
+            sessionDate > now &&
+            s.status === "confirmed" &&
+            isWithinDateRange(s.scheduled_date, s.scheduled_time, dateRange)
+          );
         } catch {
           return false;
         }
@@ -198,7 +295,8 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       console.error("Error fetching sessions:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to load sessions. Please try again.",
+        description:
+          error.message || "Failed to load sessions. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -237,9 +335,7 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       // Update local state
       setSessions((prev) =>
         prev.map((session) =>
-          session.id === sessionId
-            ? { ...session, status: newStatus }
-            : session
+          session.id === sessionId ? { ...session, status: newStatus } : session
         )
       );
 
@@ -254,7 +350,8 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       console.error("Error updating session:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update session. Please try again.",
+        description:
+          error.message || "Failed to update session. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -263,7 +360,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     }
   };
 
-  const openConfirmDialog = (sessionId: string, action: "accept" | "decline") => {
+  const openConfirmDialog = (
+    sessionId: string,
+    action: "accept" | "decline"
+  ) => {
     setConfirmDialog({ open: true, sessionId, action });
   };
 
@@ -274,7 +374,13 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       if (filter !== "all" && session.status !== filter) return false;
 
       // Date range filter
-      if (!isWithinDateRange(session.scheduled_date, session.scheduled_time, dateRange)) {
+      if (
+        !isWithinDateRange(
+          session.scheduled_date,
+          session.scheduled_time,
+          dateRange
+        )
+      ) {
         return false;
       }
 
@@ -331,30 +437,33 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         "Student Email",
         "Status",
         "Amount",
-        "Message"
+        "Message",
       ];
-      
-      const csvData = filteredAndSortedSessions.map(session => [
+
+      const csvData = filteredAndSortedSessions.map((session) => [
         formatDate(session.scheduled_date, session.scheduled_time),
-        session.session_type || "1-on-1 Session",
+        formatSessionType(session.session_type),
         session.student_name || "N/A",
         session.student_email || "N/A",
         session.status || "pending",
         session.total_amount ? `₹${session.total_amount.toFixed(2)}` : "N/A",
-        (session.message || "").replace(/,/g, ";") // Replace commas to avoid CSV issues
+        (session.message || "").replace(/,/g, ";"), // Replace commas to avoid CSV issues
       ]);
 
       const csvContent = [
         headers.join(","),
-        ...csvData.map(row => row.map(cell => `"${cell}"`).join(","))
+        ...csvData.map((row) => row.map((cell) => `"${cell}"`).join(",")),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-      
+
       link.setAttribute("href", url);
-      link.setAttribute("download", `sessions_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `sessions_${new Date().toISOString().split("T")[0]}.csv`
+      );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -380,17 +489,18 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       const sessionDate = new Date(`${scheduledDate}T${scheduledTime}`);
       const now = new Date();
       const diffMs = sessionDate.getTime() - now.getTime();
-      
+
       if (diffMs < 0) return "Past";
-      
+
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       const diffDays = Math.floor(diffHours / 24);
-      
-      if (diffDays > 0) return `in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-      if (diffHours > 0) return `in ${diffHours} hour${diffHours > 1 ? 's' : ''}`;
-      
+
+      if (diffDays > 0) return `in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
+      if (diffHours > 0)
+        return `in ${diffHours} hour${diffHours > 1 ? "s" : ""}`;
+
       const diffMins = Math.floor(diffMs / (1000 * 60));
-      return `in ${diffMins} minute${diffMins > 1 ? 's' : ''}`;
+      return `in ${diffMins} minute${diffMins > 1 ? "s" : ""}`;
     } catch {
       return "";
     }
@@ -398,10 +508,22 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      pending: { label: "Pending", className: "bg-yellow-50 text-yellow-700 border-0 rounded-md" },
-      confirmed: { label: "Confirmed", className: "bg-green-50 text-green-700 border-0 rounded-md" },
-      completed: { label: "Completed", className: "bg-blue-50 text-blue-700 border-0 rounded-md" },
-      cancelled: { label: "Cancelled", className: "bg-red-50 text-red-700 border-0 rounded-md" },
+      pending: {
+        label: "Pending",
+        className: "bg-yellow-50 text-yellow-700 border-0 rounded-md",
+      },
+      confirmed: {
+        label: "Confirmed",
+        className: "bg-green-50 text-green-700 border-0 rounded-md",
+      },
+      completed: {
+        label: "Completed",
+        className: "bg-blue-50 text-blue-700 border-0 rounded-md",
+      },
+      cancelled: {
+        label: "Cancelled",
+        className: "bg-red-50 text-red-700 border-0 rounded-md",
+      },
     };
 
     const config = statusConfig[status] || {
@@ -409,9 +531,7 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       className: "bg-gray-50 text-gray-700 border-0 rounded-md",
     };
 
-    return (
-      <Badge className={config.className}>{config.label}</Badge>
-    );
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const formatDate = (scheduledDate: string, scheduledTime: string) => {
@@ -569,15 +689,21 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {session.session_type || "1-on-1 Session"}
+                      {formatSessionType(session.session_type)}
                     </p>
                     <p className="text-xs text-gray-600 mt-0.5">
-                      {formatDate(session.scheduled_date, session.scheduled_time)}
+                      {formatDate(
+                        session.scheduled_date,
+                        session.scheduled_time
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-rose-50 text-rose-700 border-0 rounded-md text-xs">
-                      {getTimeRemaining(session.scheduled_date, session.scheduled_time)}
+                      {getTimeRemaining(
+                        session.scheduled_date,
+                        session.scheduled_time
+                      )}
                     </Badge>
                     <Button
                       size="sm"
@@ -633,7 +759,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         >
           Confirmed
           {statusCounts.confirmed > 0 && (
-            <span className="ml-1.5 opacity-75">({statusCounts.confirmed})</span>
+            <span className="ml-1.5 opacity-75">
+              ({statusCounts.confirmed})
+            </span>
           )}
         </button>
         <button
@@ -646,7 +774,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         >
           Completed
           {statusCounts.completed > 0 && (
-            <span className="ml-1.5 opacity-75">({statusCounts.completed})</span>
+            <span className="ml-1.5 opacity-75">
+              ({statusCounts.completed})
+            </span>
           )}
         </button>
         <button
@@ -659,7 +789,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         >
           Cancelled
           {statusCounts.cancelled > 0 && (
-            <span className="ml-1.5 opacity-75">({statusCounts.cancelled})</span>
+            <span className="ml-1.5 opacity-75">
+              ({statusCounts.cancelled})
+            </span>
           )}
         </button>
       </div>
@@ -746,10 +878,17 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       {(searchQuery || filter !== "all" || dateRange !== "all") && (
         <div className="flex items-center gap-2 px-1">
           <p className="text-sm text-gray-600">
-            Showing <span className="font-medium text-gray-900">{filteredAndSortedSessions.length}</span> of {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+            Showing{" "}
+            <span className="font-medium text-gray-900">
+              {filteredAndSortedSessions.length}
+            </span>{" "}
+            of {sessions.length} session{sessions.length !== 1 ? "s" : ""}
             {searchQuery && (
               <span className="ml-1">
-                matching <span className="font-medium text-gray-900">"{searchQuery}"</span>
+                matching{" "}
+                <span className="font-medium text-gray-900">
+                  "{searchQuery}"
+                </span>
               </span>
             )}
           </p>
@@ -757,80 +896,127 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       )}
 
       {/* Sessions List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="border-gray-200 rounded-2xl shadow-none">
               <CardContent className="p-6">
-                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-32 w-full" />
               </CardContent>
             </Card>
           ))
         ) : filteredAndSortedSessions.length > 0 ? (
           filteredAndSortedSessions.map((session) => (
-            <Card key={session.id} className="border-gray-200 rounded-2xl shadow-none hover:shadow-md transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  {/* Session Info */}
+            <Card
+              key={session.id}
+              className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
+            >
+              <CardContent className="p-5">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  {/* Left Section - Session Info */}
                   <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {session.session_type || "1-on-1 Session"}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(session.scheduled_date, session.scheduled_time)}</span>
-                          </div>
-                          {isUpcoming(session.scheduled_date, session.scheduled_time) && session.status === "confirmed" && (
-                            <Badge className="bg-blue-50 text-blue-700 border-0 rounded-md">
-                              Upcoming
-                            </Badge>
-                          )}
+                    {/* Header Row */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <h3 className="text-base font-bold text-gray-900">
+                            {formatSessionType(session.session_type)}
+                          </h3>
+                          {isUpcoming(
+                            session.scheduled_date,
+                            session.scheduled_time
+                          ) &&
+                            session.status === "confirmed" && (
+                              <Badge className="bg-blue-50 text-blue-700 border-0 rounded-lg text-xs px-2 py-0.5">
+                                Upcoming
+                              </Badge>
+                            )}
+                        </div>
+
+                        {/* Date and Time */}
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="font-medium">
+                            {formatDate(
+                              session.scheduled_date,
+                              session.scheduled_time
+                            )}
+                          </span>
                         </div>
                       </div>
-                      {getStatusBadge(session.status || "pending")}
+
+                      {/* Status Badge */}
+                      <div className="flex-shrink-0">
+                        {getStatusBadge(session.status || "pending")}
+                      </div>
                     </div>
 
+                    {/* Student Info */}
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <Users className="h-3.5 w-3.5 text-gray-600" />
+                        </div>
+                        <span className="font-medium">
+                          {session.student_name || "Student"}
+                        </span>
+                      </div>
+                      {session.student_email && (
+                        <span className="text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">
+                          {session.student_email}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Message */}
                     {session.message && (
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        {session.message}
-                      </p>
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                          Message
+                        </p>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {session.message}
+                        </p>
+                      </div>
                     )}
 
-                    {session.total_amount && (
-                      <p className="text-sm font-semibold text-gray-900">
-                        Amount: ₹{session.total_amount.toFixed(2)}
-                      </p>
+                    {/* Amount */}
+                    {session.total_amount && session.total_amount > 0 && (
+                      <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                        <span className="text-xs font-semibold text-green-700">
+                          Amount: ₹{session.total_amount.toFixed(2)}
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2">
+                  {/* Right Section - Actions */}
+                  <div className="flex lg:flex-col gap-2 lg:min-w-[140px]">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setDetailsModal({ open: true, session })}
-                      className="border-gray-200 hover:bg-gray-50 rounded-xl"
+                      className="flex-1 lg:flex-none border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded-xl h-9 text-sm font-medium"
                     >
-                      <Eye className="h-4 w-4 mr-1.5" />
-                      Details
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />
+                      View Details
                     </Button>
-                    
+
                     {session.status === "pending" && (
                       <>
                         <Button
                           size="sm"
-                          onClick={() => openConfirmDialog(session.id, "accept")}
+                          onClick={() =>
+                            openConfirmDialog(session.id, "accept")
+                          }
                           disabled={actionLoading === session.id}
-                          className="bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-none"
+                          className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700 text-white rounded-xl h-9 shadow-sm hover:shadow text-sm font-medium"
                         >
                           {actionLoading === session.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <>
-                              <CheckCircle className="h-4 w-4 mr-1.5" />
+                              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                               Accept
                             </>
                           )}
@@ -838,15 +1024,17 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openConfirmDialog(session.id, "decline")}
+                          onClick={() =>
+                            openConfirmDialog(session.id, "decline")
+                          }
                           disabled={actionLoading === session.id}
-                          className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
+                          className="flex-1 lg:flex-none border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 rounded-xl h-9 text-sm font-medium"
                         >
                           {actionLoading === session.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <>
-                              <XCircle className="h-4 w-4 mr-1.5" />
+                              <XCircle className="h-3.5 w-3.5 mr-1.5" />
                               Decline
                             </>
                           )}
@@ -859,18 +1047,28 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
             </Card>
           ))
         ) : (
-          <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
-            <CardContent className="p-12">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white mb-4">
-                  <Calendar className="h-8 w-8 text-rose-400" />
+          <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-0 rounded-2xl shadow-none">
+            <CardContent className="p-16">
+              <div className="text-center max-w-md mx-auto">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white shadow-sm mb-5">
+                  <Calendar className="h-10 w-10 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   No sessions found
                 </h3>
-                <p className="text-sm text-gray-600 max-w-md mx-auto">
-                  {filter === "all"
-                    ? "You don't have any sessions yet. They will appear here once students book with you."
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {filter === "all" && dateRange === "all"
+                    ? "You don't have any sessions yet. When students book sessions with you, they will appear here."
+                    : dateRange !== "all"
+                    ? `No ${
+                        filter !== "all" ? filter : ""
+                      } sessions found for ${
+                        dateRange === "today"
+                          ? "today"
+                          : dateRange === "week"
+                          ? "this week"
+                          : "this month"
+                      }.`
                     : `You don't have any ${filter} sessions.`}
                 </p>
               </div>
@@ -900,7 +1098,11 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
             ? "Are you sure you want to accept this session? The student will be notified and the session will be confirmed."
             : "Are you sure you want to decline this session? This action cannot be undone and the student will be notified."
         }
-        confirmText={confirmDialog.action === "accept" ? "Accept Session" : "Decline Session"}
+        confirmText={
+          confirmDialog.action === "accept"
+            ? "Accept Session"
+            : "Decline Session"
+        }
         variant={confirmDialog.action === "decline" ? "destructive" : "default"}
       />
 
