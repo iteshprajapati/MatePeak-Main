@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getAvailableTimeSlots, TimeSlot } from "@/services/bookingService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DateTimeSelectionProps {
   selectedService: SelectedService;
@@ -40,6 +46,13 @@ export default function DateTimeSelection({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [hasAutoSelectedDate, setHasAutoSelectedDate] = useState(false);
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
+
+  // Request Custom Time states
+  const [showCustomTimeRequest, setShowCustomTimeRequest] = useState(false);
+  const [requestedStartTime, setRequestedStartTime] = useState("");
+  const [requestedEndTime, setRequestedEndTime] = useState("");
+  const [requestMessage, setRequestMessage] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
 
   // Generate 7 days starting from today
   const visibleDates = Array.from({ length: 7 }, (_, i) =>
@@ -155,6 +168,59 @@ export default function DateTimeSelection({
         time: selectedTime,
         timezone: selectedTimezone,
       });
+    }
+  };
+
+  const handleCustomTimeRequest = async () => {
+    if (!selectedDate) {
+      toast.error("Please select a date first");
+      return;
+    }
+    if (!requestedStartTime || !requestedEndTime) {
+      toast.error("Please enter both start and end times");
+      return;
+    }
+
+    setSubmittingRequest(true);
+
+    try {
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error("Please sign in to request custom time");
+        return;
+      }
+
+      // Create custom time request record
+      const { error } = await supabase.from("booking_requests").insert({
+        mentor_id: mentorId,
+        student_id: user.id,
+        requested_date: format(selectedDate, "yyyy-MM-dd"),
+        requested_start_time: requestedStartTime,
+        requested_end_time: requestedEndTime,
+        message: requestMessage,
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      toast.success(
+        "Custom time request sent! The mentor will review and respond via email."
+      );
+
+      // Reset form
+      setShowCustomTimeRequest(false);
+      setRequestedStartTime("");
+      setRequestedEndTime("");
+      setRequestMessage("");
+    } catch (error: any) {
+      console.error("Error submitting custom time request:", error);
+      toast.error(error.message || "Failed to submit request");
+    } finally {
+      setSubmittingRequest(false);
     }
   };
 
@@ -493,6 +559,137 @@ export default function DateTimeSelection({
         >
           Continue
         </Button>
+      )}
+
+      {/* Request Custom Time Section */}
+      {selectedDate && (
+        <div className="bg-gray-100 rounded-2xl p-5 border-0 shadow-sm">
+          {!showCustomTimeRequest ? (
+            <div className="text-center">
+              <div className="mb-3">
+                <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <h4 className="text-sm font-semibold text-gray-900">
+                  Don't see a suitable time?
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Request a custom session time and the mentor will get back to
+                  you
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomTimeRequest(true)}
+                className="border-gray-300 hover:bg-white hover:border-gray-900 rounded-xl"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Request Custom Time
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-base font-bold text-gray-900">
+                  Request Custom Time
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowCustomTimeRequest(false);
+                    setRequestedStartTime("");
+                    setRequestedEndTime("");
+                    setRequestMessage("");
+                  }}
+                  className="h-8 text-gray-500 hover:text-gray-900"
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <p className="text-xs text-blue-900">
+                  <strong>Selected Date:</strong>{" "}
+                  {format(selectedDate, "EEEE, MMMM d, yyyy")}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="custom-start"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    Start Time
+                  </Label>
+                  <Input
+                    id="custom-start"
+                    type="time"
+                    value={requestedStartTime}
+                    onChange={(e) => setRequestedStartTime(e.target.value)}
+                    className="border-gray-300 rounded-xl h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="custom-end"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    End Time
+                  </Label>
+                  <Input
+                    id="custom-end"
+                    type="time"
+                    value={requestedEndTime}
+                    onChange={(e) => setRequestedEndTime(e.target.value)}
+                    className="border-gray-300 rounded-xl h-11"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="custom-message"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Message (Optional)
+                </Label>
+                <Textarea
+                  id="custom-message"
+                  placeholder="Add any specific requirements or questions..."
+                  value={requestMessage}
+                  onChange={(e) => setRequestMessage(e.target.value)}
+                  className="border-gray-300 rounded-xl min-h-[80px] resize-none"
+                />
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p className="text-xs text-amber-900">
+                  <strong>💡 Note:</strong> The mentor will review your request
+                  and respond via email. You'll be notified once they confirm
+                  availability.
+                </p>
+              </div>
+
+              <Button
+                onClick={handleCustomTimeRequest}
+                disabled={submittingRequest}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11 text-sm font-semibold rounded-xl shadow-sm"
+              >
+                {submittingRequest ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending Request...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Send Request
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
