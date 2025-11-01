@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { generateMeetingLink } from "./meetingService";
 
 export interface CreateBookingData {
   expert_id: string;
@@ -231,6 +232,50 @@ export async function createBooking(data: CreateBookingData) {
         error: error.message || "Failed to create booking",
         data: null,
       };
+    }
+
+    // 10. Generate meeting link for confirmed booking
+    try {
+      // Fetch mentor name for meeting room
+      const { data: mentorProfile } = await supabase
+        .from("expert_profiles")
+        .select("full_name, username")
+        .eq("id", data.expert_id)
+        .single();
+
+      const mentorName =
+        mentorProfile?.full_name || mentorProfile?.username || "mentor";
+
+      // Generate Jitsi meeting link (free, no API key needed)
+      const meetingConfig = generateMeetingLink(
+        booking.id,
+        mentorName,
+        data.session_type,
+        "jitsi"
+      );
+
+      // Update booking with meeting link
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({
+          meeting_link: meetingConfig.meetingLink,
+          meeting_provider: meetingConfig.provider,
+          meeting_id: meetingConfig.meetingId,
+        })
+        .eq("id", booking.id);
+
+      if (updateError) {
+        console.error("Failed to add meeting link:", updateError);
+        // Don't fail the booking, just log the error
+      } else {
+        // Add meeting link to returned booking data
+        booking.meeting_link = meetingConfig.meetingLink;
+        booking.meeting_provider = meetingConfig.provider;
+        booking.meeting_id = meetingConfig.meetingId;
+      }
+    } catch (meetingError) {
+      console.error("Meeting link generation error:", meetingError);
+      // Don't fail the booking if meeting link generation fails
     }
 
     return {

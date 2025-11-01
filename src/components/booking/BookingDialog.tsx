@@ -124,6 +124,12 @@ export default function BookingDialog({
         "EEEE, MMMM d, yyyy"
       );
 
+      // Check if meeting link exists
+      const hasMeetingLink =
+        bookingData.meeting_link && bookingData.meeting_link.length > 0;
+      const meetingLink = bookingData.meeting_link || "";
+      const meetingProvider = bookingData.meeting_provider || "Jitsi Meet";
+
       // Email to Student
       const studentEmailHtml = `
 <!DOCTYPE html>
@@ -139,6 +145,8 @@ export default function BookingDialog({
     .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
     .detail-label { color: #6b7280; font-weight: 500; }
     .detail-value { color: #111827; font-weight: 600; }
+    .meeting-button { display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+    .meeting-box { background-color: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; }
     .footer { background-color: #f9fafb; padding: 24px; text-align: center; color: #6b7280; font-size: 14px; }
     h1 { margin: 0; font-size: 24px; }
   </style>
@@ -179,11 +187,31 @@ export default function BookingDialog({
         </div>
       </div>
       
+      ${
+        hasMeetingLink
+          ? `
+      <div class="meeting-box">
+        <h3 style="color: #111827; margin-top: 0;">🎥 Video Meeting Link</h3>
+        <p style="color: #6b7280; font-size: 14px; margin: 8px 0;">Join the session using ${meetingProvider}</p>
+        <a href="${meetingLink}" class="meeting-button">Join Meeting</a>
+        <p style="color: #6b7280; font-size: 12px; margin: 16px 0 0 0;">
+          Click the button above when it's time for your session.<br>
+          You can also find this link in your dashboard.
+        </p>
+      </div>
+      `
+          : ""
+      }
+      
       <p style="color: #6b7280; font-size: 14px;">
         <strong>What to expect:</strong><br>
         • You'll receive a reminder 24 hours before the session<br>
         • Another reminder will be sent 1 hour before<br>
-        • Meeting link will be available in your dashboard
+        ${
+          hasMeetingLink
+            ? "• Use the meeting link above to join at the scheduled time<br>"
+            : "• Meeting link will be available in your dashboard<br>"
+        }
       </p>
     </div>
     
@@ -229,6 +257,8 @@ export default function BookingDialog({
     .detail-label { color: #6b7280; font-weight: 500; }
     .detail-value { color: #111827; font-weight: 600; }
     .message-box { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; }
+    .meeting-button { display: inline-block; background-color: #111827; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+    .meeting-box { background-color: #f3f4f6; border: 2px solid #111827; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; }
     .footer { background-color: #f9fafb; padding: 24px; text-align: center; color: #6b7280; font-size: 14px; }
     h1 { margin: 0; font-size: 24px; }
   </style>
@@ -282,11 +312,32 @@ export default function BookingDialog({
           : ""
       }
       
+      ${
+        hasMeetingLink
+          ? `
+      <div class="meeting-box">
+        <h3 style="color: #111827; margin-top: 0;">🎥 Video Meeting Link</h3>
+        <p style="color: #6b7280; font-size: 14px; margin: 8px 0;">Host the session using ${meetingProvider}</p>
+        <a href="${meetingLink}" class="meeting-button">Start Meeting</a>
+        <p style="color: #6b7280; font-size: 12px; margin: 16px 0 0 0;">
+          Click the button above to start or join the meeting at the scheduled time.<br>
+          Share this link with your student if needed.
+        </p>
+      </div>
+      `
+          : ""
+      }
+      
       <p style="color: #6b7280; font-size: 14px;">
         <strong>Next Steps:</strong><br>
         • Review the session purpose above<br>
-        • Check your dashboard for session details<br>
-        • Prepare any materials needed
+        • Check your dashboard for full session details<br>
+        ${
+          hasMeetingLink
+            ? "• Use the meeting link above at the scheduled time<br>"
+            : "• Meeting link is available in your dashboard<br>"
+        }
+        • Prepare any materials needed for the session
       </p>
     </div>
     
