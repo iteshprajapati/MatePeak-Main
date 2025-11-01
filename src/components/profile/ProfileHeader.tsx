@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import BookingDialog from "@/components/booking/BookingDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfileHeaderProps {
   mentor: any;
@@ -42,7 +43,41 @@ export default function ProfileHeader({
   stats,
   isOwnProfile = false,
 }: ProfileHeaderProps) {
+  const navigate = useNavigate();
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+
+  const handleBookingClick = async () => {
+    setIsCheckingAuth(true);
+
+    try {
+      // Check if user is authenticated
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        // User is not logged in, redirect to login
+        toast.error("Please login to book a session");
+        navigate("/student-login", {
+          state: {
+            returnTo: window.location.pathname,
+            message: "Login to book a session with this mentor",
+          },
+        });
+        return;
+      }
+
+      // User is authenticated, open booking dialog
+      setBookingDialogOpen(true);
+    } catch (error) {
+      console.error("Auth check error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -145,10 +180,13 @@ export default function ProfileHeader({
             // Show booking and message buttons for other mentors
             <>
               <Button
-                onClick={() => setBookingDialogOpen(true)}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm"
+                onClick={handleBookingClick}
+                disabled={isCheckingAuth}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm disabled:opacity-50"
               >
-                Book {mentor.full_name.split(" ")[0]}
+                {isCheckingAuth
+                  ? "Checking..."
+                  : `Book ${mentor.full_name.split(" ")[0]}`}
               </Button>
               <Button
                 variant="outline"
@@ -321,6 +359,8 @@ export default function ProfileHeader({
         services={mentor.services}
         servicePricing={mentor.service_pricing}
         timezone={mentor.timezone}
+        averageRating={mentor.average_rating}
+        totalReviews={mentor.total_reviews}
       />
     </Card>
   );

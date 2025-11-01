@@ -23,6 +23,8 @@ interface BookingDialogProps {
   services: any;
   servicePricing: any;
   timezone?: string;
+  averageRating?: number;
+  totalReviews?: number;
 }
 
 export type BookingStep = 1 | 2 | 3;
@@ -58,6 +60,8 @@ export default function BookingDialog({
   services,
   servicePricing,
   timezone = "Asia/Kolkata",
+  averageRating = 0,
+  totalReviews = 0,
 }: BookingDialogProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState<BookingStep>(1);
@@ -168,8 +172,20 @@ export default function BookingDialog({
   };
 
   const handleBack = () => {
-    if (step > 1) {
-      setStep((step - 1) as BookingStep);
+    if (step === 3 && selectedService) {
+      // If on step 3, check if service needs date/time
+      const needsDateTime = selectedService.type === "oneOnOneSession";
+
+      if (needsDateTime) {
+        // Go back to step 2 (date/time selection)
+        setStep(2);
+      } else {
+        // Skip step 2 and go directly to step 1 (service selection)
+        setStep(1);
+      }
+    } else if (step === 2) {
+      // From step 2, always go back to step 1
+      setStep(1);
     }
   };
 
@@ -194,8 +210,12 @@ export default function BookingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal>
+      <DialogContent
+        className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         {/* Header */}
         <DialogHeader className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -240,6 +260,8 @@ export default function BookingDialog({
               services={services}
               servicePricing={servicePricing}
               onServiceSelect={handleServiceSelect}
+              averageRating={averageRating}
+              totalReviews={totalReviews}
             />
           )}
 

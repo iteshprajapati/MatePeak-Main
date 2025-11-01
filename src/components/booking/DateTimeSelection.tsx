@@ -199,22 +199,33 @@ export default function DateTimeSelection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-3xl mx-auto">
+      {/* Header */}
+      <div>
+        <h3 className="text-xl font-bold text-gray-900 mb-1.5">
+          Select Date & Time
+        </h3>
+        <p className="text-sm text-gray-600">
+          Choose your preferred date and time slot
+        </p>
+      </div>
+
       {/* Service Summary */}
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="bg-gray-100 rounded-2xl p-5 border-0 shadow-sm">
+        {/* Service Info */}
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-semibold text-gray-900">
+            <h4 className="font-bold text-gray-900 text-base">
               {selectedService.name}
             </h4>
-            <p className="text-sm text-gray-600 mt-0.5">
+            <p className="text-sm text-gray-600 mt-1 font-medium">
               {selectedService.duration > 0 &&
                 `${selectedService.duration} mins • `}
               Video Call
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-xl font-bold text-gray-900">
+          <div className="bg-white rounded-xl px-4 py-2 shadow-sm">
+            <div className="text-2xl font-bold text-gray-900">
               ₹{selectedService.price.toLocaleString("en-IN")}
             </div>
           </div>
@@ -222,19 +233,20 @@ export default function DateTimeSelection({
       </div>
 
       {/* Date Selection */}
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold text-gray-900">
+      <div className="bg-gray-100 rounded-2xl p-5 border-0 shadow-sm">
+        <h3 className="text-base font-bold text-gray-900 mb-4">
           When should we meet?
         </h3>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Week navigation */}
           <Button
             variant="ghost"
             size="sm"
             onClick={handlePrevWeek}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0 hover:bg-white rounded-xl"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
 
           <div className="flex gap-2 overflow-x-auto flex-1 pb-2 scrollbar-hide">
@@ -251,13 +263,13 @@ export default function DateTimeSelection({
                   onClick={() => !isPast && setSelectedDate(date)}
                   disabled={isPast}
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[70px] p-3 rounded-lg border-2 transition-all",
+                    "flex flex-col items-center justify-center min-w-[75px] p-3.5 rounded-xl border-2 transition-all",
                     isSelected
-                      ? "border-yellow-400 bg-yellow-50"
+                      ? "border-gray-900 bg-gray-900 text-white shadow-sm"
                       : isPast
-                      ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed"
+                      ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                       : hasAvailableSlots
-                      ? "border-green-400 bg-white hover:border-green-500"
+                      ? "border-green-400 bg-white hover:border-green-500 hover:shadow-sm"
                       : "border-gray-200 bg-white hover:border-gray-300",
                     isToday &&
                       !isSelected &&
@@ -265,13 +277,18 @@ export default function DateTimeSelection({
                       "border-gray-400"
                   )}
                 >
-                  <span className="text-xs text-gray-600 font-medium">
+                  <span
+                    className={cn(
+                      "text-xs font-semibold",
+                      isSelected ? "text-gray-200" : "text-gray-600"
+                    )}
+                  >
                     {format(date, "EEE")}
                   </span>
                   <span
                     className={cn(
-                      "text-sm font-bold mt-1",
-                      isSelected ? "text-gray-900" : "text-gray-700"
+                      "text-sm font-bold mt-1.5",
+                      isSelected ? "text-white" : "text-gray-900"
                     )}
                   >
                     {format(date, "d MMM")}
@@ -285,17 +302,17 @@ export default function DateTimeSelection({
             variant="ghost"
             size="sm"
             onClick={handleNextWeek}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0 hover:bg-white rounded-xl"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       {/* Time Selection */}
       {selectedDate && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900">
+        <div className="bg-gray-100 rounded-2xl p-5 border-0 shadow-sm animate-fade-in">
+          <h3 className="text-base font-bold text-gray-900 mb-4">
             Select time slot ({selectedService.duration} min session)
           </h3>
 
@@ -304,8 +321,10 @@ export default function DateTimeSelection({
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
           ) : timeSlots.filter((slot) => slot.available).length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-gray-600">No available slots for this date</p>
+            <div className="text-center py-12 bg-white rounded-xl border-0 shadow-sm">
+              <p className="text-gray-600 font-medium">
+                No available slots for this date
+              </p>
               <p className="text-sm text-gray-500 mt-1">
                 Please select another date
               </p>
@@ -314,14 +333,14 @@ export default function DateTimeSelection({
             (() => {
               const { morning, afternoon, evening } = groupTimeSlots(timeSlots);
               return (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {morning.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <span className="text-yellow-500">☀️</span> Morning
                         (Before 12 PM)
                       </h4>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2.5">
                         {morning.map((slot) => {
                           const isSelected = selectedTime === slot.time;
                           return (
@@ -329,14 +348,19 @@ export default function DateTimeSelection({
                               key={slot.time}
                               onClick={() => setSelectedTime(slot.time)}
                               className={cn(
-                                "px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all text-left",
+                                "px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left",
                                 isSelected
-                                  ? "border-yellow-400 bg-yellow-50 text-gray-900"
-                                  : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                  ? "border-gray-900 bg-gray-900 text-white shadow-sm"
+                                  : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                               )}
                             >
-                              <div className="font-semibold">{slot.time}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-bold">{slot.time}</div>
+                              <div
+                                className={cn(
+                                  "text-xs mt-0.5",
+                                  isSelected ? "text-gray-300" : "text-gray-500"
+                                )}
+                              >
                                 {formatTimeRange(
                                   slot.time,
                                   selectedService.duration
@@ -351,11 +375,11 @@ export default function DateTimeSelection({
 
                   {afternoon.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <span className="text-orange-500">☀️</span> Afternoon
                         (12 PM - 5 PM)
                       </h4>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2.5">
                         {afternoon.map((slot) => {
                           const isSelected = selectedTime === slot.time;
                           return (
@@ -363,14 +387,19 @@ export default function DateTimeSelection({
                               key={slot.time}
                               onClick={() => setSelectedTime(slot.time)}
                               className={cn(
-                                "px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all text-left",
+                                "px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left",
                                 isSelected
-                                  ? "border-yellow-400 bg-yellow-50 text-gray-900"
-                                  : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                  ? "border-gray-900 bg-gray-900 text-white shadow-sm"
+                                  : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                               )}
                             >
-                              <div className="font-semibold">{slot.time}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-bold">{slot.time}</div>
+                              <div
+                                className={cn(
+                                  "text-xs mt-0.5",
+                                  isSelected ? "text-gray-300" : "text-gray-500"
+                                )}
+                              >
                                 {formatTimeRange(
                                   slot.time,
                                   selectedService.duration
@@ -385,11 +414,11 @@ export default function DateTimeSelection({
 
                   {evening.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <span className="text-blue-500">🌙</span> Evening (After
                         5 PM)
                       </h4>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2.5">
                         {evening.map((slot) => {
                           const isSelected = selectedTime === slot.time;
                           return (
@@ -397,14 +426,19 @@ export default function DateTimeSelection({
                               key={slot.time}
                               onClick={() => setSelectedTime(slot.time)}
                               className={cn(
-                                "px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all text-left",
+                                "px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left",
                                 isSelected
-                                  ? "border-yellow-400 bg-yellow-50 text-gray-900"
-                                  : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                  ? "border-gray-900 bg-gray-900 text-white shadow-sm"
+                                  : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                               )}
                             >
-                              <div className="font-semibold">{slot.time}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-bold">{slot.time}</div>
+                              <div
+                                className={cn(
+                                  "text-xs mt-0.5",
+                                  isSelected ? "text-gray-300" : "text-gray-500"
+                                )}
+                              >
                                 {formatTimeRange(
                                   slot.time,
                                   selectedService.duration
@@ -425,10 +459,10 @@ export default function DateTimeSelection({
 
       {/* Timezone Selection */}
       {selectedDate && selectedTime && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900">Timezone</h3>
+        <div className="bg-gray-100 rounded-2xl p-5 border-0 shadow-sm animate-fade-in">
+          <h3 className="text-base font-bold text-gray-900 mb-4">Timezone</h3>
           <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full h-11 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -455,7 +489,7 @@ export default function DateTimeSelection({
       {selectedDate && selectedTime && (
         <Button
           onClick={handleContinue}
-          className="w-full bg-gray-900 hover:bg-gray-800 text-white h-12 text-base font-semibold animate-fade-in"
+          className="w-full bg-gray-900 hover:bg-gray-800 text-white h-12 text-base font-semibold rounded-xl shadow-sm animate-fade-in"
         >
           Continue
         </Button>

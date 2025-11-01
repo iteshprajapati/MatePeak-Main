@@ -12,6 +12,7 @@ export interface CreateBookingData {
   user_email?: string;
   user_phone?: string;
   add_recording?: boolean;
+  test_code?: string; // Beta test code for free bookings
 }
 
 export interface AvailabilitySlot {
@@ -30,10 +31,137 @@ export interface TimeSlot {
 }
 
 /**
+ * Validate and calculate booking price server-side
+ */
+async function validateBookingPrice(
+  expertId: string,
+  sessionType: string,
+  duration: number,
+  addRecording: boolean = false
+): Promise<{ success: boolean; price?: number; error?: string }> {
+  try {
+    // Fetch mentor's service pricing from database
+    const { data: profile, error } = await supabase
+      .from("expert_profiles")
+      .select("service_pricing")
+      .eq("id", expertId)
+      .single();
+
+    if (error || !profile) {
+      return {
+        success: false,
+        error: "Mentor not found",
+      };
+    }
+
+    const servicePricing = profile.service_pricing?.[sessionType];
+
+    if (!servicePricing || !servicePricing.enabled) {
+      return {
+        success: false,
+        error: "This service is not available",
+      };
+    }
+
+    // Calculate expected price
+    let basePrice = servicePricing.price || 0;
+
+    // For oneOnOneSession, price might vary by duration
+    // Currently using same price regardless of duration
+    // You can add duration-based pricing logic here
+
+    // Add recording price if applicable
+    const RECORDING_PRICE = 300;
+    const recordingFee =
+      addRecording && sessionType === "oneOnOneSession" ? RECORDING_PRICE : 0;
+
+    const totalPrice = basePrice + recordingFee;
+
+    return {
+      success: true,
+      price: totalPrice,
+    };
+  } catch (error: any) {
+    console.error("Price validation error:", error);
+    return {
+      success: false,
+      error: "Failed to validate price",
+    };
+  }
+}
+
+/**
+ * Check if user is a beta tester and can book for free
+ */
+async function checkBetaTesterStatus(userEmail: string, testCode?: string) {
+  try {
+    const { data, error } = await supabase.rpc("get_beta_tester_info", {
+      user_email: userEmail,
+    });
+
+    if (error) {
+      console.error("Beta tester check error:", error);
+      return {
+        isBetaTester: false,
+        freeBookingsRemaining: 0,
+        testCode: null,
+      };
+    }
+
+    const testerInfo = data?.[0];
+    
+    if (!testerInfo || !testerInfo.has_access) {
+      return {
+        isBetaTester: false,
+        freeBookingsRemaining: 0,
+        testCode: null,
+      };
+    }
+
+    return {
+      isBetaTester: true,
+      freeBookingsRemaining: testerInfo.free_bookings_remaining || 0,
+      testCode: testerInfo.test_code,
+      expiresAt: testerInfo.expires_at,
+    };
+  } catch (error) {
+    console.error("Beta tester check error:", error);
+    return {
+      isBetaTester: false,
+      freeBookingsRemaining: 0,
+      testCode: null,
+    };
+  }
+}
+
+/**
+ * Use a free booking credit for beta tester
+ */
+async function useFreeBookingCredit(userEmail: string, testCode: string) {
+  try {
+    const { data, error } = await supabase.rpc("use_free_booking_credit", {
+      user_email: userEmail,
+      booking_code: testCode,
+    });
+
+    if (error) {
+      console.error("Error using free booking credit:", error);
+      return false;
+    }
+
+    return data === true;
+  } catch (error) {
+    console.error("Error using free booking credit:", error);
+    return false;
+  }
+}
+
+/**
  * Create a new booking
  */
 export async function createBooking(data: CreateBookingData) {
   try {
+    // 1. Check authentication
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -46,20 +174,138 @@ export async function createBooking(data: CreateBookingData) {
       };
     }
 
-    // Create booking record
+    // 2. Validate required fields
+    if (
+      !data.expert_id ||
+      !data.session_type ||
+      !data.scheduled_date ||
+      !data.scheduled_time
+    ) {
+      return {
+        success: false,
+        error: "Missing required booking information",
+        data: null,
+      };
+    }
+
+    // 3. Validate date is not in the past
+    const bookingDate = new Date(data.scheduled_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (bookingDate < today) {
+      return {
+        success: false,
+        error: "Cannot book sessions in the past",
+        data: null,
+      };
+    }
+
+    // 4. Validate duration
+    if (data.duration < 15 || data.duration > 240) {
+      return {
+        success: false,
+        error: "Session duration must be between 15 and 240 minutes",
+        data: null,
+      };
+    }
+
+    // 5. CHECK FOR BETA TESTER / FREE BOOKING
+    let isTestBooking = false;
+    let finalPrice = 0;
+    let betaTesterInfo = null;
+
+    if (data.user_email) {
+      betaTesterInfo = await checkBetaTesterStatus(data.user_email, data.test_code);
+      
+      if (betaTesterInfo.isBetaTester && betaTesterInfo.freeBookingsRemaining > 0) {
+        // User is a beta tester with free credits
+        isTestBooking = true;
+        finalPrice = 0; // FREE booking
+      }
+    }
+
+    // 6. SERVER-SIDE PRICE VALIDATION (if not a free test booking)
+    if (!isTestBooking) {
+      const priceValidation = await validateBookingPrice(
+        data.expert_id,
+        data.session_type,
+        data.duration,
+        data.add_recording
+      );
+
+      if (!priceValidation.success) {
+        return {
+          success: false,
+          error: priceValidation.error || "Price validation failed",
+          data: null,
+        };
+      }
+
+      finalPrice = priceValidation.price!;
+
+      // Check if client-sent price matches server calculation
+      const priceDifference = Math.abs(data.total_amount - finalPrice);
+      if (priceDifference > 0.01) {
+        console.warn(
+          `Price mismatch: Client sent ${data.total_amount}, Server calculated ${finalPrice}`
+        );
+      }
+    }
+
+    // 7. Validate email format if provided
+    if (data.user_email && !isValidEmail(data.user_email)) {
+      return {
+        success: false,
+        error: "Invalid email format",
+        data: null,
+      };
+    }
+
+    // 7. Sanitize inputs
+    const sanitizedMessage = sanitizeInput(data.message || "");
+    const sanitizedName = sanitizeInput(data.user_name || "");
+    const sanitizedPhone = sanitizeInput(data.user_phone || "");
+
+    // 8. Check for existing booking conflicts
+    const conflictCheck = await checkBookingConflict(
+      data.expert_id,
+      data.scheduled_date,
+      data.scheduled_time,
+      data.duration
+    );
+
+    if (!conflictCheck.success) {
+      return {
+        success: false,
+        error: conflictCheck.error || "Booking conflict detected",
+        data: null,
+      };
+    }
+
+    // 9. Create booking record with server-validated price
+    const bookingInsertData: any = {
+      user_id: user.id,
+      expert_id: data.expert_id,
+      session_type: data.session_type,
+      scheduled_date: data.scheduled_date,
+      scheduled_time: data.scheduled_time,
+      duration: data.duration,
+      message: sanitizedMessage,
+      total_amount: finalPrice, // Use server-calculated or FREE price
+      status: "pending",
+      user_name: sanitizedName,
+      user_email: data.user_email,
+      user_phone: sanitizedPhone,
+      price_verified: true, // Mark as server-validated
+      payment_status: isTestBooking ? "completed" : "pending", // Free bookings are pre-completed
+      is_test_booking: isTestBooking,
+      test_booking_code: isTestBooking ? betaTesterInfo?.testCode : null,
+    };
+
     const { data: booking, error } = await supabase
       .from("bookings")
-      .insert({
-        user_id: user.id,
-        expert_id: data.expert_id,
-        session_type: data.session_type,
-        scheduled_date: data.scheduled_date,
-        scheduled_time: data.scheduled_time,
-        duration: data.duration,
-        message: data.message,
-        total_amount: data.total_amount,
-        status: "pending",
-      })
+      .insert(bookingInsertData)
       .select()
       .single();
 
@@ -72,10 +318,21 @@ export async function createBooking(data: CreateBookingData) {
       };
     }
 
+    // 10. If test booking, deduct free credit
+    if (isTestBooking && betaTesterInfo && data.user_email) {
+      await useFreeBookingCredit(data.user_email, betaTesterInfo.testCode);
+    }
+
     return {
       success: true,
       data: booking,
-      message: "Booking created successfully",
+      message: isTestBooking 
+        ? "Free test booking created successfully! No payment required." 
+        : "Booking created successfully",
+      isTestBooking,
+      freeBookingsRemaining: isTestBooking 
+        ? (betaTesterInfo?.freeBookingsRemaining || 1) - 1 
+        : undefined,
     };
   } catch (error: any) {
     console.error("Booking service error:", error);
@@ -84,6 +341,76 @@ export async function createBooking(data: CreateBookingData) {
       error: error.message || "An unexpected error occurred",
       data: null,
     };
+  }
+}
+
+/**
+ * Helper: Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Helper: Sanitize input to prevent XSS
+ */
+function sanitizeInput(input: string): string {
+  if (!input) return "";
+  // Remove HTML tags and trim
+  return input
+    .replace(/<[^>]*>/g, "")
+    .trim()
+    .substring(0, 1000);
+}
+
+/**
+ * Helper: Check for booking conflicts
+ */
+async function checkBookingConflict(
+  expertId: string,
+  date: string,
+  time: string,
+  duration: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: existingBookings, error } = await supabase
+      .from("bookings")
+      .select("scheduled_time, duration")
+      .eq("expert_id", expertId)
+      .eq("scheduled_date", date)
+      .in("status", ["pending", "confirmed"]);
+
+    if (error) {
+      return { success: false, error: "Failed to check availability" };
+    }
+
+    if (!existingBookings || existingBookings.length === 0) {
+      return { success: true };
+    }
+
+    // Check for time conflicts
+    const requestedStart = parseTime(time);
+    const requestedEnd = requestedStart + duration;
+
+    for (const booking of existingBookings) {
+      const bookedStart = parseTime(booking.scheduled_time);
+      const bookedEnd = bookedStart + booking.duration;
+
+      // Check overlap
+      if (requestedStart < bookedEnd && requestedEnd > bookedStart) {
+        return {
+          success: false,
+          error:
+            "This time slot is already booked. Please choose another time.",
+        };
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Conflict check error:", error);
+    return { success: false, error: "Failed to verify availability" };
   }
 }
 
