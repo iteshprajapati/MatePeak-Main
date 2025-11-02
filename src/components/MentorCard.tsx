@@ -48,7 +48,7 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
   };
 
   return (
-    <Card className="overflow-visible shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[320px] mx-auto border border-gray-200 bg-white rounded-2xl">
+    <Card className="overflow-visible shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[340px] mx-auto border border-gray-200 bg-white rounded-2xl">
       <CardContent className="p-6 relative">
         {isNew && (
           <div className="absolute -top-2 -right-2 z-50 pointer-events-none">

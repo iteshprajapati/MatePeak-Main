@@ -73,7 +73,7 @@ const NewMentors = ({ sectionRef }: NewMentorsProps) => {
   if (!loading && newMentors.length === 0) {
     return (
       <section
-        className="py-16 bg-gradient-to-br from-matepeak-yellow/10 via-white to-matepeak-primary/5"
+        className="py-20 md:py-28"
         ref={sectionRef}
       >
         <div className="container mx-auto px-4">
@@ -102,12 +102,12 @@ const NewMentors = ({ sectionRef }: NewMentorsProps) => {
 
   return (
     <section
-      className="py-20 md:py-28 bg-gradient-to-br from-matepeak-yellow/10 via-white to-matepeak-primary/5"
+      className="py-20 md:py-28"
       ref={sectionRef}
     >
-      <div className="w-full max-w-6xl mx-auto px-4 md:px-8 xl:px-0">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 xl:px-0">
         {/* Section Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-matepeak-primary/10 px-4 py-2 rounded-full mb-4">
             <Sparkles className="h-5 w-5 text-matepeak-primary" />
             <span className="text-sm font-semibold text-matepeak-primary">
@@ -133,7 +133,7 @@ const NewMentors = ({ sectionRef }: NewMentorsProps) => {
         {/* Mentor Cards Grid */}
         {!loading && newMentors.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
               {newMentors.map((mentor, index) => (
                 <MentorCard
                   key={mentor.id || index}
