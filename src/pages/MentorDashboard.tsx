@@ -44,6 +44,18 @@ const MentorDashboard = () => {
         return;
       }
 
+      // Security: Check if user is a student
+      const userRole = session.user.user_metadata?.role || session.user.user_metadata?.user_type;
+      if (userRole === 'student') {
+        toast({
+          title: "Access denied",
+          description: "This dashboard is for mentors only",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+
       setUser(session.user);
 
       // Fetch mentor profile

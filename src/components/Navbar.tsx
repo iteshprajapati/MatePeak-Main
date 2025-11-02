@@ -52,52 +52,56 @@ const Navbar = () => {
   }, []);
 
   const fetchProfile = async (userId: string, role: 'student' | 'mentor') => {
-    if (role === 'mentor') {
-      // Get expert profile with profile picture
-      const { data: expertData, error } = await supabase
-        .from("expert_profiles")
-        .select("username, full_name, profile_picture_url, id")
-        .eq("id", userId)
-        .single();
-
-      if (error) {
-        console.error('Navbar - Error fetching expert profile:', error);
-        return;
-      }
-
-      if (expertData) {
-        console.log('Navbar - Fetched expert profile:', expertData);
-        
-        // Get avatar from profiles table as fallback
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("avatar_url")
+    try {
+      if (role === 'mentor') {
+        // Get expert profile with profile picture
+        const { data: expertData, error } = await supabase
+          .from("expert_profiles")
+          .select("username, full_name, profile_picture_url, id")
           .eq("id", userId)
           .single();
-        
-        const profileData = {
-          username: expertData.username,
-          full_name: expertData.full_name,
-          // Use profile_picture_url from expert_profiles first, fallback to avatar_url from profiles
-          avatar_url: expertData.profile_picture_url || profilesData?.avatar_url || null,
-          type: 'mentor' as const
-        };
-        console.log('Navbar - Setting profile state:', profileData);
-        setProfile(profileData);
-      } else {
-        console.log('Navbar - No expert profile data found');
-      }
-    } else {
-      // Get regular profile for student
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", userId)
-        .maybeSingle();
 
-      if (profileData) {
-        setProfile({ ...profileData, type: 'student' });
+        if (error) {
+          console.error('Navbar - Error fetching expert profile:', error);
+          return;
+        }
+
+        if (expertData) {
+          console.log('Navbar - Fetched expert profile:', expertData);
+          
+          // Get avatar from profiles table as fallback
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("avatar_url")
+            .eq("id", userId)
+            .single();
+          
+          const profileData = {
+            username: expertData.username,
+            full_name: expertData.full_name,
+            // Use profile_picture_url from expert_profiles first, fallback to avatar_url from profiles
+            avatar_url: expertData.profile_picture_url || profilesData?.avatar_url || null,
+            type: 'mentor' as const
+          };
+          console.log('Navbar - Setting profile state:', profileData);
+          setProfile(profileData);
+        } else {
+          console.log('Navbar - No expert profile data found');
+        }
+      } else {
+        // Get regular profile for student
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (profileData) {
+          setProfile({ ...profileData, type: 'student' });
+        }
       }
+    } catch (err) {
+      console.error('Navbar - Unexpected error fetching profile:', err);
     }
   };
 

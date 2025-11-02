@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/sonner";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Mail } from "lucide-react";
 
 const StudentSignup = () => {
   const navigate = useNavigate();
@@ -20,6 +20,8 @@ const StudentSignup = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +42,20 @@ const StudentSignup = () => {
     const email = formData.get("email") as string;
     const fullName = formData.get("fullName") as string;
 
+    // DETAILED DEBUG LOGGING
+    console.log('==========================================');
+    console.log('STUDENT SIGNUP ATTEMPT');
+    console.log('==========================================');
+    console.log('Email:', email);
+    console.log('Full Name:', fullName);
+    console.log('Password Length:', password?.length);
+    console.log('Password Valid:', isPasswordValid);
+    console.log('Redirect URL:', `${window.location.origin}/`);
+    console.log('==========================================');
+
     try {
+      console.log('📡 Calling supabase.auth.signUp...');
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -53,8 +68,18 @@ const StudentSignup = () => {
         },
       });
 
+      console.log('Signup Response Data:', JSON.stringify(data, null, 2));
+      console.log('Signup Error:', error);
+
       if (error) {
-        console.error('Signup error:', error);
+        console.error('==========================================');
+        console.error('SIGNUP ERROR DETAILS:');
+        console.error('==========================================');
+        console.error('Error Message:', error.message);
+        console.error('Error Name:', error.name);
+        console.error('Error Status:', error.status);
+        console.error('Full Error Object:', JSON.stringify(error, null, 2));
+        console.error('==========================================');
         
         // Handle specific error cases with better messages
         if (error.message.includes('fetch')) {
@@ -73,19 +98,46 @@ const StudentSignup = () => {
         return;
       }
 
-      // With email confirmation disabled, session should be available immediately
+      console.log('==========================================');
+      console.log('SIGNUP SUCCESS');
+      console.log('==========================================');
+      console.log('User ID:', data?.user?.id);
+      console.log('User Email:', data?.user?.email);
+      console.log('Email Confirmed:', data?.user?.email_confirmed_at);
+      console.log('Has Session:', !!data?.session);
+      console.log('Session Token:', data?.session ? 'Present' : 'None');
+      console.log('==========================================');
+
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is required - show success message
+        console.log('EMAIL CONFIRMATION REQUIRED');
+        setEmailSent(true);
+        setUserEmail(email);
+        toast.success('Account created! Please check your email to verify your account.', {
+          duration: 8000,
+        });
+        return; // Don't navigate, show the email confirmation UI
+      }
+
+      // If session exists, email confirmation is disabled
       if (data.session) {
+        console.log('Session available - no email confirmation needed');
         toast.success("Account created successfully! Welcome to MatePeak!");
         navigate("/dashboard");
-      } else {
-        toast.success("Account created! Please check your email to verify your account.");
-        navigate("/student/login");
       }
     } catch (error: any) {
-      console.error('Unexpected signup error:', error);
+      console.error('==========================================');
+      console.error('💥 UNEXPECTED ERROR:');
+      console.error('==========================================');
+      console.error('Error:', error);
+      console.error('Error Message:', error?.message);
+      console.error('Error Stack:', error?.stack);
+      console.error('==========================================');
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+      console.log('🏁 Signup process completed');
     }
   }
 
@@ -111,6 +163,74 @@ const StudentSignup = () => {
       setIsResettingPassword(false);
     }
   };
+
+  // Show email confirmation success screen
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
+          <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+            <Mail className="h-10 w-10 text-green-600" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Check Your Email!</h1>
+          
+          <p className="text-gray-600 mb-4">
+            We've sent a confirmation email to:
+          </p>
+          
+          <p className="font-semibold text-lg mb-6 text-primary break-all">
+            {userEmail}
+          </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold mb-2">Next Steps:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Open the email from MatePeak</li>
+                  <li>Click the "Confirm Email" button</li>
+                  <li>You'll be redirected back to login</li>
+                  <li>Sign in with your credentials</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-500 mb-6">
+            Didn't receive the email? Check your spam folder or{' '}
+            <button 
+              onClick={() => {
+                setEmailSent(false);
+                setUserEmail("");
+              }}
+              className="text-primary hover:underline font-semibold"
+            >
+              try signing up again
+            </button>
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <Button 
+              onClick={() => navigate('/student/login')}
+              className="w-full h-11"
+            >
+              Go to Login
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/')}
+              variant="outline"
+              className="w-full h-11"
+            >
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -162,7 +282,7 @@ const StudentSignup = () => {
                 setPassword(value);
                 setPasswordError("");
               }}
-              onValidationChange={setIsPasswordValid}
+              onValidityChange={setIsPasswordValid}
               required
               showRequirements={true}
             />
