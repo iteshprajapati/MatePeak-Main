@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { UserPlus, Search, Video, CheckCircle } from "lucide-react";
 
 const steps = [
@@ -309,6 +309,38 @@ const HowItWorks = ({
 }: {
   sectionRef: React.RefObject<HTMLDivElement>;
 }) => {
+  const [activeStep, setActiveStep] = useState<number>(0);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const index = stepRefs.current.indexOf(
+            entry.target as HTMLDivElement
+          );
+          if (entry.isIntersecting && index !== -1) {
+            setActiveStep(index);
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: "-100px 0px",
+      }
+    );
+
+    stepRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => {
+      stepRefs.current.forEach((ref) => {
+        if (ref) observer.unobserve(ref);
+      });
+    };
+  }, []);
+
   return (
     <section
       ref={sectionRef}
@@ -327,48 +359,115 @@ const HowItWorks = ({
         </div>
 
         {/* Steps */}
-        <div className="space-y-20 md:space-y-24">
+        <div className="space-y-20 md:space-y-24 relative">
           {steps.map((step, index) => (
             <div
               key={step.number}
+              ref={(el) => (stepRefs.current[index] = el)}
               className={`flex flex-col ${
                 index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-              } items-center gap-2 md:gap-0 relative overflow-visible`}
+              } items-center gap-2 md:gap-0 relative overflow-visible transition-all duration-700 ${
+                activeStep === index
+                  ? "opacity-100 translate-y-0"
+                  : activeStep > index
+                  ? "opacity-50 -translate-y-8 scale-95"
+                  : "opacity-0 translate-y-12"
+              }`}
             >
-              {/* Large Background Number */}
+              {/* Background Number with smooth transitions */}
               <div
                 className={`absolute ${
                   index % 2 === 0 ? "left-0 md:-left-4" : "right-0 md:-right-4"
-                } text-[120px] md:text-[180px] font-bold leading-none pointer-events-none select-none z-0`}
+                } text-[120px] md:text-[180px] font-bold leading-none pointer-events-none select-none z-0 transition-all duration-700 ${
+                  activeStep === index
+                    ? "opacity-30 scale-100"
+                    : "opacity-15 scale-90"
+                }`}
                 style={{
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "rgba(156, 163, 175, 0.15)",
-                  WebkitTextStroke: "1px rgba(156, 163, 175, 0.08)",
+                  color: "rgba(156, 163, 175, 0.3)",
+                  WebkitTextStroke: "1px rgba(156, 163, 175, 0.2)",
                 }}
               >
                 {step.number}
               </div>
 
-              {/* Mockup Card */}
+              {/* Mockup Card with scroll animation */}
               <div
                 className={`w-full md:w-1/2 flex justify-center relative z-10 ${
                   index % 2 === 0 ? "md:-mr-16" : "md:-ml-16"
+                } transition-all duration-700 ${
+                  activeStep === index
+                    ? "scale-100 opacity-100"
+                    : activeStep > index
+                    ? "scale-90 opacity-40"
+                    : "scale-95 opacity-0"
                 }`}
               >
-                <div className="transform hover:scale-105 transition-transform duration-300">
+                <div
+                  className={`transform transition-all duration-500 ${
+                    activeStep === index ? "hover:scale-105" : ""
+                  }`}
+                >
                   <MockupCard type={step.mockup} />
                 </div>
               </div>
 
-              {/* Text Content */}
+              {/* Text Content with scroll animation */}
               <div
                 className={`w-full md:w-1/2 relative z-10 flex items-center justify-center ${
                   index % 2 === 0 ? "md:-ml-16" : "md:-mr-16"
+                } transition-all duration-700 delay-150 ${
+                  activeStep === index
+                    ? "opacity-100 translate-x-0"
+                    : activeStep > index
+                    ? "opacity-40 translate-x-0"
+                    : index % 2 === 0
+                    ? "opacity-0 translate-x-12"
+                    : "opacity-0 -translate-x-12"
                 }`}
               >
                 <div className="max-w-md text-center md:text-left">
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                  {/* Step badge - clean and professional */}
+                  <div
+                    className={`flex items-center justify-center md:justify-start gap-2 mb-4 transition-all duration-500 ${
+                      activeStep === index ? "scale-100" : "scale-95"
+                    }`}
+                  >
+                    <div className={`flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 ${
+                      activeStep === index 
+                        ? "bg-matepeak-primary shadow-sm" 
+                        : "bg-white border border-gray-200"
+                    }`}>
+                      <div className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-300 ${
+                        activeStep === index 
+                          ? "bg-white" 
+                          : "bg-gray-100"
+                      }`}>
+                        <step.icon className={`w-3 h-3 transition-colors duration-300 ${
+                          activeStep === index 
+                            ? "text-matepeak-primary" 
+                            : "text-gray-400"
+                        }`} />
+                      </div>
+                      <span className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-300 ${
+                        activeStep === index 
+                          ? "text-white" 
+                          : "text-gray-600"
+                      }`}>
+                        Step {step.number}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3
+                    className={`text-2xl md:text-3xl font-bold mb-4 transition-all duration-500 ${
+                      activeStep === index
+                        ? "text-matepeak-primary"
+                        : "text-gray-900"
+                    }`}
+                  >
                     {step.title}
                   </h3>
                   <p className="text-base text-gray-600 font-light leading-relaxed">
