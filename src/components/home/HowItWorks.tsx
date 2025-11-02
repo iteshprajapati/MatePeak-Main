@@ -1,184 +1,390 @@
-import React, { useState } from "react";
-import { Search, CalendarDays, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from "react";
+import { UserPlus, Search, Video, CheckCircle } from "lucide-react";
 
 const steps = [
   {
-    title: "Find Your Mentor",
-    subtitle: "Browse Experts",
-    description: "Discover top mentors by skill, domain, or passion.",
+    number: "01",
+    title: "Create Account",
+    description:
+      "Sign up with email or social accounts. Complete your profile with learning goals and interests to get started.",
+    icon: UserPlus,
+    mockup: "form", // form, search, video, success
+  },
+  {
+    number: "02",
+    title: "Search for Mentors",
+    description:
+      "Browse verified mentors across various fields. Filter by skills, languages, and ratings to find your perfect match.",
     icon: Search,
-    color: "from-amber-50/80 via-white to-amber-50/50",
+    mockup: "search",
   },
   {
-    title: "Book a Session",
-    subtitle: "Pick a Time",
-    description: "Choose when and what you'd like to discuss.",
-    icon: CalendarDays,
-    color: "from-blue-50/40 via-white to-blue-50/30",
+    number: "03",
+    title: "Book Your Session",
+    description:
+      "Choose a convenient time slot from your mentor's calendar. Book instantly with secure payment and get confirmation.",
+    icon: Video,
+    mockup: "video",
   },
   {
-    title: "Connect & Grow",
-    subtitle: "Learn & Evolve",
-    description: "Join your session and grow with guidance.",
-    icon: Users,
-    color: "from-green-50/40 via-white to-green-50/30",
+    number: "04",
+    title: "Start Learning",
+    description:
+      "Join your session via integrated video. Gain insights, receive feedback, and track your progress with ongoing support.",
+    icon: CheckCircle,
+    mockup: "success",
   },
 ];
 
-function mod(n: number, m: number) {
-  return ((n % m) + m) % m;
-}
+const MockupCard = ({ type }: { type: string }) => {
+  // All cards: force aspect-square, overflow-hidden, and scale content to fit
+  const cardClass =
+    "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-[300px] aspect-square border border-gray-100 overflow-hidden flex flex-col items-center justify-center";
+
+  if (type === "form") {
+    // Abstract, step-based form style for 'Create Account', matching 'Book a Session' polish
+    // Ultra-compact layout: minimal spacing to fit all elements without cropping
+    return (
+      <div
+        className={
+          cardClass + " relative bg-white p-0 flex flex-col justify-between"
+        }
+        style={{ minHeight: "0" }}
+      >
+        {/* Progress bar at top */}
+        <div className="w-full flex justify-center pt-3 pb-1.5 bg-white border-b border-gray-100 z-10">
+          <div className="w-32 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary rounded-full w-2/3"></div>
+          </div>
+        </div>
+        {/* Heading */}
+        <div className="w-full flex justify-center z-10 mt-1.5">
+          <h3 className="text-gray-900 font-bold text-sm text-center tracking-tight">
+            Create Account
+          </h3>
+        </div>
+        {/* Abstract form fields */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center px-8 z-10 min-h-0 relative py-1.5">
+          <div className="w-full flex flex-col gap-2.5 z-10">
+            <div className="h-8 bg-gray-100 rounded-lg w-full flex items-center px-3 gap-2 z-10">
+              <svg width="14" height="14" fill="none" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="7" stroke="#818cf8" strokeWidth="2" />
+                <circle cx="8" cy="7" r="2" fill="#a5b4fc" />
+                <rect x="4" y="11" width="8" height="2" rx="1" fill="#c7d2fe" />
+              </svg>
+              <div className="h-2.5 w-20 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-8 bg-gray-100 rounded-lg w-full flex items-center px-3 gap-2 z-10">
+              <svg width="14" height="14" fill="none" viewBox="0 0 16 16">
+                <rect
+                  x="2"
+                  y="4"
+                  width="12"
+                  height="8"
+                  rx="2"
+                  stroke="#818cf8"
+                  strokeWidth="2"
+                />
+                <rect x="5" y="7" width="6" height="2" rx="1" fill="#a5b4fc" />
+              </svg>
+              <div className="h-2.5 w-20 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+        {/* Abstract CTA button, always at bottom */}
+        <div className="w-full flex justify-center pb-3 bg-white border-t border-gray-100 z-10 mt-0 relative pt-2.5">
+          <button className="w-28 h-9 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow hover:opacity-95 transition-all z-10">
+            Create
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "search") {
+    return (
+      <div className={cardClass}>
+        <h3 className="text-gray-800 font-semibold mb-3 text-sm text-center">
+          Search
+        </h3>
+        <div className="w-full max-w-xs mx-auto flex-1 flex flex-col justify-center gap-2.5">
+          {/* Abstract Search Bar */}
+          <div className="relative mb-1.5 flex items-center">
+            <div className="w-full h-8 bg-gray-100 rounded-lg flex items-center pl-3 pr-10">
+              <div className="h-3 w-20 bg-gray-200 rounded"></div>
+            </div>
+            <div className="absolute right-3 top-1.5">
+              <div className="w-5 h-5 rounded-full bg-matepeak-primary flex items-center justify-center">
+                <svg width="14" height="14" fill="none" viewBox="0 0 14 14">
+                  <circle cx="6" cy="6" r="5" stroke="white" strokeWidth="2" />
+                  <path
+                    d="M11 11L9 9"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          {/* Abstract Result Cards */}
+          <div className="flex flex-col gap-2 mt-1">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 bg-gray-50 rounded-lg border border-gray-100 px-3 py-2"
+              >
+                <div className="w-7 h-7 rounded-full bg-matepeak-primary/20 flex items-center justify-center">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                    <rect
+                      x="3"
+                      y="3"
+                      width="10"
+                      height="10"
+                      rx="2"
+                      fill="#a5b4fc"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-3 w-24 bg-gray-200 rounded mb-1"></div>
+                  <div className="h-2 w-16 bg-gray-100 rounded"></div>
+                </div>
+                <div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center">
+                  <svg width="10" height="10" fill="none" viewBox="0 0 10 10">
+                    <path
+                      d="M2 5h6"
+                      stroke="#818cf8"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "video") {
+    // Match the Create Account mockup structure for perfect consistency
+    return (
+      <div
+        className={
+          cardClass + " relative bg-white p-0 flex flex-col justify-between"
+        }
+        style={{ minHeight: "0" }}
+      >
+        {/* Heading */}
+        <div className="w-full flex justify-center z-10 mt-4">
+          <h3 className="text-gray-900 font-bold text-sm text-center tracking-tight">
+            Calendar
+          </h3>
+        </div>
+        {/* Mentor preview and calendar grid */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center px-8 z-10 min-h-0 relative py-1.5">
+          <div className="w-full flex flex-col gap-2.5 z-10">
+            <div className="flex items-center gap-2 h-8 bg-gray-100 rounded-lg w-full px-3 z-10">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-matepeak-primary to-matepeak-secondary flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                <svg width="14" height="14" fill="none" viewBox="0 0 20 20">
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="10"
+                    fill="currentColor"
+                    className="text-matepeak-primary/40"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="h-2.5 w-20 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 w-16 bg-gray-100 rounded"></div>
+              </div>
+            </div>
+            <div className="bg-gray-100 rounded-lg w-full flex flex-col items-center py-2">
+              <div className="grid grid-cols-7 gap-0.5">
+                {[...Array(21)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-3 w-3 rounded ${
+                      i === 10 ? "bg-matepeak-primary/80" : "bg-gray-200"
+                    }`}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Book button, always at bottom */}
+        <div className="w-full flex justify-center pb-3 bg-white border-t border-gray-100 z-10 mt-0 relative pt-2.5">
+          <button className="w-28 h-9 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow hover:opacity-95 transition-all z-10">
+            Book
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "success") {
+    // Abstract, celebratory/achievement style for 'Start Learning'
+    return (
+      <div className={cardClass}>
+        <div className="flex flex-col items-center justify-center h-full w-full relative">
+          {/* Confetti/celebration effect */}
+          <div className="absolute inset-0 flex items-start justify-center pointer-events-none select-none z-0">
+            <svg
+              width="120"
+              height="40"
+              viewBox="0 0 120 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="10" cy="10" r="3" fill="#a5b4fc" />
+              <circle cx="30" cy="8" r="2" fill="#fbbf24" />
+              <circle cx="60" cy="12" r="2.5" fill="#34d399" />
+              <circle cx="90" cy="7" r="2" fill="#f472b6" />
+              <circle cx="110" cy="13" r="2.5" fill="#818cf8" />
+              <rect x="20" y="18" width="2" height="6" rx="1" fill="#fbbf24" />
+              <rect x="50" y="20" width="2" height="6" rx="1" fill="#34d399" />
+              <rect x="80" y="16" width="2" height="6" rx="1" fill="#f472b6" />
+            </svg>
+          </div>
+          {/* Certificate/achievement card */}
+          <div className="w-16 h-16 bg-gradient-to-br from-matepeak-primary/10 to-matepeak-secondary/10 rounded-xl flex items-center justify-center mb-3 z-10 border-2 border-matepeak-primary/20">
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="6"
+                y="10"
+                width="28"
+                height="20"
+                rx="4"
+                fill="#fff"
+                stroke="#818cf8"
+                strokeWidth="2"
+              />
+              <rect
+                x="12"
+                y="16"
+                width="16"
+                height="3"
+                rx="1.5"
+                fill="#a5b4fc"
+              />
+              <rect x="12" y="22" width="10" height="2" rx="1" fill="#c7d2fe" />
+              <circle cx="30" cy="27" r="2" fill="#fbbf24" />
+            </svg>
+          </div>
+          {/* Progress bar */}
+          <div className="w-32 h-3 bg-gray-100 rounded-full mb-3 overflow-hidden z-10">
+            <div className="h-3 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary rounded-full w-4/5"></div>
+          </div>
+          {/* Heading */}
+          <h3 className="text-gray-800 font-semibold mb-2 text-base z-10">
+            Learning Started!
+          </h3>
+          {/* Description */}
+          <p className="text-gray-500 text-xs leading-relaxed px-2 z-10 text-center">
+            You’re now connected with your mentor.
+            <br />
+            Enjoy your personalized learning journey!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 const HowItWorks = ({
   sectionRef,
 }: {
   sectionRef: React.RefObject<HTMLDivElement>;
 }) => {
-  const [active, setActive] = useState(0);
-
-  const goLeft = () => setActive((prev) => mod(prev - 1, steps.length));
-  const goRight = () => setActive((prev) => mod(prev + 1, steps.length));
-
   return (
     <section
       ref={sectionRef}
-      className="py-20 md:py-28 bg-gradient-to-b from-white via-slate-50/30 to-white"
+      className="py-20 md:py-28 bg-gradient-to-b from-white via-gray-50/30 to-white relative overflow-visible"
     >
-      <div className="w-full max-w-5xl mx-auto px-4 md:px-8 xl:px-0">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-matepeak-primary mb-3 font-poppins tracking-tight">
-            How MatePeak Works
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 xl:px-0 relative z-10 overflow-visible">
+        {/* Header */}
+        <div className="text-center mb-16 md:mb-24">
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
+            How it works
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-base leading-relaxed">
-            Get mentorship in three easy steps—from browsing experts to growing
-            your skills.
+          <p className="text-base md:text-lg text-gray-500 font-light max-w-3xl mx-auto leading-relaxed">
+            Connect with expert mentors in four simple steps. Your learning
+            journey starts here.
           </p>
         </div>
-        <div className="relative flex items-center justify-center mb-10 select-none overflow-visible">
-          <button
-            aria-label="Previous step"
-            onClick={goLeft}
-            className="z-20 absolute left-4 md:left-20 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full w-10 h-10 flex items-center justify-center transition-all hover:shadow-xl hover:scale-110 hover:bg-white focus:outline-none active:scale-95"
-          >
-            <svg
-              width={20}
-              height={20}
-              viewBox="0 0 24 24"
-              stroke="#555"
-              fill="none"
+
+        {/* Steps */}
+        <div className="space-y-20 md:space-y-24">
+          {steps.map((step, index) => (
+            <div
+              key={step.number}
+              className={`flex flex-col ${
+                index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
+              } items-center gap-2 md:gap-0 relative overflow-visible`}
             >
-              <path
-                d="M15 18l-6-6 6-6"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <div className="flex w-full max-w-4xl items-center justify-center h-[320px] md:h-[280px] relative px-16 md:px-24">
-            {[...Array(3)].map((_, i) => {
-              const stepIdx = mod(active + i - 1, steps.length);
-              let pos = i - 1;
+              {/* Large Background Number */}
+              <div
+                className={`absolute ${
+                  index % 2 === 0 ? "left-0 md:-left-4" : "right-0 md:-right-4"
+                } text-[120px] md:text-[180px] font-bold leading-none pointer-events-none select-none z-0`}
+                style={{
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "rgba(156, 163, 175, 0.15)",
+                  WebkitTextStroke: "1px rgba(156, 163, 175, 0.08)",
+                }}
+              >
+                {step.number}
+              </div>
 
-              const step = steps[stepIdx];
-              let scale = pos === 0 ? "scale-100" : "scale-85";
-              let blur = pos === 0 ? "blur-0" : "blur-[0.8px]";
-              let z = pos === 0 ? "z-10" : "z-0";
-              let opacity = pos === 0 ? "opacity-100" : "opacity-50";
-              let yTrans = pos === 0 ? "translate-y-0" : "translate-y-4";
-              let boxShadow = pos === 0 ? "shadow-2xl" : "shadow-md";
-
-              return (
-                <div
-                  key={step.title}
-                  aria-hidden={pos !== 0}
-                  className={cn(
-                    "absolute transition-all duration-700 ease-out flex flex-col items-center w-5/6 md:w-2/5 max-w-lg mx-auto cursor-default",
-                    scale,
-                    blur,
-                    z,
-                    opacity,
-                    yTrans,
-                    boxShadow
-                  )}
-                  style={{
-                    left: pos === -1 ? "0%" : pos === 1 ? "60%" : "30%",
-                  }}
-                >
-                  <div
-                    className={cn(
-                      "w-full rounded-2xl bg-gradient-to-br backdrop-blur-sm",
-                      step.color,
-                      "p-8 flex flex-col items-center min-h-[260px] border border-gray-200/40"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-16 h-16 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg group transition-all duration-300 border border-gray-100/50",
-                        "hover:scale-110 hover:shadow-xl hover:border-gray-200"
-                      )}
-                    >
-                      <step.icon
-                        size={36}
-                        className="text-matepeak-primary transition-transform group-hover:scale-110"
-                        strokeWidth={2}
-                      />
-                    </div>
-                    <span className="uppercase text-xs text-matepeak-secondary font-bold tracking-widest mb-2 opacity-60">
-                      {step.subtitle}
-                    </span>
-                    <h3 className="text-xl md:text-2xl font-bold mb-3 text-matepeak-primary tracking-tight leading-tight">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 text-center text-sm leading-relaxed font-normal max-w-xs">
-                      {step.description}
-                    </p>
-                  </div>
+              {/* Mockup Card */}
+              <div
+                className={`w-full md:w-1/2 flex justify-center relative z-10 ${
+                  index % 2 === 0 ? "md:-mr-16" : "md:-ml-16"
+                }`}
+              >
+                <div className="transform hover:scale-105 transition-transform duration-300">
+                  <MockupCard type={step.mockup} />
                 </div>
-              );
-            })}
-          </div>
-          <button
-            aria-label="Next step"
-            onClick={goRight}
-            className="z-20 absolute right-4 md:right-20 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full w-10 h-10 flex items-center justify-center transition-all hover:shadow-xl hover:scale-110 hover:bg-white focus:outline-none active:scale-95"
-          >
-            <svg
-              width={20}
-              height={20}
-              viewBox="0 0 24 24"
-              stroke="#555"
-              fill="none"
-            >
-              <path
-                d="M9 6l6 6-6 6"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+              </div>
+
+              {/* Text Content */}
+              <div
+                className={`w-full md:w-1/2 relative z-10 flex items-center justify-center ${
+                  index % 2 === 0 ? "md:-ml-16" : "md:-mr-16"
+                }`}
+              >
+                <div className="max-w-md text-center md:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                    {step.title}
+                  </h3>
+                  <p className="text-base text-gray-600 font-light leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="text-center mt-8">
-          <a href="/how-it-works">
-            <button className="rounded-full border-2 border-matepeak-primary/80 text-matepeak-primary font-semibold px-10 py-3 text-sm group relative transition-all bg-white hover:bg-matepeak-primary hover:text-white hover:shadow-xl hover:border-matepeak-primary hover:-translate-y-0.5 active:translate-y-0">
-              <span className="relative z-10 flex items-center">
-                Learn More About How It Works
-                <svg
-                  className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M5 12h14M13 18l6-6-6-6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-20 md:mt-32">
+          <a href="/mentors">
+            <button className="px-10 py-4 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white font-semibold rounded-full hover:shadow-2xl hover:shadow-matepeak-primary/20 hover:-translate-y-1 transition-all duration-300 text-lg">
+              Get Started Today
             </button>
           </a>
         </div>
