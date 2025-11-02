@@ -1,4 +1,3 @@
-
 import { Star, Phone, Users, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,25 +22,25 @@ export interface MentorProfile {
   tagline?: string; // Generated tagline like "Senior @ IIT Delhi | Computer Science"
 }
 
-
 interface MentorCardProps {
   mentor: MentorProfile;
   isNew?: boolean;
 }
 
 const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
-  const nameParts = mentor.name.split(' ');
-  const initials = nameParts.length > 1 
-    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
-    : mentor.name[0];
+  const nameParts = mentor.name.split(" ");
+  const initials =
+    nameParts.length > 1
+      ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+      : mentor.name[0];
 
   const getConnectionIcon = (option: string) => {
     const lowerOption = option.toLowerCase();
-    if (lowerOption.includes('call') || lowerOption.includes('1:1')) {
+    if (lowerOption.includes("call") || lowerOption.includes("1:1")) {
       return <Phone className="h-3.5 w-3.5" />;
-    } else if (lowerOption.includes('group')) {
+    } else if (lowerOption.includes("group")) {
       return <Users className="h-3.5 w-3.5" />;
-    } else if (lowerOption.includes('chat') || lowerOption.includes('doubt')) {
+    } else if (lowerOption.includes("chat") || lowerOption.includes("doubt")) {
       return <MessageCircle className="h-3.5 w-3.5" />;
     }
     return <Phone className="h-3.5 w-3.5" />;
@@ -60,24 +59,28 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
         {/* Header: Avatar, Name, Tagline, Rating */}
         <div className="flex items-start gap-4 mb-4">
           <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-gray-100">
-            <AvatarImage src={mentor.image} alt={mentor.name} className="object-cover" />
+            <AvatarImage
+              src={mentor.image}
+              alt={mentor.name}
+              className="object-cover"
+            />
             <AvatarFallback className="bg-matepeak-primary text-white font-semibold text-lg">
               {initials}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-gray-900 text-base mb-0.5 line-clamp-1">
               {mentor.name}
             </h3>
-            
+
             {/* Tagline */}
             {mentor.tagline && (
               <p className="text-gray-600 text-xs mb-1.5 line-clamp-1">
                 {mentor.tagline}
               </p>
             )}
-            
+
             {/* Rating or No Reviews Badge */}
             {mentor.rating > 0 && mentor.reviewCount > 0 ? (
               <div className="flex items-center gap-1.5">
@@ -111,8 +114,8 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
           </h4>
           <div className="flex flex-wrap gap-2">
             {mentor.categories.slice(0, 3).map((category, index) => (
-              <Badge 
-                key={index} 
+              <Badge
+                key={index}
                 variant="outline"
                 className="bg-white text-gray-700 border-gray-300 text-xs font-medium px-3 py-1 rounded-md hover:bg-gray-50 transition-colors"
               >
@@ -129,7 +132,7 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
           </h4>
           <div className="flex flex-wrap gap-2">
             {mentor.connectionOptions.slice(0, 3).map((option, index) => (
-              <Badge 
+              <Badge
                 key={index}
                 variant="outline"
                 className="bg-white text-gray-700 border-gray-300 text-xs font-medium px-3 py-1 rounded-md hover:bg-gray-50 transition-colors"
@@ -149,13 +152,19 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
             <p className="text-xs text-gray-500 mb-0.5">Starting from</p>
             <p className="text-xl font-bold text-gray-900">
               ₹{mentor.price}
-              <span className="text-xs text-gray-500 font-normal ml-1">/session</span>
+              <span className="text-xs text-gray-500 font-normal ml-1">
+                /session
+              </span>
             </p>
           </div>
-          <Link to={mentor.username ? `/mentor/${mentor.username}` : `/mentors/${mentor.id}`}>
-            <Button 
-              className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold px-6 py-2 rounded-lg transition-colors"
-            >
+          <Link
+            to={
+              mentor.username
+                ? `/mentor/${mentor.username}`
+                : `/mentors/${mentor.id}`
+            }
+          >
+            <Button className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold px-6 py-2 rounded-lg transition-colors">
               View Profile
             </Button>
           </Link>

@@ -41,7 +41,7 @@ const CallToActionSection = () => {
           </svg>
         </div>
 
-        <div className="w-full max-w-3xl mx-auto text-center relative z-10 px-2 md:px-8 xl:px-0">
+        <div className="w-full mx-auto text-center relative z-10 px-2 md:px-8 xl:px-0">
           {/* MatePeak Logo - Bigger */}
           <div className="flex justify-center items-center mb-6">
             <img

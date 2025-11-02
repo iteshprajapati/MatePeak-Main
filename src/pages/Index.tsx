@@ -52,8 +52,8 @@ const Index = () => {
         <HowItWorks sectionRef={sectionRefs.howItWorks} />
         <NewMentors sectionRef={sectionRefs.newMentors} />
         <FeaturedMentors sectionRef={sectionRefs.mentors} />
-        <CallToActionSection />
       </main>
+      <CallToActionSection />
       <Footer />
     </div>
   );
