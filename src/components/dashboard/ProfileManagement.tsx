@@ -507,11 +507,11 @@ const ProfileManagement = ({
                 placeholder="Tell students about yourself, your background, and expertise..."
                 rows={5}
                 className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
-                maxLength={1000}
+                maxLength={400}
                 required
               />
               <p className="text-xs text-gray-500">
-                {formData.introduction.length}/1000 characters
+                {formData.introduction.length}/400 characters
               </p>
             </div>
 
@@ -528,10 +528,10 @@ const ProfileManagement = ({
                 placeholder="Describe your teaching or mentoring experience..."
                 rows={4}
                 className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
-                maxLength={1000}
+                maxLength={400}
               />
               <p className="text-xs text-gray-500">
-                {formData.teaching_experience.length}/1000 characters
+                {formData.teaching_experience.length}/400 characters
               </p>
             </div>
 
@@ -548,10 +548,10 @@ const ProfileManagement = ({
                 placeholder="Share what motivates you to teach and mentor others..."
                 rows={4}
                 className="transition-all resize-none bg-gray-50 border-gray-300 focus:bg-white"
-                maxLength={500}
+                maxLength={400}
               />
               <p className="text-xs text-gray-500">
-                {formData.motivation.length}/500 characters
+                {formData.motivation.length}/400 characters
               </p>
             </div>
 

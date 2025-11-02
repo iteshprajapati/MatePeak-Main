@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +24,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfileHeaderProps {
   mentor: any;
@@ -33,9 +35,52 @@ interface ProfileHeaderProps {
     completedSessions: number;
   };
   isOwnProfile?: boolean;
+  onOpenBooking?: () => void;
 }
 
-export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: ProfileHeaderProps) {
+export default function ProfileHeader({
+  mentor,
+  stats,
+  isOwnProfile = false,
+  onOpenBooking,
+}: ProfileHeaderProps) {
+  const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+
+  const handleBookingClick = async () => {
+    setIsCheckingAuth(true);
+
+    try {
+      // Check if user is authenticated
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        // User is not logged in, redirect to login
+        toast.error("Please login to book a session");
+        navigate("/student-login", {
+          state: {
+            returnTo: window.location.pathname,
+            message: "Login to book a session with this mentor",
+          },
+        });
+        return;
+      }
+
+      // User is authenticated, open booking dialog
+      if (onOpenBooking) {
+        onOpenBooking();
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
   const handleShare = async () => {
     try {
       if (navigator.share) {
@@ -107,12 +152,17 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
             {mentor.full_name}
           </h1>
           {mentor.headline && (
-            <p className="text-sm text-gray-600 leading-tight">{mentor.headline}</p>
+            <p className="text-sm text-gray-600 leading-tight">
+              {mentor.headline}
+            </p>
           )}
           <div className="flex items-center justify-center gap-2 pt-1">
             <p className="text-xs text-gray-500">@{mentor.username}</p>
             {isOwnProfile && (
-              <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 text-xs py-0">
+              <Badge
+                variant="outline"
+                className="border-blue-300 text-blue-700 bg-blue-50 text-xs py-0"
+              >
                 Your Profile
               </Badge>
             )}
@@ -131,11 +181,15 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
           ) : (
             // Show booking and message buttons for other mentors
             <>
-              <Link to={`/book/${mentor.id}`} className="block">
-                <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm">
-                  Book {mentor.full_name.split(' ')[0]}
-                </Button>
-              </Link>
+              <Button
+                onClick={handleBookingClick}
+                disabled={isCheckingAuth}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm disabled:opacity-50"
+              >
+                {isCheckingAuth
+                  ? "Checking..."
+                  : `Book ${mentor.full_name.split(" ")[0]}`}
+              </Button>
               <Button
                 variant="outline"
                 className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm"
@@ -154,7 +208,9 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
           {/* Expert In (Categories) */}
           {mentor.categories && mentor.categories.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">Expert in:</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">
+                Expert in:
+              </p>
               <div className="space-y-2">
                 {mentor.categories.slice(0, 2).map((category: string) => {
                   const IconComponent = getIconForCategory(category);
@@ -182,7 +238,9 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
           {/* Specializations (Expertise Tags) */}
           {mentor.expertise_tags && mentor.expertise_tags.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">Specializations:</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">
+                Specializations:
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {mentor.expertise_tags.slice(0, 6).map((tag: string) => (
                   <Badge
@@ -216,7 +274,10 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
               <div className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                 <span className="font-semibold text-gray-900">
-                  {stats.averageRating.toFixed(1)} <span className="text-gray-500 font-normal">({stats.reviewCount})</span>
+                  {stats.averageRating.toFixed(1)}{" "}
+                  <span className="text-gray-500 font-normal">
+                    ({stats.reviewCount})
+                  </span>
                 </span>
               </div>
             </div>
@@ -224,16 +285,20 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Sessions</span>
-            <span className="font-semibold text-gray-900">{stats.completedSessions}</span>
+            <span className="font-semibold text-gray-900">
+              {stats.completedSessions}
+            </span>
           </div>
 
           {mentor.experience > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Experience</span>
-              <span className="font-semibold text-gray-900">{mentor.experience}+ years</span>
+              <span className="font-semibold text-gray-900">
+                {mentor.experience}+ years
+              </span>
             </div>
           )}
-          
+
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Member Since</span>
             <span className="font-semibold text-gray-900">{memberSince}</span>
@@ -241,46 +306,49 @@ export default function ProfileHeader({ mentor, stats, isOwnProfile = false }: P
         </div>
 
         {/* Social Links */}
-        {mentor.social_links && Object.keys(mentor.social_links).some(key => mentor.social_links[key]) && (
-          <>
-            <Separator className="my-4" />
-            <div className="flex gap-2 justify-center">
-              {mentor.social_links.linkedin && (
-                <a
-                  href={mentor.social_links.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                  title="LinkedIn"
-                >
-                  <Linkedin className="h-4 w-4 text-gray-600" />
-                </a>
-              )}
-              {mentor.social_links.twitter && (
-                <a
-                  href={mentor.social_links.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                  title="Twitter"
-                >
-                  <Twitter className="h-4 w-4 text-gray-600" />
-                </a>
-              )}
-              {mentor.social_links.website && (
-                <a
-                  href={mentor.social_links.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                  title="Website"
-                >
-                  <Globe className="h-4 w-4 text-gray-600" />
-                </a>
-              )}
-            </div>
-          </>
-        )}
+        {mentor.social_links &&
+          Object.keys(mentor.social_links).some(
+            (key) => mentor.social_links[key]
+          ) && (
+            <>
+              <Separator className="my-4" />
+              <div className="flex gap-2 justify-center">
+                {mentor.social_links.linkedin && (
+                  <a
+                    href={mentor.social_links.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                    title="LinkedIn"
+                  >
+                    <Linkedin className="h-4 w-4 text-gray-600" />
+                  </a>
+                )}
+                {mentor.social_links.twitter && (
+                  <a
+                    href={mentor.social_links.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                    title="Twitter"
+                  >
+                    <Twitter className="h-4 w-4 text-gray-600" />
+                  </a>
+                )}
+                {mentor.social_links.website && (
+                  <a
+                    href={mentor.social_links.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                    title="Website"
+                  >
+                    <Globe className="h-4 w-4 text-gray-600" />
+                  </a>
+                )}
+              </div>
+            </>
+          )}
       </CardContent>
     </Card>
   );

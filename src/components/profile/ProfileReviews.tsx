@@ -90,7 +90,7 @@ export default function ProfileReviews({ mentorId, stats }: ProfileReviewsProps)
 
   if (loading && page === 1) {
     return (
-      <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
+      <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
         <CardContent className="p-6 flex items-center justify-center min-h-[300px]">
           <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
         </CardContent>
@@ -101,7 +101,7 @@ export default function ProfileReviews({ mentorId, stats }: ProfileReviewsProps)
   return (
     <div className="space-y-6">
       {/* Rating Summary */}
-      <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
+      <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -135,7 +135,7 @@ export default function ProfileReviews({ mentorId, stats }: ProfileReviewsProps)
 
       {/* Reviews List */}
       {reviews.length > 0 ? (
-        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
           <CardContent className="p-6">
             <div className="space-y-6">
               {reviews.map((review, index) => (
@@ -220,7 +220,7 @@ export default function ProfileReviews({ mentorId, stats }: ProfileReviewsProps)
           </CardContent>
         </Card>
       ) : (
-        <Card className="shadow-sm border-0 bg-gray-80 rounded-2xl">
+        <Card className="shadow-sm border-0 bg-gray-50 rounded-2xl">
           <CardContent className="p-6 text-center">
             <Star className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600 text-sm">No reviews yet</p>

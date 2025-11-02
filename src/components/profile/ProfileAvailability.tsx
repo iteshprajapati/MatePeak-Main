@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Calendar as CalendarIcon, 
+import {
+  Calendar as CalendarIcon,
   Clock,
   XCircle,
   CheckCircle,
@@ -13,7 +13,7 @@ import {
   Globe,
   Bell,
   MessageSquare,
-  Filter
+  Filter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,7 @@ interface ProfileAvailabilityProps {
   mentorId: string;
   mentorName?: string;
   mentorTimezone?: string;
+  onBookSlot?: (date: Date, time: string, timezone: string) => void;
 }
 
 interface AvailabilitySlot {
@@ -67,13 +68,21 @@ interface DaySchedule {
   blockedReason?: string;
 }
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 // Helper to get date string in local timezone (avoids UTC conversion)
 const getLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -97,12 +106,14 @@ const getTimezoneOffset = (timezone: string) => {
     console.warn(`Invalid timezone: ${timezone}, using UTC`);
     return 0;
   }
-  
+
   try {
     const now = new Date();
-    const tzString = now.toLocaleString('en-US', { timeZone: timezone });
+    const tzString = now.toLocaleString("en-US", { timeZone: timezone });
     const tzDate = new Date(tzString);
-    const localDate = new Date(now.toLocaleString('en-US', { timeZone: getUserTimezone() }));
+    const localDate = new Date(
+      now.toLocaleString("en-US", { timeZone: getUserTimezone() })
+    );
     return (tzDate.getTime() - localDate.getTime()) / (1000 * 60 * 60);
   } catch (e) {
     console.error(`Error calculating timezone offset for ${timezone}:`, e);
@@ -115,37 +126,50 @@ const convertTime = (time: string, fromTz: string, toTz: string): string => {
   if (!isValidTimezone(fromTz) || !isValidTimezone(toTz)) {
     return time;
   }
-  
+
   try {
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
     const offset = getTimezoneOffset(toTz) - getTimezoneOffset(fromTz);
     let newHours = hours + offset;
-    
+
     if (newHours < 0) newHours += 24;
     if (newHours >= 24) newHours -= 24;
-    
-    return `${String(Math.floor(newHours)).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+    return `${String(Math.floor(newHours)).padStart(2, "0")}:${String(
+      minutes
+    ).padStart(2, "0")}`;
   } catch (e) {
-    console.error('Error converting time:', e);
+    console.error("Error converting time:", e);
     return time;
   }
 };
 
-export default function ProfileAvailability({ mentorId, mentorName, mentorTimezone = "UTC" }: ProfileAvailabilityProps) {
+export default function ProfileAvailability({
+  mentorId,
+  mentorName,
+  mentorTimezone = "UTC",
+  onBookSlot,
+}: ProfileAvailabilityProps) {
   const [loading, setLoading] = useState(true);
   const [recurringSlots, setRecurringSlots] = useState<AvailabilitySlot[]>([]);
   const [specificSlots, setSpecificSlots] = useState<AvailabilitySlot[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(getStartOfWeek(new Date()));
-  const [selectedView, setSelectedView] = useState<'week' | 'recurring'>('week');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
+    getStartOfWeek(new Date())
+  );
+  const [selectedView, setSelectedView] = useState<"week" | "recurring">(
+    "week"
+  );
   const [showUserTimezone, setShowUserTimezone] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
-  
+
   // Session Type Selector state
   const [sessionTypes, setSessionTypes] = useState<string[]>([]);
   const [selectedSessionType, setSelectedSessionType] = useState<string>("all");
-  
+
   // Request Custom Time state
   const [customTimeDialogOpen, setCustomTimeDialogOpen] = useState(false);
   const [requestedDate, setRequestedDate] = useState("");
@@ -153,14 +177,14 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
   const [requestedEndTime, setRequestedEndTime] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [submittingRequest, setSubmittingRequest] = useState(false);
-  
+
   // Availability Alerts state
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [alertEmail, setAlertEmail] = useState("");
   const [alertDaysPreference, setAlertDaysPreference] = useState<string[]>([]);
   const [submittingAlert, setSubmittingAlert] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const userTimezone = getUserTimezone();
@@ -190,7 +214,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
 
-      if (recurringError && recurringError.code !== 'PGRST116') {
+      if (recurringError && recurringError.code !== "PGRST116") {
         console.error("Error fetching recurring slots:", recurringError);
       }
 
@@ -204,7 +228,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .order("specific_date", { ascending: true })
         .order("start_time", { ascending: true });
 
-      if (specificError && specificError.code !== 'PGRST116') {
+      if (specificError && specificError.code !== "PGRST116") {
         console.error("Error fetching specific slots:", specificError);
       }
 
@@ -215,12 +239,15 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         .eq("expert_id", mentorId)
         .order("date", { ascending: true });
 
-      if (blockedError && blockedError.code !== 'PGRST116') {
+      if (blockedError && blockedError.code !== "PGRST116") {
         console.error("Error fetching blocked dates:", blockedError);
       }
 
       // If no availability_slots found, try to load from old availability_json format
-      if ((!recurring || recurring.length === 0) && (!specific || specific.length === 0)) {
+      if (
+        (!recurring || recurring.length === 0) &&
+        (!specific || specific.length === 0)
+      ) {
         const { data: profile, error: profileError } = await supabase
           .from("expert_profiles")
           .select("availability_json")
@@ -230,20 +257,26 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         if (!profileError && profile?.availability_json) {
           try {
             const oldAvailability = JSON.parse(profile.availability_json);
-            
+
             // Convert old format to new format
             const convertedSlots: AvailabilitySlot[] = [];
-            
+
             if (Array.isArray(oldAvailability)) {
               oldAvailability.forEach((slot: any, index: number) => {
                 // Map day names to day numbers
                 const dayMap: { [key: string]: number } = {
-                  'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
-                  'Thursday': 4, 'Friday': 5, 'Saturday': 6
+                  Sunday: 0,
+                  Monday: 1,
+                  Tuesday: 2,
+                  Wednesday: 3,
+                  Thursday: 4,
+                  Friday: 5,
+                  Saturday: 6,
                 };
-                
-                const dayOfWeek = dayMap[slot.day] ?? dayMap[slot.dayOfWeek] ?? -1;
-                
+
+                const dayOfWeek =
+                  dayMap[slot.day] ?? dayMap[slot.dayOfWeek] ?? -1;
+
                 if (dayOfWeek !== -1 && slot.from && slot.to) {
                   convertedSlots.push({
                     id: `legacy-${index}`,
@@ -251,12 +284,12 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                     start_time: slot.from,
                     end_time: slot.to,
                     is_recurring: true,
-                    specific_date: null
+                    specific_date: null,
                   });
                 }
               });
             }
-            
+
             setRecurringSlots(convertedSlots);
             console.log("Loaded legacy availability:", convertedSlots);
           } catch (parseError) {
@@ -267,11 +300,13 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         setRecurringSlots(recurring || []);
         setSpecificSlots(specific || []);
       }
-      
+
       setBlockedDates(blocked || []);
 
       // Check if user has active alert subscription
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: alertData } = await supabase
           .from("availability_alerts")
@@ -295,7 +330,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
   };
 
   const formatTime = (time: string) => {
-    const convertedTime = showUserTimezone ? convertTime(time, mentorTimezone, userTimezone) : time;
+    const convertedTime = showUserTimezone
+      ? convertTime(time, mentorTimezone, userTimezone)
+      : time;
     return new Date(`2000-01-01T${convertedTime}`).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -313,23 +350,23 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       date.setDate(currentWeekStart.getDate() + i);
       const dateStr = getLocalDateString(date); // Use local timezone helper
       const dayOfWeek = date.getDay();
-      
+
       // Check if date is blocked
-      const blocked = blockedDates.find(b => b.date === dateStr);
-      
+      const blocked = blockedDates.find((b) => b.date === dateStr);
+
       // Get slots for this date
       const slots: { start: string; end: string }[] = [];
-      
+
       // Add specific slots for this exact date
-      specificSlots.forEach(slot => {
+      specificSlots.forEach((slot) => {
         if (slot.specific_date === dateStr) {
           slots.push({ start: slot.start_time, end: slot.end_time });
         }
       });
-      
+
       // Add recurring slots for this day of week
       if (!blocked) {
-        recurringSlots.forEach(slot => {
+        recurringSlots.forEach((slot) => {
           if (slot.day_of_week === dayOfWeek) {
             slots.push({ start: slot.start_time, end: slot.end_time });
           }
@@ -346,16 +383,18 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
         isToday: date.getTime() === today.getTime(),
         isBlocked: !!blocked,
         slots,
-        blockedReason: blocked?.reason
+        blockedReason: blocked?.reason,
       });
     }
 
     return schedule;
   };
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigateWeek = (direction: "prev" | "next") => {
     const newDate = new Date(currentWeekStart);
-    newDate.setDate(currentWeekStart.getDate() + (direction === 'next' ? 7 : -7));
+    newDate.setDate(
+      currentWeekStart.getDate() + (direction === "next" ? 7 : -7)
+    );
     setCurrentWeekStart(newDate);
   };
 
@@ -364,29 +403,38 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
   };
 
   const calculateDuration = (startTime: string, endTime: string): number => {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    return (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+    return endHour * 60 + endMin - (startHour * 60 + startMin);
   };
 
   const handleBookSlot = (date: string, startTime: string, endTime: string) => {
-    // Navigate to booking page with pre-filled information
-    const bookingData = {
-      mentorId,
-      mentorName,
-      date,
-      startTime,
-      endTime,
-      timezone: showUserTimezone ? userTimezone : mentorTimezone
-    };
-    
-    // Store booking data in session storage for the booking page
-    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-    
-    // Navigate to booking page
-    navigate(`/booking/${mentorId}`, { 
-      state: bookingData 
-    });
+    // Parse the date string to Date object
+    const dateObj = new Date(date + "T00:00:00");
+
+    // Use the callback if provided
+    if (onBookSlot) {
+      const timezone = showUserTimezone ? userTimezone : mentorTimezone;
+      onBookSlot(dateObj, startTime, timezone);
+    } else {
+      // Fallback to old navigation behavior
+      const bookingData = {
+        mentorId,
+        mentorName,
+        date,
+        startTime,
+        endTime,
+        timezone: showUserTimezone ? userTimezone : mentorTimezone,
+      };
+
+      // Store booking data in session storage for the booking page
+      sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
+
+      // Navigate to booking page
+      navigate(`/booking/${mentorId}`, {
+        state: bookingData,
+      });
+    }
   };
 
   // Handle custom time request submission
@@ -400,30 +448,32 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       setSubmittingRequest(true);
 
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Please sign in to request custom time");
         return;
       }
 
       // Create custom time request record
-      const { error } = await supabase
-        .from("booking_requests")
-        .insert({
-          mentee_id: user.id,
-          mentor_id: mentorId,
-          requested_date: requestedDate,
-          requested_start_time: requestedStartTime,
-          requested_end_time: requestedEndTime,
-          message: requestMessage,
-          status: "pending"
-        });
+      const { error } = await supabase.from("booking_requests").insert({
+        mentee_id: user.id,
+        mentor_id: mentorId,
+        requested_date: requestedDate,
+        requested_start_time: requestedStartTime,
+        requested_end_time: requestedEndTime,
+        message: requestMessage,
+        status: "pending",
+      });
 
       if (error) throw error;
 
-      toast.success("Time request sent successfully! The mentor will respond within 24 hours.");
+      toast.success(
+        "Time request sent successfully! The mentor will respond within 24 hours."
+      );
       setCustomTimeDialogOpen(false);
-      
+
       // Reset form
       setRequestedDate("");
       setRequestedStartTime("");
@@ -448,29 +498,34 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       setSubmittingAlert(true);
 
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Please sign in to enable alerts");
         return;
       }
 
       // Create or update alert subscription
-      const { error } = await supabase
-        .from("availability_alerts")
-        .upsert({
+      const { error } = await supabase.from("availability_alerts").upsert(
+        {
           mentee_id: user.id,
           mentor_id: mentorId,
           email: alertEmail,
           preferred_days: alertDaysPreference,
-          is_active: true
-        }, {
-          onConflict: 'mentee_id,mentor_id'
-        });
+          is_active: true,
+        },
+        {
+          onConflict: "mentee_id,mentor_id",
+        }
+      );
 
       if (error) throw error;
 
       setAlertsEnabled(true);
-      toast.success("Availability alerts enabled! You'll be notified when new slots are added.");
+      toast.success(
+        "Availability alerts enabled! You'll be notified when new slots are added."
+      );
       setAlertDialogOpen(false);
     } catch (error) {
       console.error("Error setting up alerts:", error);
@@ -482,10 +537,8 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
   // Toggle alert day preference
   const toggleAlertDay = (day: string) => {
-    setAlertDaysPreference(prev =>
-      prev.includes(day)
-        ? prev.filter(d => d !== day)
-        : [...prev, day]
+    setAlertDaysPreference((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   };
 
@@ -507,7 +560,8 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
   const groupedRecurring = groupSlotsByDay(recurringSlots);
   const weekSchedule = getWeekSchedule();
-  const hasAnyAvailability = recurringSlots.length > 0 || specificSlots.length > 0;
+  const hasAnyAvailability =
+    recurringSlots.length > 0 || specificSlots.length > 0;
 
   if (loading) {
     return (
@@ -521,7 +575,10 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="p-4 bg-white rounded-xl border border-gray-200">
+                <div
+                  key={i}
+                  className="p-4 bg-white rounded-xl border border-gray-200"
+                >
                   <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-2" />
                   <div className="h-3 w-16 bg-gray-200 rounded animate-pulse mb-3" />
                   <div className="space-y-2">
@@ -545,14 +602,15 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
           <CardContent className="p-8">
             <div className="text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <Calendar className="h-8 w-8 text-gray-400" />
+                <CalendarIcon className="h-8 w-8 text-gray-400" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">
                   No Availability Set
                 </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  {mentorName || "This mentor"} hasn't added any availability slots yet.
+                  {mentorName || "This mentor"} hasn't added any availability
+                  slots yet.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -575,7 +633,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
               </div>
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
                 <p className="text-sm text-blue-900">
-                  <strong>💡 Tip:</strong> You can request a custom session time or enable notifications to be alerted when this mentor adds availability.
+                  <strong>💡 Tip:</strong> You can request a custom session time
+                  or enable notifications to be alerted when this mentor adds
+                  availability.
                 </p>
               </div>
             </div>
@@ -593,7 +653,10 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                 <span className="text-sm font-medium text-gray-700">
                   Showing times in:
                 </span>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
+                <Badge
+                  variant="outline"
+                  className="border-gray-300 text-gray-700"
+                >
                   {showUserTimezone ? userTimezone : mentorTimezone}
                 </Badge>
               </div>
@@ -616,26 +679,26 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
           {/* View Toggle */}
           <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
             <Button
-              variant={selectedView === 'week' ? 'default' : 'ghost'}
-              onClick={() => setSelectedView('week')}
+              variant={selectedView === "week" ? "default" : "ghost"}
+              onClick={() => setSelectedView("week")}
               size="sm"
               className={`rounded-lg transition-all ${
-                selectedView === 'week' 
-                  ? 'bg-white text-gray-900 shadow-sm hover:bg-white' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                selectedView === "week"
+                  ? "bg-white text-gray-900 shadow-sm hover:bg-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
               <CalendarIcon className="h-4 w-4 mr-2" />
               Week View
             </Button>
             <Button
-              variant={selectedView === 'recurring' ? 'default' : 'ghost'}
-              onClick={() => setSelectedView('recurring')}
+              variant={selectedView === "recurring" ? "default" : "ghost"}
+              onClick={() => setSelectedView("recurring")}
               size="sm"
               className={`rounded-lg transition-all ${
-                selectedView === 'recurring' 
-                  ? 'bg-white text-gray-900 shadow-sm hover:bg-white' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                selectedView === "recurring"
+                  ? "bg-white text-gray-900 shadow-sm hover:bg-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
               <Clock className="h-4 w-4 mr-2" />
@@ -660,51 +723,67 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
               onClick={() => setAlertDialogOpen(true)}
               className={`border-2 transition-all duration-200 font-semibold ${
                 alertsEnabled
-                  ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-600'
-                  : 'border-gray-400 text-gray-700 hover:bg-gray-50 hover:border-gray-500'
+                  ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-600"
+                  : "border-gray-400 text-gray-700 hover:bg-gray-50 hover:border-gray-500"
               }`}
             >
-              <Bell className={`h-4 w-4 mr-2 ${alertsEnabled ? 'fill-green-600' : ''}`} />
-              {alertsEnabled ? 'Alerts Active' : 'Get Notified'}
+              <Bell
+                className={`h-4 w-4 mr-2 ${
+                  alertsEnabled ? "fill-green-600" : ""
+                }`}
+              />
+              {alertsEnabled ? "Alerts Active" : "Get Notified"}
             </Button>
           </div>
         </div>
       )}
 
       {/* Week View */}
-      {selectedView === 'week' && hasAnyAvailability && (
+      {selectedView === "week" && hasAnyAvailability && (
         <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
             {/* Week Navigation */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
-                  {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
-                  {new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {currentWeekStart.toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                  })}{" "}
+                  -{" "}
+                  {new Date(
+                    currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">Click on any time slot to book</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Click on any time slot to book
+                </p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigateWeek('prev')} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWeek("prev")}
                   className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={goToCurrentWeek} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToCurrentWeek}
                   className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 px-4"
                 >
                   Today
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigateWeek('next')} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWeek("next")}
                   className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -719,17 +798,19 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                   key={day.dateStr}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     day.isToday
-                      ? 'border-matepeak-primary bg-matepeak-yellow/5 shadow-sm'
+                      ? "border-matepeak-primary bg-matepeak-yellow/5 shadow-sm"
                       : day.isBlocked
-                      ? 'border-red-200 bg-red-50/50'
+                      ? "border-red-200 bg-red-50/50"
                       : day.slots.length > 0
-                      ? 'border-green-200 bg-green-50/30 hover:border-green-300 hover:shadow-sm'
-                      : 'border-gray-100 bg-gray-50/50'
+                      ? "border-green-200 bg-green-50/30 hover:border-green-300 hover:shadow-sm"
+                      : "border-gray-100 bg-gray-50/50"
                   }`}
                 >
                   <div className="mb-3 pb-2.5 border-b border-gray-100">
                     <div className="flex items-center justify-between mb-0.5">
-                      <h3 className="font-bold text-gray-900 text-sm">{day.dayName}</h3>
+                      <h3 className="font-bold text-gray-900 text-sm">
+                        {day.dayName}
+                      </h3>
                       {day.isToday && (
                         <Badge className="bg-matepeak-primary text-white text-xs px-1.5 py-0">
                           Today
@@ -737,7 +818,10 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                       )}
                     </div>
                     <p className="text-xs text-gray-600">
-                      {day.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                      {day.date.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </p>
                   </div>
 
@@ -745,9 +829,13 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                     <div className="flex items-start gap-2 p-2.5 bg-red-100/50 rounded-lg">
                       <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs font-semibold text-red-900">Blocked</p>
+                        <p className="text-xs font-semibold text-red-900">
+                          Blocked
+                        </p>
                         {day.blockedReason && (
-                          <p className="text-xs text-red-600 mt-0.5">{day.blockedReason}</p>
+                          <p className="text-xs text-red-600 mt-0.5">
+                            {day.blockedReason}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -755,42 +843,62 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                     <div className="space-y-2">
                       {day.slots.map((slot, idx) => {
                         const slotKey = `${day.dateStr}-${idx}`;
-                        const duration = calculateDuration(slot.start, slot.end);
+                        const duration = calculateDuration(
+                          slot.start,
+                          slot.end
+                        );
                         return (
                           <div
                             key={idx}
                             className={`group relative flex items-center gap-2.5 p-2.5 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
                               hoveredSlot === slotKey
-                                ? 'bg-matepeak-yellow/10 border-matepeak-primary shadow-md transform scale-[1.02]'
-                                : 'bg-green-50/50 border-green-200 hover:bg-green-50 hover:border-green-300 hover:shadow-sm'
+                                ? "bg-matepeak-yellow/10 border-matepeak-primary shadow-md transform scale-[1.02]"
+                                : "bg-green-50/50 border-green-200 hover:bg-green-50 hover:border-green-300 hover:shadow-sm"
                             }`}
                             onMouseEnter={() => setHoveredSlot(slotKey)}
                             onMouseLeave={() => setHoveredSlot(null)}
-                            onClick={() => handleBookSlot(day.dateStr, slot.start, slot.end)}
+                            onClick={() =>
+                              handleBookSlot(day.dateStr, slot.start, slot.end)
+                            }
                           >
-                            <div className={`p-1.5 rounded-lg transition-colors ${
-                              hoveredSlot === slotKey ? 'bg-matepeak-primary/10' : 'bg-gray-100'
-                            }`}>
-                              <Clock className={`h-3.5 w-3.5 transition-colors ${
-                                hoveredSlot === slotKey ? 'text-matepeak-primary' : 'text-gray-600'
-                              }`} />
+                            <div
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                hoveredSlot === slotKey
+                                  ? "bg-matepeak-primary/10"
+                                  : "bg-gray-100"
+                              }`}
+                            >
+                              <Clock
+                                className={`h-3.5 w-3.5 transition-colors ${
+                                  hoveredSlot === slotKey
+                                    ? "text-matepeak-primary"
+                                    : "text-gray-600"
+                                }`}
+                              />
                             </div>
                             <div className="flex-grow">
                               <span className="text-xs font-semibold text-gray-900 block">
-                                {formatTime(slot.start)} - {formatTime(slot.end)}
+                                {formatTime(slot.start)} -{" "}
+                                {formatTime(slot.end)}
                               </span>
-                              <span className="text-xs text-gray-500">{duration} min</span>
+                              <span className="text-xs text-gray-500">
+                                {duration} min
+                              </span>
                             </div>
                             <Button
                               size="sm"
                               className={`opacity-0 group-hover:opacity-100 transition-all h-7 text-xs font-semibold ${
                                 hoveredSlot === slotKey
-                                  ? 'bg-matepeak-primary hover:bg-matepeak-secondary text-white'
-                                  : 'bg-gray-900 hover:bg-gray-800 text-white'
+                                  ? "bg-matepeak-primary hover:bg-matepeak-secondary text-white"
+                                  : "bg-gray-900 hover:bg-gray-800 text-white"
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleBookSlot(day.dateStr, slot.start, slot.end);
+                                handleBookSlot(
+                                  day.dateStr,
+                                  slot.start,
+                                  slot.end
+                                );
                               }}
                             >
                               Book
@@ -812,7 +920,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       )}
 
       {/* Recurring Schedule View */}
-      {selectedView === 'recurring' && recurringSlots.length > 0 && (
+      {selectedView === "recurring" && recurringSlots.length > 0 && (
         <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
@@ -820,8 +928,12 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                 <Clock className="h-5 w-5 text-matepeak-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Weekly Recurring Schedule</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Regular availability that repeats every week</p>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Weekly Recurring Schedule
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Regular availability that repeats every week
+                </p>
               </div>
             </div>
 
@@ -843,7 +955,10 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {slots.map((slot) => {
-                          const duration = calculateDuration(slot.start_time, slot.end_time);
+                          const duration = calculateDuration(
+                            slot.start_time,
+                            slot.end_time
+                          );
                           return (
                             <div
                               key={slot.id}
@@ -854,9 +969,12 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                               </div>
                               <div>
                                 <span className="text-xs font-semibold text-gray-900 block">
-                                  {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                                  {formatTime(slot.start_time)} -{" "}
+                                  {formatTime(slot.end_time)}
                                 </span>
-                                <span className="text-xs text-gray-500">{duration} min</span>
+                                <span className="text-xs text-gray-500">
+                                  {duration} min
+                                </span>
                               </div>
                             </div>
                           );
@@ -872,15 +990,21 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       )}
 
       {/* Custom Time Request Dialog */}
-      <Dialog open={customTimeDialogOpen} onOpenChange={setCustomTimeDialogOpen}>
+      <Dialog
+        open={customTimeDialogOpen}
+        onOpenChange={setCustomTimeDialogOpen}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Request Custom Time</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              Request Custom Time
+            </DialogTitle>
             <DialogDescription>
-              Don't see a suitable time? Request a custom session time and {mentorName} will get back to you within 24 hours.
+              Don't see a suitable time? Request a custom session time and{" "}
+              {mentorName} will get back to you within 24 hours.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="request-date">Preferred Date</Label>
@@ -889,7 +1013,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                 type="date"
                 value={requestedDate}
                 onChange={(e) => setRequestedDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
                 className="border-gray-300"
               />
             </div>
@@ -930,7 +1054,9 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
 
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-900">
-                <strong>Note:</strong> The mentor will review your request and respond via email. You'll be notified once they confirm availability.
+                <strong>Note:</strong> The mentor will review your request and
+                respond via email. You'll be notified once they confirm
+                availability.
               </p>
             </div>
           </div>
@@ -955,7 +1081,7 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                   Sending...
                 </>
               ) : (
-                'Send Request'
+                "Send Request"
               )}
             </Button>
           </DialogFooter>
@@ -966,12 +1092,15 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
       <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Get Availability Alerts</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              Get Availability Alerts
+            </DialogTitle>
             <DialogDescription>
-              Receive notifications when {mentorName} adds new availability slots that match your preferences.
+              Receive notifications when {mentorName} adds new availability
+              slots that match your preferences.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="alert-email">Email Address</Label>
@@ -996,13 +1125,17 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
                     onClick={() => toggleAlertDay(day)}
                     className={`justify-start transition-all ${
                       alertDaysPreference.includes(day)
-                        ? 'bg-matepeak-primary text-white border-matepeak-primary hover:bg-matepeak-primary/90 hover:text-white'
-                        : 'border-gray-300 hover:bg-gray-50'
+                        ? "bg-matepeak-primary text-white border-matepeak-primary hover:bg-matepeak-primary/90 hover:text-white"
+                        : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    <CheckCircle className={`h-4 w-4 mr-2 ${
-                      alertDaysPreference.includes(day) ? 'opacity-100' : 'opacity-0'
-                    }`} />
+                    <CheckCircle
+                      className={`h-4 w-4 mr-2 ${
+                        alertDaysPreference.includes(day)
+                          ? "opacity-100"
+                          : "opacity-0"
+                      }`}
+                    />
                     {day}
                   </Button>
                 ))}
@@ -1013,7 +1146,8 @@ export default function ProfileAvailability({ mentorId, mentorName, mentorTimezo
               <div className="flex items-start gap-2">
                 <Bell className="h-4 w-4 text-green-600 mt-0.5" />
                 <p className="text-sm text-green-900">
-                  <strong>You'll be notified when:</strong> New slots are added on your preferred days or existing slots become available.
+                  <strong>You'll be notified when:</strong> New slots are added
+                  on your preferred days or existing slots become available.
                 </p>
               </div>
             </div>

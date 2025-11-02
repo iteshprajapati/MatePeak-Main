@@ -14,8 +14,15 @@ import ProfileExperiences from "@/components/profile/ProfileExperiences";
 import ProfileReviews from "@/components/profile/ProfileReviews";
 import ProfileAbout from "@/components/profile/ProfileAbout";
 import AvailabilityPreview from "@/components/profile/AvailabilityPreview";
+import BookingDialog from "@/components/booking/BookingDialog";
+import { SelectedDateTime } from "@/components/booking/BookingDialog";
 
-export type ProfileTab = "overview" | "availability" | "experiences" | "reviews" | "about";
+export type ProfileTab =
+  | "overview"
+  | "availability"
+  | "experiences"
+  | "reviews"
+  | "about";
 
 interface MentorProfileData {
   id: string;
@@ -56,6 +63,9 @@ export default function MentorPublicProfile() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [preSelectedDateTime, setPreSelectedDateTime] =
+    useState<SelectedDateTime | null>(null);
   const [stats, setStats] = useState({
     averageRating: 0,
     reviewCount: 0,
@@ -72,12 +82,14 @@ export default function MentorPublicProfile() {
   const fetchMentorProfile = async () => {
     try {
       setLoading(true);
-      
+
       console.log("Fetching profile for username:", username);
-      
+
       // Check if user is logged in and get their profile
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Fetch mentor profile by username
       const { data: profileData, error: profileError } = await supabase
         .from("expert_profiles")
@@ -99,7 +111,7 @@ export default function MentorPublicProfile() {
 
       console.log("Profile data fetched:", profileData);
       setMentor(profileData as any);
-      
+
       // Check if the logged-in user is viewing their own profile
       if (user && profileData.id === user.id) {
         setIsOwnProfile(true);
@@ -114,9 +126,10 @@ export default function MentorPublicProfile() {
 
       if (!reviewsError && reviews) {
         const reviewCount = reviews.length;
-        const avgRating = reviewCount > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
-          : 0;
+        const avgRating =
+          reviewCount > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+            : 0;
 
         // Fetch session stats
         const { data: sessions } = await supabase
@@ -125,7 +138,8 @@ export default function MentorPublicProfile() {
           .eq("expert_id", profileData.id);
 
         const totalSessions = sessions?.length || 0;
-        const completedSessions = sessions?.filter(s => s.status === "completed").length || 0;
+        const completedSessions =
+          sessions?.filter((s) => s.status === "completed").length || 0;
 
         setStats({
           averageRating: avgRating,
@@ -142,6 +156,19 @@ export default function MentorPublicProfile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookFromAvailability = (
+    date: Date,
+    time: string,
+    timezone: string
+  ) => {
+    setPreSelectedDateTime({
+      date,
+      time,
+      timezone,
+    });
+    setBookingDialogOpen(true);
   };
 
   if (loading) {
@@ -167,17 +194,28 @@ export default function MentorPublicProfile() {
           <div className="text-center max-w-md mx-auto px-4">
             <div className="mb-6">
               <div className="h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-10 w-10 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Profile Not Found
+              </h2>
               <p className="text-gray-600 mb-6">
-                {error || "We couldn't find the mentor profile you're looking for. The username may be incorrect or the profile may not exist."}
+                {error ||
+                  "We couldn't find the mentor profile you're looking for. The username may be incorrect or the profile may not exist."}
               </p>
-              <Button onClick={() => navigate("/mentors")} className="bg-matepeak-primary hover:bg-matepeak-secondary">
-                Browse All Mentors
-              </Button>
+              {/* Browse All Mentors button removed as per request */}
             </div>
           </div>
         </div>
@@ -193,17 +231,21 @@ export default function MentorPublicProfile() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      
+
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Sidebar - Profile Header (Sticky) */}
             <div className="lg:col-span-3">
               <div className="lg:sticky lg:top-6">
-                <ProfileHeader 
-                  mentor={mentor} 
+                <ProfileHeader
+                  mentor={mentor}
                   stats={stats}
                   isOwnProfile={isOwnProfile}
+                  onOpenBooking={() => {
+                    setPreSelectedDateTime(null);
+                    setBookingDialogOpen(true);
+                  }}
                 />
               </div>
             </div>
@@ -212,22 +254,33 @@ export default function MentorPublicProfile() {
             <div className="lg:col-span-9">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="space-y-6">
-                  <ProfileTabs 
-                    activeTab={activeTab} 
+                  <ProfileTabs
+                    activeTab={activeTab}
                     onTabChange={setActiveTab}
                   />
 
-                  <div className={activeTab === "overview" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : ""}>
+                  <div
+                    className={
+                      activeTab === "overview"
+                        ? "grid grid-cols-1 lg:grid-cols-3 gap-6"
+                        : ""
+                    }
+                  >
                     {/* Main Content */}
-                    <div className={activeTab === "overview" ? "lg:col-span-2" : ""}>
+                    <div
+                      className={
+                        activeTab === "overview" ? "lg:col-span-2" : ""
+                      }
+                    >
                       {activeTab === "overview" && (
                         <ProfileOverview mentor={mentor} stats={stats} />
                       )}
                       {activeTab === "availability" && (
-                        <ProfileAvailability 
-                          mentorId={mentor.id} 
+                        <ProfileAvailability
+                          mentorId={mentor.id}
                           mentorName={mentor.full_name}
                           mentorTimezone={mentor.timezone || "UTC"}
+                          onBookSlot={handleBookFromAvailability}
                         />
                       )}
                       {activeTab === "experiences" && (
@@ -244,7 +297,7 @@ export default function MentorPublicProfile() {
                     {/* Right Sidebar - Availability (Only on Overview Tab) */}
                     {activeTab === "overview" && (
                       <div className="lg:col-span-1">
-                        <AvailabilityPreview 
+                        <AvailabilityPreview
                           mentorId={mentor.id}
                           mentor={mentor}
                           onSeeMore={() => setActiveTab("availability")}
@@ -258,8 +311,31 @@ export default function MentorPublicProfile() {
           </div>
         </div>
       </main>
-      
+
       <Footer />
+
+      {/* Booking Dialog */}
+      {mentor && (
+        <BookingDialog
+          open={bookingDialogOpen}
+          onOpenChange={(open) => {
+            setBookingDialogOpen(open);
+            if (!open) {
+              // Clear pre-selected date/time when dialog closes
+              setPreSelectedDateTime(null);
+            }
+          }}
+          mentorId={mentor.id}
+          mentorName={mentor.full_name}
+          mentorImage={mentor.profile_picture_url}
+          services={mentor.services}
+          servicePricing={mentor.service_pricing}
+          timezone={mentor.timezone}
+          averageRating={stats.averageRating}
+          totalReviews={stats.reviewCount}
+          preSelectedDateTime={preSelectedDateTime}
+        />
+      )}
     </div>
   );
 }

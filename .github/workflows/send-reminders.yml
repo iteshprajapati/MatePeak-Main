@@ -1,0 +1,42 @@
+name: Send Email Reminders
+
+on:
+  # Disabled - uncomment to re-enable hourly reminders
+  # schedule:
+  #   # Run every hour at minute 0
+  #   - cron: "0 * * * *"
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Supabase Reminder Function
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: Function returned status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Reminders sent successfully!"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Email Reminders Summary 📧" >> $GITHUB_STEP_SUMMARY
+          echo "Function executed at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "Next run: $(date -d '+1 hour')" >> $GITHUB_STEP_SUMMARY

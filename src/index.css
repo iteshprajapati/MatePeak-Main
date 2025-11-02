@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,7 +113,9 @@
     transition: all 0.2s ease-in-out;
   }
 
-  input:not([type="checkbox"]):not([type="radio"]):hover:not(:focus):not(:disabled),
+  input:not([type="checkbox"]):not([type="radio"]):hover:not(:focus):not(
+      :disabled
+    ),
   textarea:hover:not(:focus):not(:disabled),
   button[role="combobox"]:hover:not(:focus):not(:disabled) {
     background-color: hsl(0 0% 97%);
@@ -129,7 +130,7 @@
     outline: none;
     box-shadow: 0 0 0 3px hsl(0 0% 0% / 0.1) !important;
   }
-  
+
   /* Focus visible for better accessibility */
   input:not([type="checkbox"]):not([type="radio"]):focus-visible,
   textarea:focus-visible,
@@ -145,23 +146,23 @@
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-matepeak-primary via-[#FFD966] to-matepeak-primary bg-size-200 animate-gradient-x;
   }
-  
+
   .gradient-heading {
     @apply text-matepeak-primary font-bold;
   }
-  
+
   .mentor-card {
     @apply bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden;
   }
-  
+
   .btn-primary {
     @apply bg-matepeak-primary hover:bg-matepeak-secondary text-white font-medium rounded-lg transition-colors duration-200;
   }
-  
+
   .btn-secondary {
     @apply bg-white border border-matepeak-primary text-matepeak-primary hover:bg-gray-100 font-medium rounded-lg transition-colors duration-200;
   }
-  
+
   .section-padding {
     @apply py-12 md:py-20;
   }
@@ -177,7 +178,8 @@
 }
 
 @keyframes gradient-x {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -187,7 +189,7 @@
 
 /* Add focus styles for form elements */
 .focus-visible:ring-brand {
-  --tw-ring-color: #FFD966;
+  --tw-ring-color: #ffd966;
 }
 
 /* Premium onboarding animations */
@@ -221,7 +223,8 @@
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -230,13 +233,21 @@
 }
 
 @keyframes shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     transform: translateX(-5px);
   }
-  20%, 40%, 60%, 80% {
+  20%,
+  40%,
+  60%,
+  80% {
     transform: translateX(5px);
   }
 }
@@ -271,7 +282,8 @@
 
 /* Premium shadows */
 .shadow-3xl {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15),
+    0 0 15px rgba(0, 0, 0, 0.05);
 }
 
 /* Glassmorphism effect */
@@ -300,4 +312,95 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
+}
+
+/* Beautiful Toast Animations - Collapse to Top */
+@keyframes toast-slide-in-top {
+  from {
+    transform: translateY(-100%) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out-top {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Sonner Toast Custom Styles */
+[data-sonner-toaster] {
+  font-family: "Poppins", sans-serif !important;
+}
+
+[data-sonner-toast] {
+  animation: toast-slide-in-top 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards !important;
+}
+
+[data-sonner-toast][data-removed="true"] {
+  animation: toast-slide-out-top 0.3s cubic-bezier(0.06, 0.71, 0.55, 1) forwards !important;
+}
+
+[data-sonner-toast][data-expanded="false"] {
+  animation: toast-slide-out-top 0.3s cubic-bezier(0.06, 0.71, 0.55, 1) forwards !important;
+}
+
+/* Success Toast Icon Enhancement */
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: #10b981 !important;
+}
+
+/* Error Toast Icon Enhancement */
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+/* Warning Toast Icon Enhancement */
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #f59e0b !important;
+}
+
+/* Info Toast Icon Enhancement */
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: #3b82f6 !important;
+}
+
+/* Loading Toast Icon Enhancement */
+[data-sonner-toast][data-type="loading"] [data-icon] {
+  color: #6b7280 !important;
+}
+
+/* Toast Container Styling */
+[data-sonner-toaster][data-y-position="top"] {
+  top: 20px !important;
+}
+
+/* Toast hover effect */
+[data-sonner-toast]:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease-out;
+}
+
+/* Toast progress bar (if shown) */
+[data-sonner-toast] [data-progress] {
+  background: linear-gradient(90deg, #222222, #444444) !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+/* Close button enhancement */
+[data-sonner-toast] [data-close-button] {
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  transform: rotate(90deg) scale(1.1) !important;
 }

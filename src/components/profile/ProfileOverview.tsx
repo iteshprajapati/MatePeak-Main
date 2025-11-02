@@ -26,6 +26,11 @@ interface ProfileOverviewProps {
 
 export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps) {
   const [featuredReviews, setFeaturedReviews] = useState<any[]>([]);
+  const [showMore, setShowMore] = useState({
+    introduction: false,
+    motivation: false,
+    teaching_experience: false,
+  });
 
   useEffect(() => {
     fetchFeaturedReviews();
@@ -112,9 +117,18 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
             <Quote className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">How I'd Describe Myself</h2>
           </div>
-          <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
+          <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.introduction ? 'line-clamp-3' : ''}`}>
             {mentor.introduction || mentor.bio || "No introduction provided yet."}
           </p>
+          {((mentor.introduction || mentor.bio || '').split('\n').length > 3 || (mentor.introduction || mentor.bio || '').length > 250) && (
+            <button
+              className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
+              style={{paddingBottom: '1px', marginTop: '0'}}
+              onClick={() => setShowMore((prev) => ({ ...prev, introduction: !prev.introduction }))}
+            >
+              {showMore.introduction ? 'Show less' : 'Show more'}
+            </button>
+          )}
         </CardContent>
       </Card>
 
@@ -126,9 +140,18 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
               <Heart className="h-5 w-5 text-gray-600" />
               <h2 className="text-lg font-semibold text-gray-900">Why I Became a Mentor</h2>
             </div>
-            <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
+            <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.motivation ? 'line-clamp-3' : ''}`}>
               {mentor.motivation}
             </p>
+            {(mentor.motivation.split('\n').length > 3 || mentor.motivation.length > 250) && (
+              <button
+                className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
+                style={{paddingBottom: '1px', marginTop: '0'}}
+                onClick={() => setShowMore((prev) => ({ ...prev, motivation: !prev.motivation }))}
+              >
+                {showMore.motivation ? 'Show less' : 'Show more'}
+              </button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -141,9 +164,18 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
               <Target className="h-5 w-5 text-gray-600" />
               <h2 className="text-lg font-semibold text-gray-900">An Ideal Relationship To Me</h2>
             </div>
-            <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
+            <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.teaching_experience ? 'line-clamp-3' : ''}`}>
               {mentor.teaching_experience}
             </p>
+            {(mentor.teaching_experience.split('\n').length > 3 || mentor.teaching_experience.length > 250) && (
+              <button
+                className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
+                style={{paddingBottom: '1px', marginTop: '0'}}
+                onClick={() => setShowMore((prev) => ({ ...prev, teaching_experience: !prev.teaching_experience }))}
+              >
+                {showMore.teaching_experience ? 'Show less' : 'Show more'}
+              </button>
+            )}
           </CardContent>
         </Card>
       )}
