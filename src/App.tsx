@@ -22,6 +22,8 @@ import ExpertLogin from "./pages/ExpertLogin";
 import ExpertOnboarding from "./pages/ExpertOnboarding";
 import ExpertDashboard from "./pages/ExpertDashboard";
 import MentorDashboard from "./pages/MentorDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -39,12 +41,14 @@ const App = () => (
           <Route path="/profile/:username" element={<MentorPublicProfile />} />
           <Route path="/book/:id" element={<BookingPage />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/signup" element={<RoleSelection />} />
           <Route path="/student/signup" element={<StudentSignup />} />
           <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/mentor/signup" element={<MentorSignup />} />
           <Route path="/expert/signup" element={<MentorSignup />} />
           <Route path="/expert/login" element={<ExpertLogin />} />

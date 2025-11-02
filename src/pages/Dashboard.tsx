@@ -28,10 +28,22 @@ const Dashboard = () => {
         return;
       }
       
-      // If user is a mentor, redirect to mentor dashboard
-      const userRole = session.user.user_metadata?.role;
-      if (userRole === 'mentor') {
-        navigate('/expert/dashboard');
+      // Security: Check if user is a mentor and redirect
+      const userRole = session.user.user_metadata?.role || session.user.user_metadata?.user_type;
+      if (userRole === 'mentor' || userRole === 'expert') {
+        navigate('/mentor-dashboard');
+        return;
+      }
+
+      // Security: Verify user is NOT in expert_profiles table
+      const { data: expertProfile } = await supabase
+        .from('expert_profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (expertProfile) {
+        navigate('/mentor-dashboard');
         return;
       }
 
