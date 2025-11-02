@@ -31,9 +31,9 @@ export function useAISearch() {
       console.log("Search results:", data.mentors);
       return data.mentors;
     } catch (err) {
-      console.error('Search error:', err);
-      setError('Failed to search mentors. Please try again.');
-      toast.error('Search failed. Please try again or use standard filters.');
+      console.error('AI Search error (feature not yet available):', err);
+      setError('AI search is not available. Using standard search.');
+      // Don't show error toast - let the calling component handle it gracefully
       return [];
     } finally {
       setIsLoading(false);

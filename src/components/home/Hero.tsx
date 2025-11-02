@@ -137,7 +137,7 @@ const Hero = () => {
 
         <div className="flex flex-wrap justify-center mt-8 gap-4 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap max-w-full">
           <div className="flex gap-3 md:flex-wrap md:justify-center overflow-x-auto sm:overflow-visible px-1 py-2 -mx-1 md:px-0">
-            <Link to="/mentors?category=academic">
+            <Link to="/explore?q=Academic Support">
               <Button
                 variant="outline"
                 className="border-gray-300 text-gray-700 hover:bg-[#FFD966]/10 hover:border-[#FFD966] transition-all whitespace-nowrap"
@@ -145,7 +145,7 @@ const Hero = () => {
                 Academic Support
               </Button>
             </Link>
-            <Link to="/mentors?category=career">
+            <Link to="/explore?q=Career Guidance">
               <Button
                 variant="outline"
                 className="border-gray-300 text-gray-700 hover:bg-[#FFD966]/10 hover:border-[#FFD966] transition-all whitespace-nowrap"
@@ -153,7 +153,7 @@ const Hero = () => {
                 Career Guidance
               </Button>
             </Link>
-            <Link to="/mentors?category=wellness">
+            <Link to="/explore?q=Wellness">
               <Button
                 variant="outline"
                 className="border-gray-300 text-gray-700 hover:bg-[#FFD966]/10 hover:border-[#FFD966] transition-all whitespace-nowrap"
@@ -161,7 +161,7 @@ const Hero = () => {
                 Wellness & Fitness
               </Button>
             </Link>
-            <Link to="/mentors?category=interview">
+            <Link to="/explore?q=Mock Interviews">
               <Button
                 variant="outline"
                 className="border-gray-300 text-gray-700 hover:bg-[#FFD966]/10 hover:border-[#FFD966] transition-all whitespace-nowrap"
