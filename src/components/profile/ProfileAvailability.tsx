@@ -444,6 +444,21 @@ export default function ProfileAvailability({
       return;
     }
 
+    // Validate time order and minimum duration
+    const [startHour, startMin] = requestedStartTime.split(":").map(Number);
+    const [endHour, endMin] = requestedEndTime.split(":").map(Number);
+    const startTotal = startHour * 60 + startMin;
+    const endTotal = endHour * 60 + endMin;
+    const duration = endTotal - startTotal;
+    if (endTotal <= startTotal) {
+      toast.error("End time must be after start time");
+      return;
+    }
+    if (duration < 30) {
+      toast.error("Session must be at least 30 minutes");
+      return;
+    }
+
     try {
       setSubmittingRequest(true);
 
@@ -1006,38 +1021,75 @@ export default function ProfileAvailability({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="request-date">Preferred Date</Label>
-              <Input
-                id="request-date"
-                type="date"
-                value={requestedDate}
-                onChange={(e) => setRequestedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="border-gray-300"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="request-start">Start Time</Label>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="request-date">Preferred Date</Label>
                 <Input
-                  id="request-start"
-                  type="time"
-                  value={requestedStartTime}
-                  onChange={(e) => setRequestedStartTime(e.target.value)}
+                  id="request-date"
+                  type="date"
+                  value={requestedDate}
+                  onChange={(e) => setRequestedDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
                   className="border-gray-300"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="request-start">Start Time</Label>
+                <Select
+                  value={requestedStartTime}
+                  onValueChange={setRequestedStartTime}
+                >
+                  <SelectTrigger
+                    id="request-start"
+                    className="border-gray-300"
+                    aria-label="Start Time"
+                  />
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const hour = Math.floor(i / 2);
+                      const min = i % 2 === 0 ? "00" : "30";
+                      const value = `${String(hour).padStart(2, "0")}:${min}`;
+                      return (
+                        <SelectItem
+                          key={value}
+                          value={value}
+                          className="cursor-pointer"
+                        >
+                          {value}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 space-y-2">
                 <Label htmlFor="request-end">End Time</Label>
-                <Input
-                  id="request-end"
-                  type="time"
+                <Select
                   value={requestedEndTime}
-                  onChange={(e) => setRequestedEndTime(e.target.value)}
-                  className="border-gray-300"
-                />
+                  onValueChange={setRequestedEndTime}
+                >
+                  <SelectTrigger
+                    id="request-end"
+                    className="border-gray-300"
+                    aria-label="End Time"
+                  />
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const hour = Math.floor(i / 2);
+                      const min = i % 2 === 0 ? "00" : "30";
+                      const value = `${String(hour).padStart(2, "0")}:${min}`;
+                      return (
+                        <SelectItem
+                          key={value}
+                          value={value}
+                          className="cursor-pointer"
+                        >
+                          {value}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

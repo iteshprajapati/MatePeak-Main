@@ -35,7 +35,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "./NotificationBell";
 
-type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students" | "requests";
+type DashboardView =
+  | "overview"
+  | "profile"
+  | "sessions"
+  | "reviews"
+  | "availability"
+  | "calendar"
+  | "messages"
+  | "students"
+  | "requests";
 
 interface DashboardLayoutProps {
   activeView: DashboardView;
@@ -193,7 +202,7 @@ const DashboardLayout = ({
                   <Menu className="h-5 w-5" />
                 )}
               </button>
-              
+
               <Link to="/" className="flex items-center group">
                 <img
                   src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png"
@@ -208,15 +217,17 @@ const DashboardLayout = ({
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-
               <NotificationBell mentorId={mentorProfile.id} />
-              
+
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-3 h-11 rounded-xl hover:bg-gray-100 transition-all border-2 border-transparent data-[state=open]:border-black focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 group">
                     <div className="relative">
-                      <Avatar className="h-8 w-8 ring-2 ring-gray-200" key={mentorProfile?.profile_picture_url}>
+                      <Avatar
+                        className="h-8 w-8 ring-2 ring-gray-200"
+                        key={mentorProfile?.profile_picture_url}
+                      >
                         <AvatarImage
                           src={mentorProfile?.profile_picture_url || ""}
                           alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
@@ -235,11 +246,17 @@ const DashboardLayout = ({
                     <ChevronDown className="hidden md:block h-4 w-4 text-gray-600 group-hover:text-gray-900 transition-colors" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72 bg-white shadow-lg border border-gray-200 rounded-xl p-0">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-72 bg-white shadow-lg border border-gray-200 rounded-xl p-0"
+                >
                   {/* User Info Header */}
                   <div className="px-4 py-4 bg-gray-50 rounded-t-xl">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12 ring-2 ring-gray-200" key={mentorProfile?.profile_picture_url}>
+                      <Avatar
+                        className="h-12 w-12 ring-2 ring-gray-200"
+                        key={mentorProfile?.profile_picture_url}
+                      >
                         <AvatarImage
                           src={mentorProfile?.profile_picture_url || ""}
                           alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
@@ -250,45 +267,58 @@ const DashboardLayout = ({
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 truncate">
-                          {mentorProfile?.full_name || `${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
+                          {mentorProfile?.full_name ||
+                            `${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5 truncate">
                           @{mentorProfile?.username}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                          <span className="text-xs text-gray-600 font-medium">Active</span>
+                          <span className="text-xs text-gray-600 font-medium">
+                            Active
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-1.5">
-                    <DropdownMenuItem 
-                      onClick={() => navigate(`/mentor/${mentorProfile?.username}`)} 
+                    <DropdownMenuItem
+                      onClick={() =>
+                        navigate(`/mentor/${mentorProfile?.username}`)
+                      }
                       className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 focus:bg-gray-50"
                     >
                       <Eye className="h-4 w-4 mr-3 text-gray-600" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">View Public Profile</p>
-                        <p className="text-xs text-gray-500 mt-0.5">See how students see you</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          View Public Profile
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          See how students see you
+                        </p>
                       </div>
                     </DropdownMenuItem>
-                    
-                    <DropdownMenuItem 
-                      onClick={() => onViewChange("profile")} 
+
+                    <DropdownMenuItem
+                      onClick={() => onViewChange("profile")}
                       className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 focus:bg-gray-50"
                     >
                       <Settings className="h-4 w-4 mr-3 text-gray-600" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">Settings & Profile</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Manage your account</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          Settings & Profile
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Manage your account
+                        </p>
                       </div>
                     </DropdownMenuItem>
                   </div>
-                  
+
                   <DropdownMenuSeparator className="my-1.5 bg-gray-200" />
-                  
+
                   <div className="p-1.5">
                     <DropdownMenuItem
                       onClick={handleSignOut}
@@ -307,12 +337,14 @@ const DashboardLayout = ({
 
       {/* Sidebar - Desktop (MentorLoop Style) */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col pt-16">
-        <div className="flex flex-col flex-grow bg-gray-50 overflow-y-auto">
-          
+        <div className="flex flex-col flex-grow bg-gray-50 overflow-y-auto thin-scrollbar">
           {/* Enhanced Profile Card */}
           <div className="p-6 m-4 rounded-2xl bg-gray-100">
             <div className="flex flex-col items-center text-center mb-4">
-              <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3" key={mentorProfile?.profile_picture_url}>
+              <Avatar
+                className="h-20 w-20 ring-4 ring-white shadow-md mb-3"
+                key={mentorProfile?.profile_picture_url}
+              >
                 <AvatarImage
                   src={mentorProfile?.profile_picture_url || ""}
                   alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
@@ -399,12 +431,14 @@ const DashboardLayout = ({
             className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <nav className="fixed top-16 left-0 bottom-0 w-80 bg-gray-50 shadow-xl overflow-y-auto">
-            
+          <nav className="fixed top-16 left-0 bottom-0 w-80 bg-gray-50 shadow-xl overflow-y-auto thin-scrollbar">
             {/* Enhanced Mobile Profile Card */}
             <div className="p-6 border-b border-gray-200 bg-gray-100">
               <div className="flex flex-col items-center text-center mb-4">
-                <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3" key={mentorProfile?.profile_picture_url}>
+                <Avatar
+                  className="h-20 w-20 ring-4 ring-white shadow-md mb-3"
+                  key={mentorProfile?.profile_picture_url}
+                >
                   <AvatarImage
                     src={mentorProfile?.profile_picture_url || ""}
                     alt={`${mentorProfile?.first_name} ${mentorProfile?.last_name}`}
@@ -465,9 +499,7 @@ const DashboardLayout = ({
                             <span>{item.label}</span>
                           </div>
                           {item.badge && (
-                            <Badge variant="secondary">
-                              {item.badge}
-                            </Badge>
+                            <Badge variant="secondary">{item.badge}</Badge>
                           )}
                         </button>
                       );
@@ -491,11 +523,9 @@ const DashboardLayout = ({
               {activeView}
             </span>
           </div>
-          
+
           {/* Content */}
-          <div className="min-h-[calc(100vh-180px)]">
-            {children}
-          </div>
+          <div className="min-h-[calc(100vh-180px)]">{children}</div>
         </div>
       </main>
 
@@ -523,7 +553,7 @@ const DashboardLayout = ({
                 </kbd>
               </div>
             </div>
-            
+
             <div className="max-h-96 overflow-y-auto p-2">
               {/* Quick Navigation */}
               <div className="mb-3">
@@ -531,24 +561,28 @@ const DashboardLayout = ({
                   Quick Navigation
                 </p>
                 <div className="space-y-1">
-                  {navigationGroups.flatMap(group => group.items).map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          onViewChange(item.id);
-                          setShowCommandPalette(false);
-                          setSearchQuery("");
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors text-left"
-                      >
-                        <Icon className="h-4 w-4 text-gray-400" />
-                        <span className="flex-1 text-gray-700">{item.label}</span>
-                        <ChevronRight className="h-4 w-4 text-gray-300" />
-                      </button>
-                    );
-                  })}
+                  {navigationGroups
+                    .flatMap((group) => group.items)
+                    .map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onViewChange(item.id);
+                            setShowCommandPalette(false);
+                            setSearchQuery("");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors text-left"
+                        >
+                          <Icon className="h-4 w-4 text-gray-400" />
+                          <span className="flex-1 text-gray-700">
+                            {item.label}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-gray-300" />
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 

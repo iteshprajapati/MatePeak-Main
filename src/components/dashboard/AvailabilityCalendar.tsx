@@ -116,7 +116,6 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
 
   const handleAddSlot = async () => {
     if (!selectedDate) return;
-
     if (!mentorProfile?.id) {
       toast({
         title: "Error",
@@ -126,7 +125,21 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
       return;
     }
 
-    // Validate all slots have required fields
+    // Prevent selecting a date in the past
+    const now = new Date();
+    const selectedIsToday =
+      getLocalDateString(selectedDate) === getLocalDateString(now);
+    const selectedIsPast =
+      selectedDate < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (selectedIsPast) {
+      toast({
+        title: "Invalid Date",
+        description: "Cannot set availability for a past date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     for (let i = 0; i < newSlots.length; i++) {
       const newSlot = newSlots[i];
       if (!newSlot.start_time || !newSlot.end_time) {
@@ -138,6 +151,7 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
         return;
       }
 
+      // Prevent backward time (end before start)
       if (newSlot.start_time >= newSlot.end_time) {
         toast({
           title: "Invalid Time Range",
@@ -147,12 +161,41 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
         return;
       }
 
+      // Prevent selecting a time in the past for today
+      if (selectedIsToday) {
+        const [nowH, nowM] = [now.getHours(), now.getMinutes()];
+        const nowMinutes = nowH * 60 + nowM;
+        const [startH, startM] = newSlot.start_time.split(":").map(Number);
+        const [endH, endM] = newSlot.end_time.split(":").map(Number);
+        const slotStartMinutes = startH * 60 + startM;
+        const slotEndMinutes = endH * 60 + endM;
+        if (slotEndMinutes <= nowMinutes) {
+          toast({
+            title: "Invalid Time",
+            description: `Slot ${
+              i + 1
+            } ends in the past. Please select a future time.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        if (slotStartMinutes < nowMinutes) {
+          toast({
+            title: "Invalid Time",
+            description: `Slot ${
+              i + 1
+            } starts in the past. Please select a future time.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Check for very short slots (less than 15 minutes)
       const [startHours, startMins] = newSlot.start_time.split(":").map(Number);
       const [endHours, endMins] = newSlot.end_time.split(":").map(Number);
       const durationMinutes =
         endHours * 60 + endMins - (startHours * 60 + startMins);
-
       if (durationMinutes < 15) {
         toast({
           title: "Slot Too Short",
@@ -840,11 +883,28 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-60 overflow-y-auto">
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
-                            </SelectItem>
-                          ))}
+                          {timeSlots
+                            .filter((time) => {
+                              // If today, only allow future times
+                              if (
+                                selectedDate &&
+                                getLocalDateString(selectedDate) ===
+                                  getLocalDateString(new Date())
+                              ) {
+                                const [h, m] = time.split(":").map(Number);
+                                const now = new Date();
+                                const nowMinutes =
+                                  now.getHours() * 60 + now.getMinutes();
+                                const slotMinutes = h * 60 + m;
+                                return slotMinutes >= nowMinutes;
+                              }
+                              return true;
+                            })
+                            .map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -862,9 +922,26 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                         </SelectTrigger>
                         <SelectContent className="max-h-60 overflow-y-auto">
                           {timeSlots
-                            .filter(
-                              (time) => time > (slot.start_time || "00:00")
-                            )
+                            .filter((time) => {
+                              // Only allow end times after start time
+                              if (slot.start_time && time > slot.start_time) {
+                                // If today, only allow future times
+                                if (
+                                  selectedDate &&
+                                  getLocalDateString(selectedDate) ===
+                                    getLocalDateString(new Date())
+                                ) {
+                                  const [h, m] = time.split(":").map(Number);
+                                  const now = new Date();
+                                  const nowMinutes =
+                                    now.getHours() * 60 + now.getMinutes();
+                                  const slotMinutes = h * 60 + m;
+                                  return slotMinutes > nowMinutes;
+                                }
+                                return true;
+                              }
+                              return false;
+                            })
                             .map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}

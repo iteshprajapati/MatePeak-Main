@@ -1,3 +1,20 @@
+/* Thinner scrollbar for dashboard sidebar */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #bdbdbd;
+  border-radius: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+/* For Firefox */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #bdbdbd #f3f4f6;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
