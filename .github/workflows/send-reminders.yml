@@ -1,9 +1,10 @@
 name: Send Email Reminders
 
 on:
-  schedule:
-    # Run every hour at minute 0
-    - cron: "0 * * * *"
+  # Disabled - uncomment to re-enable hourly reminders
+  # schedule:
+  #   # Run every hour at minute 0
+  #   - cron: "0 * * * *"
 
   # Allow manual trigger for testing
   workflow_dispatch:
