@@ -22,10 +22,24 @@ export default function ExpertDashboard() {
         return;
       }
 
-      // If user is a student, redirect to student dashboard
-      const userRole = session.user.user_metadata?.role;
+      // Security: Check if user is a student
+      const userRole = session.user.user_metadata?.role || session.user.user_metadata?.user_type;
       if (userRole === 'student') {
+        toast.error('This dashboard is for mentors only');
         navigate('/dashboard');
+        return;
+      }
+
+      // Security: Verify user has expert profile
+      const { data: expertCheck } = await supabase
+        .from('expert_profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!expertCheck) {
+        toast.error('Expert profile not found. Please complete onboarding.');
+        navigate('/expert/onboarding');
         return;
       }
       
