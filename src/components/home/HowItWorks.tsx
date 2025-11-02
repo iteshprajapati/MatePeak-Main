@@ -429,33 +429,15 @@ const HowItWorks = ({
                 }`}
               >
                 <div className="max-w-md text-center md:text-left">
-                  {/* Step badge - clean and professional */}
+                  {/* Step badge */}
                   <div
-                    className={`flex items-center justify-center md:justify-start gap-2 mb-4 transition-all duration-500 ${
-                      activeStep === index ? "scale-100" : "scale-95"
+                    className={`flex items-center justify-center md:justify-start gap-2 mb-3 transition-all duration-500 ${
+                      activeStep === index ? "scale-100" : "scale-90"
                     }`}
                   >
-                    <div className={`flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 ${
-                      activeStep === index 
-                        ? "bg-matepeak-primary shadow-sm" 
-                        : "bg-white border border-gray-200"
-                    }`}>
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-300 ${
-                        activeStep === index 
-                          ? "bg-white" 
-                          : "bg-gray-100"
-                      }`}>
-                        <step.icon className={`w-3 h-3 transition-colors duration-300 ${
-                          activeStep === index 
-                            ? "text-matepeak-primary" 
-                            : "text-gray-400"
-                        }`} />
-                      </div>
-                      <span className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-300 ${
-                        activeStep === index 
-                          ? "text-white" 
-                          : "text-gray-600"
-                      }`}>
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-matepeak-primary/10 to-matepeak-secondary/10 rounded-full border border-matepeak-primary/20">
+                      <step.icon className="w-4 h-4 text-matepeak-primary" />
+                      <span className="text-xs font-semibold text-matepeak-primary">
                         Step {step.number}
                       </span>
                     </div>
