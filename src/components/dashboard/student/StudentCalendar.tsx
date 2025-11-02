@@ -243,7 +243,7 @@ export default function StudentCalendar({ studentProfile }: StudentCalendarProps
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={exportToICS}>
-            Export .ics
+            Export to Calendar
           </Button>
         </div>
       </div>

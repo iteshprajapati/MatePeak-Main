@@ -282,60 +282,46 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Profile Picture Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
+      <Card className="border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
             Profile Picture
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Avatar Preview */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
-                <Avatar 
-                  className="h-32 w-32 cursor-pointer border-4 border-white shadow-lg hover:shadow-xl transition-all ring-4 ring-gray-100"
+          </h3>
+        </div>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-6">
+            <div className="relative group">
+              <Avatar className="h-24 w-24 cursor-pointer border-4 border-white shadow-md hover:shadow-lg transition-all">
+                <AvatarImage
+                  src={previewUrl || profilePictureUrl || ""}
+                  alt="Profile"
+                  onClick={handleProfilePictureClick}
+                />
+                <AvatarFallback
+                  className="bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center cursor-pointer"
                   onClick={handleProfilePictureClick}
                 >
-                  <AvatarImage src={previewUrl || profilePictureUrl} alt="Profile picture" />
-                  <AvatarFallback 
-                    className="bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600 text-2xl font-bold cursor-pointer"
-                    onClick={handleProfilePictureClick}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-12 w-12 animate-spin" />
-                    ) : (
-                      <Camera className="h-12 w-12" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                {(profilePictureUrl || previewUrl) && !uploading && (
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-2 shadow-md">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                )}
-                <div 
-                  className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                  onClick={handleProfilePictureClick}
-                >
-                  <Camera className="h-8 w-8 text-white" />
-                </div>
+                  {uploading ? (
+                    <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
+                  ) : (
+                    <Camera className="h-8 w-8 text-gray-400" />
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                onClick={handleProfilePictureClick}
+              >
+                <Camera className="h-6 w-6 text-white" />
               </div>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/jpeg,image/jpg,image/png"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              
+            </div>
+            <div className="flex-1">
               <Button
                 type="button"
+                variant="outline"
                 onClick={handleProfilePictureClick}
                 disabled={uploading}
-                variant="outline"
+                className="border-2 border-gray-300 hover:border-black hover:bg-gray-50"
               >
                 {uploading ? (
                   <>
@@ -345,53 +331,32 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    {profilePictureUrl ? 'Change Photo' : 'Upload Photo'}
+                    Change Photo
                   </>
                 )}
               </Button>
-              <p className="text-xs text-gray-500 text-center max-w-[200px]">
-                JPG or PNG | Max 5MB
+              <p className="text-xs text-gray-500 mt-2">
+                JPG or PNG | Max 5MB | Recommended: 400x400px
               </p>
             </div>
-
-            {/* Image Editor Modal */}
-            <ImageEditor
-              open={editorOpen}
-              onClose={() => setEditorOpen(false)}
-              imageUrl={tempImageUrl}
-              onSave={handleSaveEditedImage}
-            />
-
-            {/* Guidelines */}
-            <div className="flex-1 space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  Photo Guidelines
-                </h4>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">✓</span>
-                    <span>Clear, well-lit photo showing your face</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">✓</span>
-                    <span>Professional or smart casual attire</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">✓</span>
-                    <span>Neutral background preferred</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">✓</span>
-                    <span>Friendly, approachable expression</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
           </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/jpeg,image/jpg,image/png"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </CardContent>
       </Card>
+
+      {/* Image Editor Modal */}
+      <ImageEditor
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        imageUrl={tempImageUrl}
+        onSave={handleSaveEditedImage}
+      />
 
       {/* Personal Information */}
       <Card>
