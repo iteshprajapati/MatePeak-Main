@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Hero from "@/components/home/Hero";
@@ -6,8 +6,25 @@ import HowItWorks from "@/components/home/HowItWorks";
 import NewMentors from "@/components/home/NewMentors";
 import FeaturedMentors from "@/components/home/FeaturedMentors";
 import CallToActionSection from "@/components/CallToActionSection";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+
+  // Check authentication status
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
   // Refs for scroll animation sections
   const sectionRefs = {
     howItWorks: useRef<HTMLDivElement>(null),
@@ -49,7 +66,7 @@ const Index = () => {
       <Navbar />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 xl:px-0">
         <Hero />
-        <HowItWorks sectionRef={sectionRefs.howItWorks} />
+        {!user && <HowItWorks sectionRef={sectionRefs.howItWorks} />}
         <NewMentors sectionRef={sectionRefs.newMentors} />
         <FeaturedMentors sectionRef={sectionRefs.mentors} />
       </main>
