@@ -613,36 +613,74 @@ export default function DateTimeSelection({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 space-y-2">
                   <Label
                     htmlFor="custom-start"
                     className="text-sm font-semibold text-gray-700"
                   >
                     Start Time
                   </Label>
-                  <Input
-                    id="custom-start"
-                    type="time"
+                  <Select
                     value={requestedStartTime}
-                    onChange={(e) => setRequestedStartTime(e.target.value)}
-                    className="border-gray-300 rounded-xl h-11"
-                  />
+                    onValueChange={setRequestedStartTime}
+                  >
+                    <SelectTrigger
+                      id="custom-start"
+                      className="border-gray-300 rounded-xl h-11"
+                      aria-label="Start Time"
+                    />
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const hour = Math.floor(i / 2);
+                        const min = i % 2 === 0 ? "00" : "30";
+                        const value = `${String(hour).padStart(2, "0")}:${min}`;
+                        return (
+                          <SelectItem
+                            key={value}
+                            value={value}
+                            className="cursor-pointer"
+                          >
+                            {value}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="flex-1 space-y-2">
                   <Label
                     htmlFor="custom-end"
                     className="text-sm font-semibold text-gray-700"
                   >
                     End Time
                   </Label>
-                  <Input
-                    id="custom-end"
-                    type="time"
+                  <Select
                     value={requestedEndTime}
-                    onChange={(e) => setRequestedEndTime(e.target.value)}
-                    className="border-gray-300 rounded-xl h-11"
-                  />
+                    onValueChange={setRequestedEndTime}
+                  >
+                    <SelectTrigger
+                      id="custom-end"
+                      className="border-gray-300 rounded-xl h-11"
+                      aria-label="End Time"
+                    />
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const hour = Math.floor(i / 2);
+                        const min = i % 2 === 0 ? "00" : "30";
+                        const value = `${String(hour).padStart(2, "0")}:${min}`;
+                        return (
+                          <SelectItem
+                            key={value}
+                            value={value}
+                            className="cursor-pointer"
+                          >
+                            {value}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
