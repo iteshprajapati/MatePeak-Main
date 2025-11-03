@@ -146,7 +146,6 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
           `${session.scheduled_date}T${session.scheduled_time}`
         );
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-
         return [
           "BEGIN:VEVENT",
           `DTSTART:${
