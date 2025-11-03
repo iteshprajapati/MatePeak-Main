@@ -71,23 +71,52 @@ const Explore = () => {
     "Resume Writing"
   ];
 
-  // Fetch mentors from database
+  // Fetch mentors from database on initial load and when filters change
   useEffect(() => {
     fetchDatabaseMentors();
   }, [selectedCategory, selectedExpertise]);
+  
+  // Fetch mentors when URL params change (e.g., coming from home page buttons)
+  useEffect(() => {
+    if (initialSearchQuery) {
+      console.log('🔗 URL has search param:', initialSearchQuery);
+      fetchDatabaseMentors();
+    }
+  }, [initialSearchQuery]);
+  
+  // Real-time search with debouncing (only for manual typing)
+  useEffect(() => {
+    if (!searchInput) return; // Skip if empty
+    
+    const timeoutId = setTimeout(() => {
+      // Only search if the user manually changed the input
+      if (searchInput !== initialSearchQuery) {
+        fetchDatabaseMentors();
+      }
+    }, 500); // Wait 500ms after user stops typing
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
 
   const fetchDatabaseMentors = async () => {
     setLoading(true);
     try {
+      console.log('🔎 Explore page fetching with:', {
+        category: selectedCategory,
+        expertise: selectedExpertise,
+        searchQuery: searchInput
+      });
+      
       const cards = await fetchMentorCards({
         category: selectedCategory !== "all-categories" ? selectedCategory : undefined,
         expertise: selectedExpertise !== "all" ? selectedExpertise : undefined,
         searchQuery: searchInput || undefined,
       });
       
+      console.log('📋 Explore page received:', cards.length, 'mentor cards');
       setMentorCards(cards);
     } catch (error) {
-      console.error("Error fetching mentors:", error);
+      console.error("❌ Error fetching mentors in Explore page:", error);
     } finally {
       setLoading(false);
     }
@@ -129,6 +158,16 @@ const Explore = () => {
     }
   });
 
+  // Log sorting results
+  console.log(`🔄 Sort by: ${sortBy}`);
+  console.log(`📊 Sorted mentors (${sortedMentors.length}):`, 
+    sortedMentors.map(m => ({
+      name: m.name,
+      rating: m.rating,
+      price: m.price
+    }))
+  );
+
   const hasActiveFilters = selectedCategory !== "all-categories" || selectedExpertise !== "all" || searchInput !== "";
 
   return (
@@ -153,12 +192,25 @@ const Explore = () => {
                   <Search className="h-5 w-5 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search by name, expertise, or topic..."
+                    placeholder="Search by name, expertise, skills, institution, or category..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-900"
                   />
+                  {searchInput && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSearchInput("");
+                        fetchDatabaseMentors();
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <Button
                   onClick={handleSearch}
@@ -376,12 +428,20 @@ const Explore = () => {
                 <div className="bg-white rounded-xl shadow-md p-12 text-center">
                   <div className="flex justify-center mb-6">
                     <div className="bg-gradient-to-br from-matepeak-primary/10 to-matepeak-yellow/10 rounded-full p-8">
-                      <Users className="h-16 w-16 text-matepeak-primary" />
+                      <Search className="h-16 w-16 text-matepeak-primary" />
                     </div>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">No mentors found</h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    We couldn't find any mentors matching your criteria. Try adjusting your filters or search terms.
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                    {searchInput ? (
+                      <>
+                        No mentors match <span className="font-semibold">"{searchInput}"</span>
+                        <br />
+                        <span className="text-sm">Try searching by name, expertise, skills, or institution</span>
+                      </>
+                    ) : (
+                      "We couldn't find any mentors matching your criteria. Try adjusting your filters."
+                    )}
                   </p>
                   {hasActiveFilters && (
                     <Button

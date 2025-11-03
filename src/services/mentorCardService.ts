@@ -171,47 +171,151 @@ export async function fetchMentorCards(filters?: {
   priceRange?: [number, number];
 }): Promise<MentorProfile[]> {
   try {
+    console.log('🔍 Fetching mentors with filters:', filters);
+    
+    // First, let's check if ANY mentors exist at all
+    const { count: totalCount } = await supabase
+      .from("expert_profiles")
+      .select('*', { count: 'exact', head: true });
+    
+    console.log(`📊 Total mentors in database: ${totalCount}`);
+    
+    // Fetch expert profiles and profiles separately like FeaturedMentors does
+    // Fetch all mentors - we'll filter client-side for better reliability
     let query = supabase
       .from("expert_profiles")
-      .select(`
-        *,
-        profiles!inner (
-          avatar_url
-        )
-      `);
+      .select('*');
 
-    // Apply filters
-    if (filters?.category && filters.category !== "all-categories") {
-      const categorySearch = filters.category.replace(/-/g, " ");
-      query = query.contains("categories", [categorySearch]);
-    }
-
-    if (filters?.expertise) {
-      const expertiseSearch = filters.expertise.replace(/-/g, " ");
-      query = query.contains("expertise_tags", [expertiseSearch]);
-    }
-
-    if (filters?.searchQuery) {
-      query = query.or(
-        `full_name.ilike.%${filters.searchQuery}%,bio.ilike.%${filters.searchQuery}%,username.ilike.%${filters.searchQuery}%`
-      );
-    }
+    // Note: We fetch ALL mentors and filter client-side to handle:
+    // - Complex searches with spaces
+    // - Array field searches (expertise_tags, categories)
+    // - Multiple filter combinations
+    // This works well for moderate datasets (< 1000 mentors)
 
     const { data, error } = await query;
 
-    if (error) throw error;
-
-    // Transform to MentorCard format
-    const mentorCards = (data || []).map(transformToMentorCard);
-
-    // Apply price range filter if specified
-    if (filters?.priceRange) {
-      const [minPrice, maxPrice] = filters.priceRange;
-      return mentorCards.filter(
-        (card) => card.price >= minPrice && card.price <= maxPrice
-      );
+    if (error) {
+      console.error('❌ Database query error:', error);
+      throw error;
     }
 
+    console.log(`📊 Found ${data?.length || 0} mentors from database query`);
+
+    // Fetch profiles separately for avatar_url
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, avatar_url");
+
+    if (profilesError) {
+      console.error('⚠️ Error fetching profiles:', profilesError);
+    }
+
+    // Create a map of profiles by id for quick lookup
+    const profilesMap = new Map(
+      (profiles || []).map((p: any) => [p.id, p])
+    );
+
+    // Transform to MentorCard format
+    let mentorCards = (data || []).map((profile, index) => {
+      try {
+        // Attach profile avatar if exists
+        const userProfile = profilesMap.get(profile.id);
+        const profileWithAvatar = {
+          ...profile,
+          profiles: userProfile ? { avatar_url: userProfile.avatar_url } : null,
+        };
+        
+        return transformToMentorCard(profileWithAvatar);
+      } catch (err) {
+        console.error(`⚠️ Error transforming mentor profile at index ${index}:`, err, profile);
+        return null;
+      }
+    }).filter(Boolean) as MentorProfile[];
+
+    // Apply additional client-side filtering for better search across array fields
+    if (filters?.searchQuery) {
+      const searchLower = filters.searchQuery.toLowerCase().trim();
+      
+      console.log(`🔍 Searching for "${searchLower}" across all fields...`);
+      
+      mentorCards = mentorCards.filter((card) => {
+        // Check if search term matches any expertise tag
+        const expertiseMatch = card.expertise_tags?.some((exp: string) =>
+          exp.toLowerCase().includes(searchLower)
+        );
+        
+        // Check if search term matches any category
+        const categoryMatch = card.categories?.some((cat: string) =>
+          cat.toLowerCase().includes(searchLower)
+        );
+        
+        // Check if search term matches tagline (contains institution, field, etc.)
+        const taglineMatch = card.tagline?.toLowerCase().includes(searchLower);
+
+        // Check name, bio, title
+        const nameMatch = card.name.toLowerCase().includes(searchLower);
+        const bioMatch = card.bio?.toLowerCase().includes(searchLower);
+        const titleMatch = card.title?.toLowerCase().includes(searchLower);
+
+        // Debug: Log matches for first few mentors
+        if (nameMatch || bioMatch || titleMatch || expertiseMatch || categoryMatch || taglineMatch) {
+          console.log(`  ✅ Match found in ${card.name}:`, {
+            name: nameMatch,
+            bio: bioMatch,
+            title: titleMatch,
+            expertise: expertiseMatch ? card.expertise_tags?.filter(e => e.toLowerCase().includes(searchLower)) : false,
+            category: categoryMatch ? card.categories?.filter(c => c.toLowerCase().includes(searchLower)) : false,
+            tagline: taglineMatch
+          });
+        }
+
+        return nameMatch || bioMatch || titleMatch || expertiseMatch || categoryMatch || taglineMatch;
+      });
+      
+      console.log(`✅ After search filtering: ${mentorCards.length} mentors match "${filters.searchQuery}"`);
+    }
+
+    // Apply category filter
+    if (filters?.category && filters.category !== "all-categories") {
+      const categoryLower = filters.category.toLowerCase().replace(/-/g, " ");
+      const beforeCount = mentorCards.length;
+      
+      mentorCards = mentorCards.filter((card) => {
+        return card.categories?.some((cat: string) => 
+          cat.toLowerCase().includes(categoryLower)
+        ) || card.title?.toLowerCase().includes(categoryLower);
+      });
+      
+      console.log(`🏷️ Category filter "${filters.category}": ${beforeCount} → ${mentorCards.length} mentors`);
+    }
+
+    // Apply expertise filter
+    if (filters?.expertise && filters.expertise !== "all") {
+      const expertiseLower = filters.expertise.toLowerCase().replace(/-/g, " ");
+      const beforeCount = mentorCards.length;
+      
+      mentorCards = mentorCards.filter((card) => {
+        return card.expertise_tags?.some((exp: string) => 
+          exp.toLowerCase().includes(expertiseLower)
+        );
+      });
+      
+      console.log(`💡 Expertise filter "${filters.expertise}": ${beforeCount} → ${mentorCards.length} mentors`);
+    }
+
+    // Apply price range filter
+    if (filters?.priceRange) {
+      const [minPrice, maxPrice] = filters.priceRange;
+      const beforeCount = mentorCards.length;
+      
+      mentorCards = mentorCards.filter(
+        (card) => card.price >= minPrice && card.price <= maxPrice
+      );
+      
+      console.log(`💰 Price filter $${minPrice}-$${maxPrice}: ${beforeCount} → ${mentorCards.length} mentors`);
+    }
+
+    console.log(`🎯 Final result: ${mentorCards.length} mentors after all filters`);
     return mentorCards;
   } catch (error) {
     console.error("Error fetching mentor cards:", error);

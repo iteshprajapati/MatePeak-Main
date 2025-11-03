@@ -60,7 +60,7 @@ const SearchFilters = ({ onSearch }: SearchFiltersProps) => {
         }
       } catch (error) {
         console.error("Search error:", error);
-        toast.error("Failed to perform AI search. Using standard search instead.");
+        // AI search not available, fallback to standard search silently
         onSearch({
           searchTerm,
           priceRange,
