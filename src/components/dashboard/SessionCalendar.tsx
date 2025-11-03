@@ -46,7 +46,6 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
     try {
       setLoading(true);
 
-      // Get start and end of current month
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const firstDay = new Date(year, month, 1);
@@ -143,16 +142,26 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
       "VERSION:2.0",
       "PRODID:-//Spark Mentor Connect//EN",
       ...sessions.map((session) => {
-        const startDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`);
+        const startDateTime = new Date(
+          `${session.scheduled_date}T${session.scheduled_time}`
+        );
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-        
+
         return [
           "BEGIN:VEVENT",
-          `DTSTART:${startDateTime.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
-          `DTEND:${endDateTime.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
-          `SUMMARY:${session.session_type || "Session"} with ${session.student_name}`,
+          `DTSTART:${
+            startDateTime.toISOString().replace(/[-:]/g, "").split(".")[0]
+          }Z`,
+          `DTEND:${
+            endDateTime.toISOString().replace(/[-:]/g, "").split(".")[0]
+          }Z`,
+          `SUMMARY:${session.session_type || "Session"} with ${
+            session.student_name
+          }`,
           `DESCRIPTION:Status: ${session.status}`,
-          `STATUS:${session.status === "confirmed" ? "CONFIRMED" : "TENTATIVE"}`,
+          `STATUS:${
+            session.status === "confirmed" ? "CONFIRMED" : "TENTATIVE"
+          }`,
           "END:VEVENT",
         ].join("\r\n");
       }),
@@ -163,7 +172,9 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sessions-${currentDate.getFullYear()}-${currentDate.getMonth() + 1}.ics`;
+    a.download = `sessions-${currentDate.getFullYear()}-${
+      currentDate.getMonth() + 1
+    }.ics`;
     a.click();
     window.URL.revokeObjectURL(url);
 
@@ -176,7 +187,7 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
   const days = getDaysInMonth(currentDate);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -231,8 +242,8 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
       </div>
 
       {/* Calendar */}
-      <Card className="border-gray-200 max-w-2xl">
-        <CardContent className="p-4">
+      <Card className="border-gray-200 w-full shadow-none bg-white rounded-2xl">
+        <CardContent className="p-2 sm:p-4 w-full">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -260,7 +271,7 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
           </div>
 
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
+          <div className="grid grid-cols-7 gap-2 mb-2 w-full">
             {daysOfWeek.map((day) => (
               <div
                 key={day}
@@ -273,7 +284,7 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
 
           {/* Calendar Grid */}
           {loading ? (
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2 min-h-[420px] w-full">
               {Array.from({ length: 35 }).map((_, i) => (
                 <div key={i} className="aspect-square">
                   <Skeleton className="w-full h-full" />
@@ -281,56 +292,97 @@ const SessionCalendar = ({ mentorProfile }: SessionCalendarProps) => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2 min-h-[420px] w-full">
               {days.map((date, index) => {
                 if (!date) {
-                  return <div key={`empty-${index}`} className="aspect-square" />;
+                  return (
+                    <div key={`empty-${index}`} className="aspect-square" />
+                  );
                 }
 
                 const daySessions = getSessionsForDate(date);
                 const today = isToday(date);
+                const hasSessions = daySessions.length > 0;
+
+                // Color by status
+                const statusColor = (status: string) => {
+                  switch (status?.toLowerCase()) {
+                    case "confirmed":
+                      return "bg-green-100 text-green-800 border-green-200";
+                    case "pending":
+                      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+                    case "completed":
+                      return "bg-blue-100 text-blue-800 border-blue-200";
+                    case "cancelled":
+                      return "bg-red-100 text-red-800 border-red-200";
+                    default:
+                      return "bg-gray-100 text-gray-800 border-gray-200";
+                  }
+                };
 
                 return (
-                  <div
+                  <button
                     key={date.toISOString()}
-                    className={`aspect-square border rounded-md p-1 transition-all ${
+                    className={`aspect-square border rounded-md p-1 w-full h-full transition-all text-left focus:outline-none focus:ring-2 focus:ring-rose-400 ${
                       today
                         ? "border-2 border-gray-900 bg-gray-50"
+                        : hasSessions
+                        ? "border-rose-300 bg-rose-50 hover:bg-rose-100 hover:shadow-md"
                         : "border border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white"
-                    }`}
+                    } ${hasSessions ? "cursor-pointer" : "cursor-default"}`}
+                    onClick={() => {
+                      if (hasSessions) {
+                        setSelectedSession(
+                          daySessions.length === 1
+                            ? daySessions[0]
+                            : daySessions
+                        );
+                        setModalOpen(true);
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-label={
+                      hasSessions
+                        ? `Sessions: ${daySessions
+                            .map(
+                              (s) =>
+                                `${s.scheduled_time.slice(0, 5)} with ${
+                                  s.student_name || "Session"
+                                }`
+                            )
+                            .join(", ")}`
+                        : `No sessions`
+                    }
                   >
                     <div className="flex flex-col items-center justify-start h-full">
-                      <div className="text-xs font-semibold text-gray-900 mb-0.5">
+                      <div className="text-xs font-semibold text-gray-900 mb-1">
                         {date.getDate()}
                       </div>
-                      <div className="flex flex-wrap gap-0.5 justify-center">
-                        {daySessions.slice(0, 2).map((session) => (
-                          <button
+                      <div className="flex flex-col gap-0.5 w-full items-center">
+                        {daySessions.slice(0, 3).map((session) => (
+                          <div
                             key={session.id}
-                            onClick={() => {
-                              setSelectedSession(session);
-                              setModalOpen(true);
-                            }}
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              session.status === "pending"
-                                ? "bg-yellow-500"
-                                : session.status === "confirmed"
-                                ? "bg-green-500"
-                                : session.status === "completed"
-                                ? "bg-blue-500"
-                                : "bg-red-500"
+                            className={`w-full px-1 py-0.5 rounded text-xs border font-medium truncate mb-0.5 ${statusColor(
+                              session.status
+                            )}`}
+                            title={`${session.scheduled_time.slice(0, 5)} - ${
+                              session.student_name || "Session"
                             }`}
-                            title={`${session.scheduled_time.slice(0, 5)} - ${session.student_name || "Session"}`}
-                          />
+                          >
+                            <span className="font-semibold">
+                              {session.scheduled_time.slice(0, 5)}
+                            </span>{" "}
+                            - {session.student_name || "Session"}
+                          </div>
                         ))}
-                        {daySessions.length > 2 && (
-                          <div className="text-[8px] text-gray-500 w-full text-center mt-0.5">
-                            +{daySessions.length - 2}
+                        {daySessions.length > 3 && (
+                          <div className="text-[10px] text-gray-500 w-full text-center mt-0.5">
+                            +{daySessions.length - 3} more
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
