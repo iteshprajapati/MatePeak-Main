@@ -14,20 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Clock, 
-  Calendar, 
-  MessageSquare, 
-  CheckCircle, 
+  Clock,
+  Calendar,
+  MessageSquare,
+  CheckCircle,
   XCircle,
   Loader2,
-  User
+  User,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -53,7 +46,9 @@ interface TimeRequest {
 
 type StatusFilter = "all" | "pending" | "approved" | "declined";
 
-export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequestsProps) {
+export default function CustomTimeRequests({
+  mentorProfile,
+}: CustomTimeRequestsProps) {
   const [requests, setRequests] = useState<TimeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -77,21 +72,35 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // First, try to fetch booking requests
+      const { data: requestsData, error: requestsError } = await supabase
         .from("booking_requests")
-        .select(`
-          *,
-          profiles!booking_requests_mentee_id_fkey (
-            full_name,
-            email
-          )
-        `)
+        .select("*")
         .eq("mentor_id", mentorProfile.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (requestsError) {
+        console.error("Error fetching booking requests:", requestsError);
+        throw requestsError;
+      }
 
-      setRequests(data || []);
+      // Then fetch profile data for each request
+      const requestsWithProfiles = await Promise.all(
+        (requestsData || []).map(async (request) => {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", request.mentee_id)
+            .single();
+
+          return {
+            ...request,
+            profiles: profileData || { full_name: "Unknown", email: "" },
+          };
+        })
+      );
+
+      setRequests(requestsWithProfiles);
     } catch (error) {
       console.error("Error fetching time requests:", error);
       toast.error("Failed to load time requests");
@@ -106,7 +115,8 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
     try {
       setResponding(true);
 
-      const newStatus = respondDialog.action === "approve" ? "approved" : "declined";
+      const newStatus =
+        respondDialog.action === "approve" ? "approved" : "declined";
 
       const { error } = await supabase
         .from("booking_requests")
@@ -186,9 +196,19 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
     return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  };
+
+  const isNewRequest = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    // Consider a request "new" if it's less than 48 hours old
+    return diffHours < 48;
   };
 
   const filteredRequests = requests.filter((request) => {
@@ -197,6 +217,8 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
   });
 
   const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const approvedCount = requests.filter((r) => r.status === "approved").length;
+  const declinedCount = requests.filter((r) => r.status === "declined").length;
 
   if (loading) {
     return (
@@ -213,185 +235,240 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
 
   return (
     <div className="space-y-6">
-      {/* Header with Stats */}
-      <Card className="shadow-sm border border-gray-200 bg-white rounded-xl">
-        <CardHeader className="border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Custom Time Requests
-              </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage time slot requests from students
-              </p>
-            </div>
-            {pendingCount > 0 && (
-              <Badge className="bg-yellow-500 text-white text-lg px-4 py-2">
-                {pendingCount} Pending
-              </Badge>
-            )}
+      {/* Header - Matching Dashboard Style */}
+      <div className="py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              Time Requests
+            </h1>
+            <p className="text-gray-600 text-sm">
+              Manage custom time slot requests from students
+            </p>
           </div>
-        </CardHeader>
-      </Card>
+          {pendingCount > 0 && (
+            <Badge className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 text-sm font-semibold">
+              {pendingCount} Pending
+            </Badge>
+          )}
+        </div>
+      </div>
 
-      {/* Filters */}
-      <Card className="shadow-sm border border-gray-200 bg-white rounded-xl">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <Label className="text-sm font-semibold text-gray-700">Filter by Status:</Label>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-              <SelectTrigger className="w-[180px] border-gray-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Requests</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-500 ml-auto">
-              {filteredRequests.length} {filteredRequests.length === 1 ? "request" : "requests"}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Filters & Stats */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            statusFilter === "all"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          All Requests
+          {requests.length > 0 && (
+            <span className="ml-1.5 opacity-75">({requests.length})</span>
+          )}
+        </button>
+        <button
+          onClick={() => setStatusFilter("pending")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            statusFilter === "pending"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Pending
+          {pendingCount > 0 && (
+            <span className="ml-1.5 opacity-75">({pendingCount})</span>
+          )}
+        </button>
+        <button
+          onClick={() => setStatusFilter("approved")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            statusFilter === "approved"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Approved
+          {approvedCount > 0 && (
+            <span className="ml-1.5 opacity-75">({approvedCount})</span>
+          )}
+        </button>
+        <button
+          onClick={() => setStatusFilter("declined")}
+          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            statusFilter === "declined"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Declined
+          {declinedCount > 0 && (
+            <span className="ml-1.5 opacity-75">({declinedCount})</span>
+          )}
+        </button>
+      </div>
 
       {/* Requests List */}
       {filteredRequests.length === 0 ? (
-        <Card className="shadow-sm border border-gray-200 bg-white rounded-xl">
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm">
           <CardContent className="p-12">
             <div className="text-center">
-              <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-8 w-8 text-gray-400" />
+              </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No {statusFilter !== "all" ? statusFilter : ""} requests
               </h3>
-              <p className="text-gray-500">
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
                 {statusFilter === "pending"
-                  ? "You don't have any pending time requests at the moment."
+                  ? "You don't have any pending requests at the moment."
                   : "Time requests from students will appear here."}
               </p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredRequests.map((request) => (
-            <Card
-              key={request.id}
-              className={`shadow-sm border-2 transition-all hover:shadow-md ${
-                request.status === "pending"
-                  ? "border-yellow-200 bg-yellow-50/30"
-                  : "border-gray-200 bg-white"
-              }`}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
+        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <CardContent className="p-0">
+            <div className="divide-y divide-gray-100">
+              {filteredRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className={`p-5 transition-all duration-200 hover:bg-gray-50 ${
+                    request.status === "pending" ? "bg-amber-50/30" : ""
+                  }`}
+                >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-gray-100 rounded-full">
-                      <User className="h-6 w-6 text-gray-600" />
+                    {/* Avatar */}
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-600" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">
-                        {request.profiles?.full_name || "Unknown Student"}
-                      </h3>
-                      <p className="text-sm text-gray-600">{request.profiles?.email}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Requested {getTimeAgo(request.created_at)}
-                      </p>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header Row */}
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate">
+                              {request.profiles?.full_name || "Unknown Student"}
+                            </h3>
+                            {isNewRequest(request.created_at) && (
+                              <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0 h-4 leading-none">
+                                NEW
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            {request.profiles?.email}
+                          </p>
+                        </div>
+                        {getStatusBadge(request.status)}
+                      </div>
+
+                      {/* Date & Time Info */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-700">
+                            {formatDate(request.requested_date)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-700">
+                            {formatTime(request.requested_start_time)} -{" "}
+                            {formatTime(request.requested_end_time)}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {getTimeAgo(request.created_at)}
+                        </span>
+                      </div>
+
+                      {/* Messages */}
+                      {request.message && (
+                        <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200 rounded-xl">
+                          <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-1">
+                            Student's Message
+                          </p>
+                          <p className="text-sm text-gray-800 leading-relaxed">
+                            {request.message}
+                          </p>
+                        </div>
+                      )}
+
+                      {request.mentor_response && (
+                        <div className="mb-3 p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+                          <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide mb-1">
+                            Your Response
+                          </p>
+                          <p className="text-sm text-gray-800 leading-relaxed">
+                            {request.mentor_response}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      {request.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              setRespondDialog({
+                                open: true,
+                                request,
+                                action: "approve",
+                              })
+                            }
+                            className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 rounded-lg"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              setRespondDialog({
+                                open: true,
+                                request,
+                                action: "decline",
+                              })
+                            }
+                            variant="outline"
+                            className="h-9 border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 text-xs font-semibold px-4 rounded-lg"
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Decline
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {getStatusBadge(request.status)}
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <Calendar className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Date</p>
-                      <p className="text-sm font-bold text-gray-900">
-                        {formatDate(request.requested_date)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <Clock className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Time</p>
-                      <p className="text-sm font-bold text-gray-900">
-                        {formatTime(request.requested_start_time)} -{" "}
-                        {formatTime(request.requested_end_time)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {request.message && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-                    <p className="text-xs font-semibold text-blue-900 mb-1">
-                      Student's Message:
-                    </p>
-                    <p className="text-sm text-blue-800">{request.message}</p>
-                  </div>
-                )}
-
-                {request.mentor_response && (
-                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-                    <p className="text-xs font-semibold text-gray-900 mb-1">
-                      Your Response:
-                    </p>
-                    <p className="text-sm text-gray-700">{request.mentor_response}</p>
-                  </div>
-                )}
-
-                {request.status === "pending" && (
-                  <div className="flex gap-3 pt-4 border-t border-gray-200">
-                    <Button
-                      onClick={() =>
-                        setRespondDialog({
-                          open: true,
-                          request,
-                          action: "approve",
-                        })
-                      }
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve Request
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        setRespondDialog({
-                          open: true,
-                          request,
-                          action: "decline",
-                        })
-                      }
-                      variant="outline"
-                      className="flex-1 border-2 border-red-500 text-red-600 hover:bg-red-50 font-semibold"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Decline Request
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Response Dialog */}
-      <Dialog open={respondDialog.open} onOpenChange={(open) => {
-        if (!open) {
-          setRespondDialog({ open: false, request: null, action: null });
-          setMentorResponse("");
-        }
-      }}>
+      <Dialog
+        open={respondDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRespondDialog({ open: false, request: null, action: null });
+            setMentorResponse("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              {respondDialog.action === "approve" ? "Approve" : "Decline"} Time Request
+              {respondDialog.action === "approve" ? "Approve" : "Decline"} Time
+              Request
             </DialogTitle>
             <DialogDescription>
               {respondDialog.action === "approve"
@@ -403,19 +480,24 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
           {respondDialog.request && (
             <div className="space-y-4 py-4">
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Request Details:</p>
-                <p className="text-sm text-gray-700">
-                  <strong>Date:</strong> {formatDate(respondDialog.request.requested_date)}
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Request Details:
                 </p>
                 <p className="text-sm text-gray-700">
-                  <strong>Time:</strong> {formatTime(respondDialog.request.requested_start_time)} -{" "}
+                  <strong>Date:</strong>{" "}
+                  {formatDate(respondDialog.request.requested_date)}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <strong>Time:</strong>{" "}
+                  {formatTime(respondDialog.request.requested_start_time)} -{" "}
                   {formatTime(respondDialog.request.requested_end_time)}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="response">
-                  Response Message {respondDialog.action === "decline" && "(Required)"}
+                  Response Message{" "}
+                  {respondDialog.action === "decline" && "(Required)"}
                 </Label>
                 <Textarea
                   id="response"
@@ -446,7 +528,10 @@ export default function CustomTimeRequests({ mentorProfile }: CustomTimeRequests
             </Button>
             <Button
               onClick={handleRespond}
-              disabled={responding || (respondDialog.action === "decline" && !mentorResponse)}
+              disabled={
+                responding ||
+                (respondDialog.action === "decline" && !mentorResponse)
+              }
               className={
                 respondDialog.action === "approve"
                   ? "bg-green-600 hover:bg-green-700"

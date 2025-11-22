@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -14,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuItem, 
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuLabel,
@@ -205,9 +206,15 @@ const Navbar = () => {
     return colors[index];
   };
 
+  const location = useLocation();
+  const isMainPage = location.pathname === "/";
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+      <nav
+        className={`${
+          isMainPage ? "sticky top-0 z-50" : "relative"
+        } bg-white/70 backdrop-blur-xl py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]`}
+      >
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex justify-between items-center">
             {/* Logo - Centered */}

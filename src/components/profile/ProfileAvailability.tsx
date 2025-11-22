@@ -1043,7 +1043,9 @@ export default function ProfileAvailability({
                     id="request-start"
                     className="border-gray-300"
                     aria-label="Start Time"
-                  />
+                  >
+                    <SelectValue placeholder="Select start time" />
+                  </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {Array.from({ length: 48 }).map((_, i) => {
                       const hour = Math.floor(i / 2);
@@ -1072,7 +1074,9 @@ export default function ProfileAvailability({
                     id="request-end"
                     className="border-gray-300"
                     aria-label="End Time"
-                  />
+                  >
+                    <SelectValue placeholder="Select end time" />
+                  </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {Array.from({ length: 48 }).map((_, i) => {
                       const hour = Math.floor(i / 2);

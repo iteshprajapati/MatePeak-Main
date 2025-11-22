@@ -197,7 +197,7 @@ export default function DateTimeSelection({
       // Create custom time request record
       const { error } = await supabase.from("booking_requests").insert({
         mentor_id: mentorId,
-        student_id: user.id,
+        mentee_id: user.id,
         requested_date: format(selectedDate, "yyyy-MM-dd"),
         requested_start_time: requestedStartTime,
         requested_end_time: requestedEndTime,
@@ -629,7 +629,9 @@ export default function DateTimeSelection({
                       id="custom-start"
                       className="border-gray-300 rounded-xl h-11"
                       aria-label="Start Time"
-                    />
+                    >
+                      <SelectValue placeholder="Select start time" />
+                    </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
                       {Array.from({ length: 48 }).map((_, i) => {
                         const hour = Math.floor(i / 2);
@@ -663,7 +665,9 @@ export default function DateTimeSelection({
                       id="custom-end"
                       className="border-gray-300 rounded-xl h-11"
                       aria-label="End Time"
-                    />
+                    >
+                      <SelectValue placeholder="Select end time" />
+                    </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
                       {Array.from({ length: 48 }).map((_, i) => {
                         const hour = Math.floor(i / 2);

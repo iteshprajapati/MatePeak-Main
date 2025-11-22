@@ -1,7 +1,21 @@
 import { useEffect, useState } from "react";
-import { Calendar, Star, TrendingUp, Clock, Edit, Eye, MessageCircle, ArrowRight, IndianRupee } from "lucide-react";
+import {
+  Calendar,
+  Star,
+  TrendingUp,
+  Clock,
+  Edit,
+  Eye,
+  MessageCircle,
+  ArrowRight,
+  IndianRupee,
+  User,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +37,10 @@ interface Stats {
   completionRate: number;
 }
 
-const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps) => {
+const DashboardOverview = ({
+  mentorProfile,
+  onNavigate,
+}: DashboardOverviewProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
@@ -36,9 +53,11 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
   const [loading, setLoading] = useState(true);
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
+  const [timeRequests, setTimeRequests] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchTimeRequests();
   }, [mentorProfile, timePeriod]);
 
   const fetchDashboardData = async () => {
@@ -51,7 +70,11 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
 
       switch (timePeriod) {
         case "today":
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          startDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+          );
           break;
         case "week":
           startDate = new Date(now);
@@ -83,12 +106,13 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
       if (sessionsError) throw sessionsError;
 
       // Calculate stats
-      const upcoming = sessions?.filter(
-        (s) => {
-          const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
+      const upcoming =
+        sessions?.filter((s) => {
+          const sessionDate = new Date(
+            `${s.scheduled_date}T${s.scheduled_time}`
+          );
           return sessionDate > now && s.status === "confirmed";
-        }
-      ) || [];
+        }) || [];
       const completed = sessions?.filter((s) => s.status === "completed") || [];
       const total = sessions?.length || 0;
 
@@ -104,9 +128,12 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
           .from("reviews")
           .select("rating")
           .eq("expert_id", mentorProfile.id);
-        
+
         if (reviews && reviews.length > 0) {
-          const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+          const totalRating = reviews.reduce(
+            (sum, review) => sum + review.rating,
+            0
+          );
           avgRating = totalRating / reviews.length;
         }
       } catch {
@@ -132,6 +159,56 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTimeRequests = async () => {
+    try {
+      // Fetch pending booking requests (time requests)
+      const { data: requestsData, error: requestsError } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .eq("mentor_id", mentorProfile.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (requestsError) throw requestsError;
+
+      // Fetch profile data for each request
+      const requestsWithProfiles = await Promise.all(
+        (requestsData || []).map(async (request) => {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", request.mentee_id)
+            .single();
+
+          return {
+            ...request,
+            profiles: profileData || { full_name: "Unknown", email: "" },
+          };
+        })
+      );
+
+      setTimeRequests(requestsWithProfiles);
+    } catch (error) {
+      console.error("Error fetching time requests:", error);
+    }
+  };
+
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const formatRequestDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const statCards = [
@@ -183,7 +260,11 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
       <div className="py-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome back, {mentorProfile.full_name?.split(' ')[0] || mentorProfile.full_name || 'Mentor'}!
+            Welcome back,{" "}
+            {mentorProfile.full_name?.split(" ")[0] ||
+              mentorProfile.full_name ||
+              "Mentor"}
+            !
           </h1>
           <p className="text-gray-600 text-sm">
             Here's what's happening with your mentoring sessions
@@ -239,7 +320,10 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="bg-gray-100 border-0 rounded-2xl shadow-none">
+              <Card
+                key={i}
+                className="bg-gray-100 border-0 rounded-2xl shadow-none"
+              >
                 <CardContent className="p-6">
                   <Skeleton className="h-20 w-full" />
                 </CardContent>
@@ -248,11 +332,11 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
           : statCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card 
-                  key={index} 
+                <Card
+                  key={index}
                   className={`
                     group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200
-                    ${stat.isComingSoon ? 'relative overflow-hidden' : ''}
+                    ${stat.isComingSoon ? "relative overflow-hidden" : ""}
                   `}
                 >
                   <CardContent className="p-6">
@@ -262,7 +346,17 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
                           {stat.title}
                         </p>
                         <div className="flex items-baseline mt-3">
-                          <p className={`${stat.isComingSoon ? 'text-2xl font-extrabold' : 'text-3xl font-bold'} ${stat.isComingSoon ? 'text-gray-700' : 'text-gray-900'}`}>
+                          <p
+                            className={`${
+                              stat.isComingSoon
+                                ? "text-2xl font-extrabold"
+                                : "text-3xl font-bold"
+                            } ${
+                              stat.isComingSoon
+                                ? "text-gray-700"
+                                : "text-gray-900"
+                            }`}
+                          >
                             {stat.value}
                           </p>
                           {stat.suffix && (
@@ -292,13 +386,15 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
       {/* Quick Actions - Compact Design */}
       <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
         <CardContent className="p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            Quick Actions
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {/* Update Availability */}
             <button
               onClick={() => {
                 if (onNavigate) {
-                  onNavigate('availability');
+                  onNavigate("availability");
                 } else {
                   toast({
                     title: "Error",
@@ -323,7 +419,7 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
             <button
               onClick={() => {
                 if (mentorProfile.username) {
-                  window.open(`/mentor/${mentorProfile.username}`, '_blank');
+                  window.open(`/mentor/${mentorProfile.username}`, "_blank");
                 }
               }}
               className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
@@ -364,7 +460,9 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
             <h3 className="text-base font-bold text-gray-900">
               Upcoming Sessions
             </h3>
-            <p className="text-sm text-gray-600 mt-1">Your next confirmed bookings</p>
+            <p className="text-sm text-gray-600 mt-1">
+              Your next confirmed bookings
+            </p>
           </div>
           <CardContent className="p-5">
             {loading ? (
@@ -388,7 +486,10 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
                         {session.session_type || "1-on-1 Session"}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {formatDate(session.scheduled_date, session.scheduled_time)}
+                        {formatDate(
+                          session.scheduled_date,
+                          session.scheduled_time
+                        )}
                       </p>
                     </div>
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
@@ -413,76 +514,98 @@ const DashboardOverview = ({ mentorProfile, onNavigate }: DashboardOverviewProps
           </CardContent>
         </Card>
 
-        {/* Performance Summary - Improved Visual Design */}
+        {/* Time Requests - Clean & Professional */}
         <Card className="bg-white border border-gray-200 rounded-2xl shadow-none hover:shadow-sm transition-shadow">
           <div className="p-5 border-b border-gray-200">
-            <h3 className="text-base font-bold text-gray-900">
-              Performance Summary
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">Your session insights</p>
-          </div>
-          <CardContent className="p-5">
-            <div className="space-y-4">
-              {/* Completion Rate - Visual Card */}
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-gray-100">
-                      <TrendingUp className="h-4 w-4 text-rose-400" />
-                    </div>
-                    <span className="text-sm font-semibold text-gray-700">
-                      Completion Rate
-                    </span>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-900">
-                    {stats.completionRate}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-rose-400 to-rose-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${stats.completionRate}%` }}
-                  />
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">
+                  Time Requests
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Recent custom time slot requests
+                </p>
               </div>
-
-              {/* Profile Status - Icon Card */}
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-50">
-                    <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Profile Active
-                    </p>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      Visible to students
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Insights - Icon Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-center">
-                  <div className="inline-flex p-2 rounded-lg bg-white mb-2">
-                    <Calendar className="h-4 w-4 text-rose-400" />
-                  </div>
-                  <p className="text-lg font-bold text-gray-900">{stats.totalSessions}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">Total</p>
-                </div>
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-center">
-                  <div className="inline-flex p-2 rounded-lg bg-white mb-2">
-                    <Star className="h-4 w-4 text-rose-400" />
-                  </div>
-                  <p className="text-lg font-bold text-gray-900">
-                    {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "N/A"}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-0.5">Rating</p>
-                </div>
-              </div>
+              {timeRequests.length > 0 && (
+                <Badge className="bg-amber-500 text-white px-2.5 py-0.5 text-xs font-semibold">
+                  {timeRequests.length} Pending
+                </Badge>
+              )}
             </div>
+          </div>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-6 space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : timeRequests.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <MessageCircle className="h-6 w-6 text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  No pending requests
+                </p>
+                <p className="text-xs text-gray-500">
+                  Custom time requests will appear here
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {timeRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {request.profiles?.full_name || "Unknown Student"}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {formatRequestDate(request.requested_date)}
+                          </span>
+                          <span>•</span>
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {formatTime(request.requested_start_time)} -{" "}
+                            {formatTime(request.requested_end_time)}
+                          </span>
+                        </div>
+                        {request.message && (
+                          <p className="text-xs text-gray-500 mt-1.5 line-clamp-1">
+                            {request.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* View All Button */}
+            {timeRequests.length > 0 && (
+              <div className="p-4 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  onClick={() => onNavigate?.("requests")}
+                  className="w-full justify-center text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl h-9"
+                >
+                  View All Requests
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
