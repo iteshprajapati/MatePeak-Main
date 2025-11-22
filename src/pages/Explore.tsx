@@ -13,11 +13,8 @@ import { Card } from "@/components/ui/card";
 import { 
   Loader2, 
   Search, 
-  SlidersHorizontal, 
   X, 
-  Users,
-  Filter,
-  TrendingUp
+  Filter
 } from "lucide-react";
 import {
   Select,
@@ -26,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 
 const Explore = () => {
   const location = useLocation();
@@ -42,7 +38,6 @@ const Explore = () => {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedExpertise, setSelectedExpertise] = useState(initialExpertise);
   const [sortBy, setSortBy] = useState<"newest" | "rating" | "price-low" | "price-high">("newest");
-  const [showFilters, setShowFilters] = useState(false);
   
   // Available categories and expertise
   const categories = [
@@ -175,230 +170,73 @@ const Explore = () => {
       <Navbar />
       
       <main className="flex-grow">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-matepeak-primary via-matepeak-secondary to-matepeak-primary text-white py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                Find Your Perfect Mentor
-              </h1>
-              <p className="text-lg md:text-xl text-white/90 mb-8">
-                Browse through our community of expert mentors and book sessions that fit your goals
-              </p>
-              
-              {/* Search Bar */}
-              <div className="bg-white rounded-xl shadow-2xl p-2 flex flex-col md:flex-row gap-2">
-                <div className="flex-1 flex items-center gap-2 px-4">
-                  <Search className="h-5 w-5 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, expertise, skills, institution, or category..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-900"
-                  />
-                  {searchInput && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearchInput("");
-                        fetchDatabaseMentors();
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <Button
-                  onClick={handleSearch}
-                  className="bg-matepeak-primary hover:bg-matepeak-yellow hover:text-matepeak-primary text-white font-semibold px-8"
-                >
-                  Search
-                </Button>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 rounded-full p-3">
-                    <Users className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{mentorCards.length}</div>
-                    <div className="text-sm text-white/80">Expert Mentors</div>
-                  </div>
-                </div>
-              </Card>
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 rounded-full p-3">
-                    <TrendingUp className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{categories.length - 1}</div>
-                    <div className="text-sm text-white/80">Categories</div>
-                  </div>
-                </div>
-              </Card>
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white p-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 rounded-full p-3">
-                    <Filter className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">24/7</div>
-                    <div className="text-sm text-white/80">Available Support</div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-
         <div className="container mx-auto px-4 py-8">
-          {/* Filters and Controls */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+          {/* Centered Search Bar with Funnel Icon */}
+          <div className="flex justify-center items-center gap-3 mb-8">
+            {/* Search Bar */}
+            <div className="w-full max-w-3xl bg-white rounded-lg border border-gray-200 shadow-sm p-2 flex items-center gap-2">
+              <Search className="h-5 w-5 text-gray-400 ml-2" />
+              <Input
+                type="text"
+                placeholder="Search by name, expertise, skills, institution, or category..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-900 h-10"
+              />
+              {searchInput && (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2"
+                  onClick={async () => {
+                    setSearchInput("");
+                    // Clear search and fetch all mentors
+                    try {
+                      setLoading(true);
+                      const cards = await fetchMentorCards({
+                        category: selectedCategory !== "all-categories" ? selectedCategory : undefined,
+                        expertise: selectedExpertise !== "all" ? selectedExpertise : undefined,
+                        searchQuery: undefined, // Explicitly clear search
+                      });
+                      setMentorCards(cards);
+                      navigate("/explore", { replace: true });
+                    } catch (error) {
+                      console.error("Error clearing search:", error);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  {showFilters ? "Hide" : "Show"} Filters
+                  <X className="h-4 w-4" />
                 </Button>
-                
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearFilters}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600 font-medium">Sort by:</span>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="rating">Highest Rated</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              )}
+              <Button
+                onClick={handleSearch}
+                className="bg-matepeak-primary hover:bg-matepeak-yellow hover:text-matepeak-primary text-white font-semibold"
+              >
+                Search
+              </Button>
             </div>
 
-            {showFilters && (
-              <>
-                <Separator className="my-4" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Category
-                    </label>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat === "all-categories" ? "All Categories" : cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                      Expertise
-                    </label>
-                    <Select value={selectedExpertise} onValueChange={setSelectedExpertise}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {expertiseOptions.map((exp) => (
-                          <SelectItem key={exp} value={exp}>
-                            {exp === "all" ? "All Expertise" : exp}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={handleSearch} className="bg-matepeak-primary hover:bg-matepeak-secondary">
-                    Apply Filters
-                  </Button>
-                </div>
-              </>
-            )}
-
-            {/* Active Filters Display */}
-            {hasActiveFilters && (
-              <>
-                <Separator className="my-4" />
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm font-medium text-gray-600">Active filters:</span>
-                  {searchInput && (
-                    <Badge variant="secondary" className="gap-1">
-                      Search: {searchInput}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => {
-                          setSearchInput("");
-                          handleSearch();
-                        }}
-                      />
-                    </Badge>
-                  )}
-                  {selectedCategory !== "all-categories" && (
-                    <Badge variant="secondary" className="gap-1">
-                      {selectedCategory}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => {
-                          setSelectedCategory("all-categories");
-                          handleSearch();
-                        }}
-                      />
-                    </Badge>
-                  )}
-                  {selectedExpertise !== "all" && (
-                    <Badge variant="secondary" className="gap-1">
-                      {selectedExpertise}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => {
-                          setSelectedExpertise("all");
-                          handleSearch();
-                        }}
-                      />
-                    </Badge>
-                  )}
-                </div>
-              </>
-            )}
+            {/* Funnel Icon with Dropdown */}
+            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <SelectTrigger 
+                className="w-auto border-gray-200 px-3 py-2 h-auto"
+                aria-label="Open filters"
+              >
+                <Filter className="h-5 w-5 text-gray-600" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+
 
           {/* Results */}
           {loading ? (
