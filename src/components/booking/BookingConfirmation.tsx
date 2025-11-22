@@ -346,7 +346,7 @@ export default function BookingConfirmation({
       <Button
         type="submit"
         disabled={!isFormValid || isSubmitting}
-        className="w-full bg-gray-900 hover:bg-gray-800 text-white h-12 text-base font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+        className="w-full bg-gray-900 hover:bg-gray-800 text-white h-10 text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
       >
         {isSubmitting ? (
           <>

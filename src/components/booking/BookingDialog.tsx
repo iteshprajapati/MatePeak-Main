@@ -427,19 +427,19 @@ export default function BookingDialog({
       const result = await createBooking(bookingData);
 
       if (result.success) {
-        // Store booking data for success modal BEFORE closing dialog
+        // Store booking data for success modal
         setCreatedBooking(result.data);
 
         // Send confirmation emails (async, don't wait)
         sendConfirmationEmails(result.data, details, selectedService);
 
-        // Show success modal first
-        setShowSuccessModal(true);
+        // Close booking dialog immediately
+        handleClose();
 
-        // Close booking dialog after a brief delay
+        // Show success modal after dialog closes smoothly
         setTimeout(() => {
-          handleClose();
-        }, 100);
+          setShowSuccessModal(true);
+        }, 300);
       } else {
         toast.error(result.error || "Failed to create booking");
       }
