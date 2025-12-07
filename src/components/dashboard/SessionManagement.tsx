@@ -282,11 +282,14 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     try {
       setLoading(true);
 
+      // Paginated query - fetch only latest 100 sessions for performance
+      // For mentors with 1000+ sessions, this prevents timeout and memory issues
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
         .eq("expert_id", mentorProfile.id)
-        .order("scheduled_date", { ascending: false });
+        .order("scheduled_date", { ascending: false })
+        .limit(100); // Limit to 100 most recent sessions
 
       if (error) throw error;
 

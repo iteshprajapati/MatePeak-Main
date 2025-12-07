@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { 
-  Loader2, 
-  Search, 
-  SlidersHorizontal, 
-  X, 
+import {
+  Loader2,
+  Search,
+  SlidersHorizontal,
+  X,
   Users,
   Filter,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import {
   Select,
@@ -41,9 +41,18 @@ const Explore = () => {
   const [searchInput, setSearchInput] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedExpertise, setSelectedExpertise] = useState(initialExpertise);
-  const [sortBy, setSortBy] = useState<"newest" | "rating" | "price-low" | "price-high">("newest");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "rating" | "price-low" | "price-high"
+  >("newest");
   const [showFilters, setShowFilters] = useState(false);
-  
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalMentors, setTotalMentors] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const MENTORS_PER_PAGE = 20;
+
   // Available categories and expertise
   const categories = [
     "all-categories",
@@ -56,7 +65,7 @@ const Explore = () => {
     "Data Science",
     "Business",
     "Design",
-    "Health"
+    "Health",
   ];
 
   const expertiseOptions = [
@@ -68,57 +77,93 @@ const Explore = () => {
     "Business Strategy",
     "Career Coaching",
     "Interview Prep",
-    "Resume Writing"
+    "Resume Writing",
   ];
 
   // Fetch mentors from database on initial load and when filters change
   useEffect(() => {
     fetchDatabaseMentors();
   }, [selectedCategory, selectedExpertise]);
-  
+
   // Fetch mentors when URL params change (e.g., coming from home page buttons)
   useEffect(() => {
     if (initialSearchQuery) {
-      console.log('🔗 URL has search param:', initialSearchQuery);
+      console.log("🔗 URL has search param:", initialSearchQuery);
       fetchDatabaseMentors();
     }
   }, [initialSearchQuery]);
-  
+
   // Real-time search with debouncing (only for manual typing)
   useEffect(() => {
     if (!searchInput) return; // Skip if empty
-    
+
     const timeoutId = setTimeout(() => {
       // Only search if the user manually changed the input
       if (searchInput !== initialSearchQuery) {
         fetchDatabaseMentors();
       }
     }, 500); // Wait 500ms after user stops typing
-    
+
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
-  const fetchDatabaseMentors = async () => {
-    setLoading(true);
+  const fetchDatabaseMentors = async (page = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setCurrentPage(1);
+    }
+
     try {
-      console.log('🔎 Explore page fetching with:', {
+      console.log("🔎 Explore page fetching with:", {
         category: selectedCategory,
         expertise: selectedExpertise,
-        searchQuery: searchInput
+        searchQuery: searchInput,
+        page,
+        limit: MENTORS_PER_PAGE,
       });
-      
-      const cards = await fetchMentorCards({
-        category: selectedCategory !== "all-categories" ? selectedCategory : undefined,
+
+      const result = await fetchMentorCards({
+        category:
+          selectedCategory !== "all-categories" ? selectedCategory : undefined,
         expertise: selectedExpertise !== "all" ? selectedExpertise : undefined,
         searchQuery: searchInput || undefined,
+        page,
+        limit: MENTORS_PER_PAGE,
       });
-      
-      console.log('📋 Explore page received:', cards.length, 'mentor cards');
-      setMentorCards(cards);
+
+      console.log(
+        "📋 Explore page received:",
+        result.data.length,
+        "mentor cards (page",
+        page,
+        "of",
+        Math.ceil(result.total / MENTORS_PER_PAGE),
+        ")"
+      );
+
+      if (append) {
+        setMentorCards((prev) => [...prev, ...result.data]);
+      } else {
+        setMentorCards(result.data);
+      }
+
+      setTotalMentors(result.total);
+      setHasMore(result.hasMore);
+      setCurrentPage(page);
     } catch (error) {
       console.error("❌ Error fetching mentors in Explore page:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Load more mentors (infinite scroll or "Load More" button)
+  const loadMoreMentors = () => {
+    if (!loadingMore && hasMore) {
+      fetchDatabaseMentors(currentPage + 1, true);
     }
   };
 
@@ -128,7 +173,8 @@ const Explore = () => {
     // Update URL
     const params = new URLSearchParams();
     if (searchInput) params.set("q", searchInput);
-    if (selectedCategory !== "all-categories") params.set("category", selectedCategory);
+    if (selectedCategory !== "all-categories")
+      params.set("category", selectedCategory);
     if (selectedExpertise !== "all") params.set("expertise", selectedExpertise);
     navigate(`/explore?${params.toString()}`, { replace: true });
   };
@@ -160,20 +206,24 @@ const Explore = () => {
 
   // Log sorting results
   console.log(`🔄 Sort by: ${sortBy}`);
-  console.log(`📊 Sorted mentors (${sortedMentors.length}):`, 
-    sortedMentors.map(m => ({
+  console.log(
+    `📊 Sorted mentors (${sortedMentors.length}):`,
+    sortedMentors.map((m) => ({
       name: m.name,
       rating: m.rating,
-      price: m.price
+      price: m.price,
     }))
   );
 
-  const hasActiveFilters = selectedCategory !== "all-categories" || selectedExpertise !== "all" || searchInput !== "";
+  const hasActiveFilters =
+    selectedCategory !== "all-categories" ||
+    selectedExpertise !== "all" ||
+    searchInput !== "";
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      
+
       <main className="flex-grow">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-matepeak-primary via-matepeak-secondary to-matepeak-primary text-white py-16">
@@ -183,9 +233,10 @@ const Explore = () => {
                 Find Your Perfect Mentor
               </h1>
               <p className="text-lg md:text-xl text-white/90 mb-8">
-                Browse through our community of expert mentors and book sessions that fit your goals
+                Browse through our community of expert mentors and book sessions
+                that fit your goals
               </p>
-              
+
               {/* Search Bar */}
               <div className="bg-white rounded-xl shadow-2xl p-2 flex flex-col md:flex-row gap-2">
                 <div className="flex-1 flex items-center gap-2 px-4">
@@ -229,7 +280,9 @@ const Explore = () => {
                     <Users className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{mentorCards.length}</div>
+                    <div className="text-2xl font-bold">
+                      {mentorCards.length}
+                    </div>
                     <div className="text-sm text-white/80">Expert Mentors</div>
                   </div>
                 </div>
@@ -240,7 +293,9 @@ const Explore = () => {
                     <TrendingUp className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{categories.length - 1}</div>
+                    <div className="text-2xl font-bold">
+                      {categories.length - 1}
+                    </div>
                     <div className="text-sm text-white/80">Categories</div>
                   </div>
                 </div>
@@ -252,7 +307,9 @@ const Explore = () => {
                   </div>
                   <div>
                     <div className="text-2xl font-bold">24/7</div>
-                    <div className="text-sm text-white/80">Available Support</div>
+                    <div className="text-sm text-white/80">
+                      Available Support
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -274,7 +331,7 @@ const Explore = () => {
                   <SlidersHorizontal className="h-4 w-4" />
                   {showFilters ? "Hide" : "Show"} Filters
                 </Button>
-                
+
                 {hasActiveFilters && (
                   <Button
                     variant="ghost"
@@ -289,16 +346,25 @@ const Explore = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600 font-medium">Sort by:</span>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <span className="text-sm text-gray-600 font-medium">
+                  Sort by:
+                </span>
+                <Select
+                  value={sortBy}
+                  onValueChange={(value: any) => setSortBy(value)}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="rating">Highest Rated</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="price-low">
+                      Price: Low to High
+                    </SelectItem>
+                    <SelectItem value="price-high">
+                      Price: High to Low
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -312,7 +378,10 @@ const Explore = () => {
                     <label className="text-sm font-semibold text-gray-700 mb-2 block">
                       Category
                     </label>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <Select
+                      value={selectedCategory}
+                      onValueChange={setSelectedCategory}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -330,7 +399,10 @@ const Explore = () => {
                     <label className="text-sm font-semibold text-gray-700 mb-2 block">
                       Expertise
                     </label>
-                    <Select value={selectedExpertise} onValueChange={setSelectedExpertise}>
+                    <Select
+                      value={selectedExpertise}
+                      onValueChange={setSelectedExpertise}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -346,7 +418,10 @@ const Explore = () => {
                 </div>
 
                 <div className="mt-4 flex justify-end">
-                  <Button onClick={handleSearch} className="bg-matepeak-primary hover:bg-matepeak-secondary">
+                  <Button
+                    onClick={handleSearch}
+                    className="bg-matepeak-primary hover:bg-matepeak-secondary"
+                  >
                     Apply Filters
                   </Button>
                 </div>
@@ -358,7 +433,9 @@ const Explore = () => {
               <>
                 <Separator className="my-4" />
                 <div className="flex flex-wrap gap-2">
-                  <span className="text-sm font-medium text-gray-600">Active filters:</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Active filters:
+                  </span>
                   {searchInput && (
                     <Badge variant="secondary" className="gap-1">
                       Search: {searchInput}
@@ -405,7 +482,9 @@ const Explore = () => {
             <div className="flex justify-center items-center py-20">
               <div className="text-center">
                 <Loader2 className="h-12 w-12 animate-spin text-matepeak-primary mx-auto mb-4" />
-                <p className="text-gray-600">Finding the best mentors for you...</p>
+                <p className="text-gray-600">
+                  Finding the best mentors for you...
+                </p>
               </div>
             </div>
           ) : (
@@ -413,17 +492,49 @@ const Explore = () => {
               {/* Results Count */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {sortedMentors.length} {sortedMentors.length === 1 ? "Mentor" : "Mentors"} Found
+                  {totalMentors} {totalMentors === 1 ? "Mentor" : "Mentors"}{" "}
+                  Found
+                  {sortedMentors.length < totalMentors && (
+                    <span className="text-sm font-normal text-gray-600 ml-2">
+                      (Showing {sortedMentors.length})
+                    </span>
+                  )}
                 </h2>
               </div>
 
               {/* Mentor Grid */}
               {sortedMentors.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-                  {sortedMentors.map((mentor) => (
-                    <MentorCard key={mentor.id} mentor={mentor} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                    {sortedMentors.map((mentor) => (
+                      <MentorCard key={mentor.id} mentor={mentor} />
+                    ))}
+                  </div>
+
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <div className="flex justify-center mb-12">
+                      <Button
+                        onClick={loadMoreMentors}
+                        disabled={loadingMore}
+                        size="lg"
+                        className="bg-matepeak-primary hover:bg-matepeak-primary/90 text-white px-8"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            Load More Mentors
+                            <TrendingUp className="ml-2 h-5 w-5" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="bg-white rounded-xl shadow-md p-12 text-center">
                   <div className="flex justify-center mb-6">
@@ -431,13 +542,19 @@ const Explore = () => {
                       <Search className="h-16 w-16 text-matepeak-primary" />
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">No mentors found</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    No mentors found
+                  </h3>
                   <p className="text-gray-600 mb-4 max-w-md mx-auto">
                     {searchInput ? (
                       <>
-                        No mentors match <span className="font-semibold">"{searchInput}"</span>
+                        No mentors match{" "}
+                        <span className="font-semibold">"{searchInput}"</span>
                         <br />
-                        <span className="text-sm">Try searching by name, expertise, skills, or institution</span>
+                        <span className="text-sm">
+                          Try searching by name, expertise, skills, or
+                          institution
+                        </span>
                       </>
                     ) : (
                       "We couldn't find any mentors matching your criteria. Try adjusting your filters."
@@ -457,7 +574,7 @@ const Explore = () => {
           )}
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

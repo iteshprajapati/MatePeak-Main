@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem, 
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuLabel,
@@ -126,8 +126,31 @@ const Navbar = () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
+
     if (session) {
-      navigate("/expert/dashboard");
+      // Check user role from profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profile?.role === "mentor") {
+        // Fetch username from expert_profiles for mentors
+        const { data: expertProfile } = await supabase
+          .from("expert_profiles")
+          .select("username")
+          .eq("id", session.user.id)
+          .single();
+
+        if (expertProfile?.username) {
+          navigate(`/dashboard/${expertProfile.username}`);
+        } else {
+          navigate("/expert/dashboard"); // Fallback to old route
+        }
+      } else {
+        navigate("/student/dashboard");
+      }
     } else {
       setIsRoleModalOpen(true);
     }

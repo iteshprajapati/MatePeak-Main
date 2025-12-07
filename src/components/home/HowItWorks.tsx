@@ -463,7 +463,7 @@ const HowItWorks = ({
 
         {/* Bottom CTA */}
         <div className="text-center mt-20 md:mt-32">
-          <a href="/mentors">
+          <a href="/explore">
             <button className="px-10 py-4 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white font-semibold rounded-full hover:shadow-2xl hover:shadow-matepeak-primary/20 hover:-translate-y-1 transition-all duration-300 text-lg">
               Get Started Today
             </button>

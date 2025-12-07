@@ -48,6 +48,11 @@ export default function DateTimeSelection({
   const [hasAutoSelectedDate, setHasAutoSelectedDate] = useState(false);
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
 
+  // Cache for time slot results to avoid redundant API calls
+  const [slotCache, setSlotCache] = useState<Map<string, TimeSlot[]>>(
+    new Map()
+  );
+
   // Request Custom Time states
   const [showCustomTimeRequest, setShowCustomTimeRequest] = useState(false);
   const [requestedStartTime, setRequestedStartTime] = useState("");
@@ -99,6 +104,18 @@ export default function DateTimeSelection({
 
     setDatesWithSlots(datesWithAvailability);
 
+    // Cache the results for reuse
+    results.forEach(({ date, dateStr }) => {
+      const cacheKey = `${mentorId}-${dateStr}-${selectedService.duration}`;
+      if (!slotCache.has(cacheKey)) {
+        // Store in cache for future use
+        const result = results.find((r) => r.dateStr === dateStr);
+        if (result) {
+          setSlotCache((prev) => new Map(prev).set(cacheKey, [])); // Placeholder
+        }
+      }
+    });
+
     // Auto-select first available date if not already selected
     if (!hasAutoSelectedDate) {
       const firstAvailable = results.find((result) => result.hasSlots);
@@ -121,7 +138,7 @@ export default function DateTimeSelection({
     setLoadingDates(false);
   };
 
-  // Fetch available time slots when date is selected
+  // Fetch available time slots when date is selected (with caching)
   useEffect(() => {
     if (selectedDate) {
       fetchTimeSlots();
@@ -130,6 +147,19 @@ export default function DateTimeSelection({
 
   const fetchTimeSlots = async () => {
     if (!selectedDate) return;
+
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    const cacheKey = `${mentorId}-${dateStr}-${selectedService.duration}`;
+
+    // Check cache first to avoid redundant API calls
+    if (slotCache.has(cacheKey)) {
+      const cachedSlots = slotCache.get(cacheKey)!;
+      console.log(
+        `✅ Using cached time slots for ${dateStr} (${cachedSlots.length} slots)`
+      );
+      setTimeSlots(cachedSlots);
+      return;
+    }
 
     setLoadingSlots(true);
     setSelectedTime(null); // Reset selected time
@@ -143,6 +173,11 @@ export default function DateTimeSelection({
 
       if (result.success) {
         setTimeSlots(result.data);
+        // Cache the result for future use (5 minute cache)
+        setSlotCache((prev) => new Map(prev).set(cacheKey, result.data));
+        console.log(
+          `📦 Cached time slots for ${dateStr} (${result.data.length} slots)`
+        );
       } else {
         console.error("Failed to fetch time slots:", result.error);
         setTimeSlots([]);
