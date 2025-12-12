@@ -75,6 +75,13 @@ export default function ProfileHeader({
         return;
       }
 
+      // Check if user is trying to book their own profile
+      if (user.id === mentor.id) {
+        toast.error("You cannot book a session with yourself");
+        setIsCheckingAuth(false);
+        return;
+      }
+
       // User is authenticated, open booking dialog
       if (onOpenBooking) {
         onOpenBooking();

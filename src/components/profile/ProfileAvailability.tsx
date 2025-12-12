@@ -26,6 +26,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -182,6 +192,10 @@ export default function ProfileAvailability({
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [alertEmail, setAlertEmail] = useState("");
+
+  // Authentication state
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [alertDaysPreference, setAlertDaysPreference] = useState<string[]>([]);
   const [submittingAlert, setSubmittingAlert] = useState(false);
 
@@ -408,33 +422,77 @@ export default function ProfileAvailability({
     return endHour * 60 + endMin - (startHour * 60 + startMin);
   };
 
-  const handleBookSlot = (date: string, startTime: string, endTime: string) => {
-    // Parse the date string to Date object
-    const dateObj = new Date(date + "T00:00:00");
+  const handleBookSlot = async (
+    date: string,
+    startTime: string,
+    endTime: string
+  ) => {
+    setIsCheckingAuth(true);
 
-    // Use the callback if provided
-    if (onBookSlot) {
-      const timezone = showUserTimezone ? userTimezone : mentorTimezone;
-      onBookSlot(dateObj, startTime, timezone);
-    } else {
-      // Fallback to old navigation behavior
-      const bookingData = {
-        mentorId,
-        mentorName,
-        date,
-        startTime,
-        endTime,
-        timezone: showUserTimezone ? userTimezone : mentorTimezone,
-      };
+    try {
+      // Check if user is authenticated
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
-      // Store booking data in session storage for the booking page
-      sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
+      if (error || !user) {
+        // User is not logged in, show login dialog
+        setShowLoginDialog(true);
+        setIsCheckingAuth(false);
+        return;
+      }
 
-      // Navigate to booking page
-      navigate(`/booking/${mentorId}`, {
-        state: bookingData,
-      });
+      // Check if user is trying to book their own profile
+      if (user.id === mentorId) {
+        toast.error("You cannot book a session with yourself");
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      // User is authenticated, proceed with booking
+      // Parse the date string to Date object
+      const dateObj = new Date(date + "T00:00:00");
+
+      // Use the callback if provided
+      if (onBookSlot) {
+        const timezone = showUserTimezone ? userTimezone : mentorTimezone;
+        onBookSlot(dateObj, startTime, timezone);
+      } else {
+        // Fallback to old navigation behavior
+        const bookingData = {
+          mentorId,
+          mentorName,
+          date,
+          startTime,
+          endTime,
+          timezone: showUserTimezone ? userTimezone : mentorTimezone,
+        };
+
+        // Store booking data in session storage for the booking page
+        sessionStorage.setItem("pendingBooking", JSON.stringify(bookingData));
+
+        // Navigate to booking page
+        navigate(`/booking/${mentorId}`, {
+          state: bookingData,
+        });
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingAuth(false);
     }
+  };
+
+  const handleLoginConfirm = () => {
+    setShowLoginDialog(false);
+    navigate("/student/login", {
+      state: {
+        returnTo: window.location.pathname,
+        message: "Login to book a session with this mentor",
+      },
+    });
   };
 
   // Handle custom time request submission
@@ -1238,6 +1296,28 @@ export default function ProfileAvailability({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Login Confirmation Dialog */}
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              You need to be logged in to book a session with this mentor. Would
+              you like to login or create an account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLoginConfirm}
+              className="bg-matepeak-primary hover:bg-matepeak-secondary text-white"
+            >
+              Go to Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
