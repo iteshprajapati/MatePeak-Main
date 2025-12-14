@@ -450,6 +450,15 @@ export default function DateTimeSelection({
                 (() => {
                   const { morning, afternoon, evening } =
                     groupTimeSlots(timeSlots);
+
+                  console.log("🔍 Time slots debug:", {
+                    totalSlots: timeSlots.length,
+                    availableSlots: timeSlots.filter((s) => s.available).length,
+                    morning: morning.length,
+                    afternoon: afternoon.length,
+                    evening: evening.length,
+                  });
+
                   return (
                     <div className="space-y-5">
                       {morning.length > 0 && (
@@ -472,10 +481,12 @@ export default function DateTimeSelection({
                                       : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                                   )}
                                 >
-                                  <div className="font-bold">{slot.time}</div>
+                                  <div className="font-bold pointer-events-none">
+                                    {slot.time}
+                                  </div>
                                   <div
                                     className={cn(
-                                      "text-xs mt-0.5",
+                                      "text-xs mt-0.5 pointer-events-none",
                                       isSelected
                                         ? "text-gray-300"
                                         : "text-gray-500"
@@ -513,10 +524,12 @@ export default function DateTimeSelection({
                                       : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                                   )}
                                 >
-                                  <div className="font-bold">{slot.time}</div>
+                                  <div className="font-bold pointer-events-none">
+                                    {slot.time}
+                                  </div>
                                   <div
                                     className={cn(
-                                      "text-xs mt-0.5",
+                                      "text-xs mt-0.5 pointer-events-none",
                                       isSelected
                                         ? "text-gray-300"
                                         : "text-gray-500"
@@ -554,10 +567,12 @@ export default function DateTimeSelection({
                                       : "border-gray-200 bg-white hover:border-gray-400 text-gray-700 hover:shadow-sm"
                                   )}
                                 >
-                                  <div className="font-bold">{slot.time}</div>
+                                  <div className="font-bold pointer-events-none">
+                                    {slot.time}
+                                  </div>
                                   <div
                                     className={cn(
-                                      "text-xs mt-0.5",
+                                      "text-xs mt-0.5 pointer-events-none",
                                       isSelected
                                         ? "text-gray-300"
                                         : "text-gray-500"

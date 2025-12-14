@@ -8,8 +8,10 @@ import {
   ChevronDown,
   LayoutDashboard,
   User,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -28,6 +30,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<"student" | "mentor" | null>(null);
@@ -199,6 +202,28 @@ const Navbar = () => {
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+
+    navigate(`/explore?${params.toString()}`);
+  };
+
+  const handleBrowseAllMentors = () => {
+    navigate("/mentors");
+  };
+
+  const handleBrowseCategories = () => {
+    navigate("/explore");
+  };
+
+  const handleBrowseAdvice = () => {
+    // Navigate to advice/articles section (you can create this page or redirect to a specific section)
+    navigate("/explore?tab=advice");
+  };
+
   const getInitials = (name: string) => {
     return name?.charAt(0)?.toUpperCase() || "U";
   };
@@ -239,11 +264,11 @@ const Navbar = () => {
         } bg-white/70 backdrop-blur-xl py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]`}
       >
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex justify-between items-center">
-            {/* Logo - Centered */}
+          <div className="flex items-center gap-4">
+            {/* Logo */}
             <Link
               to="/"
-              className="flex items-center gap-2 mx-auto md:mx-0 transition-transform duration-300 hover:scale-105"
+              className="flex items-center gap-2 transition-transform duration-300 hover:scale-105"
             >
               <img
                 src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png"
@@ -255,8 +280,59 @@ const Navbar = () => {
               </span>
             </Link>
 
+            {/* Browse Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="hidden md:flex items-center gap-1 h-10 px-4 hover:bg-gray-50 font-bold text-gray-700"
+                >
+                  Browse
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 bg-white shadow-lg border border-gray-200 rounded-xl p-2">
+                <DropdownMenuItem
+                  onClick={handleBrowseAllMentors}
+                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
+                >
+                  <span className="text-sm font-medium">All Mentors</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleBrowseCategories}
+                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
+                >
+                  <span className="text-sm font-medium">Categories</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleBrowseAdvice}
+                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
+                >
+                  <span className="text-sm font-medium">Advice</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Search Bar */}
+            <form
+              onSubmit={handleSearch}
+              className="hidden md:flex flex-1 max-w-md relative"
+            >
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none"
+                strokeWidth={2.5}
+              />
+              <Input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="What advice are you looking for today?"
+                className="w-full h-9 pl-10 pr-4 rounded-full border-0 bg-gray-100 focus:bg-gray-50 focus:ring-1 focus:ring-gray-400 placeholder:text-gray-500"
+              />
+            </form>
+
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-4 absolute right-8">
+            <div className="hidden md:flex items-center space-x-4 ml-auto">
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

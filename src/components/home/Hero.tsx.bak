@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
@@ -24,43 +24,39 @@ const Hero = () => {
       name: "T Zhu",
       title: "Co-Founder",
       company: "tellus",
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces",
     },
     {
       id: "2",
       name: "Sarah Chen",
       title: "Product Lead",
       company: "TechCorp",
-      image:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=faces",
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=faces",
     },
     {
       id: "3",
       name: "Alex Johnson",
       title: "Engineering Manager",
       company: "StartupHub",
-      image:
-        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=faces",
+      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=faces",
     },
     {
       id: "4",
       name: "Maya Patel",
       title: "Design Director",
       company: "Creative Labs",
-      image:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=faces",
+      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=faces",
     },
     {
       id: "5",
       name: "James Lee",
       title: "VP of Sales",
       company: "GrowthCo",
-      image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=faces",
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=faces",
     },
   ];
 
+  // Professional headshot images with solid color backgrounds
   const expertProfiles = [
     {
       id: "1",
@@ -88,18 +84,22 @@ const Hero = () => {
     },
   ];
 
+  // Typing effect for rotating fields
   useEffect(() => {
     const typingSpeed = 100;
     const deletingSpeed = 50;
     const delayBetweenWords = 2000;
+
     const currentWord = fields[currentField];
 
     if (!isDeleting && displayText === currentWord) {
+      // Finished typing, wait then start deleting
       setTimeout(() => setIsDeleting(true), delayBetweenWords);
       return;
     }
 
     if (isDeleting && displayText === "") {
+      // Finished deleting, move to next word
       setIsDeleting(false);
       setCurrentField((prev) => (prev + 1) % fields.length);
       return;
@@ -119,6 +119,7 @@ const Hero = () => {
     return () => clearTimeout(timeout);
   }, [displayText, isDeleting, currentField]);
 
+  // Add fade-in animation on load
   useEffect(() => {
     const heroElement = document.getElementById("hero-section");
     if (heroElement) {
@@ -126,12 +127,14 @@ const Hero = () => {
     }
   }, []);
 
+  // Auto-rotate mentor cards
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentCardIndex((prev) => (prev + 1) % mentorCards.length);
-    }, 4000);
+    }, 4000); // Change card every 4 seconds
+
     return () => clearInterval(interval);
-  }, []);
+  }, [mentorCards.length]);
 
   return (
     <section
@@ -140,7 +143,8 @@ const Hero = () => {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 xl:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left lg:pl-8 -mt-8">
+          {/* Left side - Content */}
+          <div className="text-center lg:text-left lg:pl-8">
             <div className="mb-6">
               <h1 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-2">
                 Connect with Expert Mentors
@@ -155,6 +159,8 @@ const Hero = () => {
                 </span>
               </p>
             </div>
+
+            {/* Expert profiles banner */}
             <div className="flex items-center justify-center lg:justify-start gap-2 mb-8">
               <span className="text-lg text-gray-600 font-poppins font-light">
                 Our experts are ready to help!
@@ -177,25 +183,23 @@ const Hero = () => {
                 ))}
               </div>
             </div>
-            <div className="flex justify-center lg:justify-start mb-8">
-              <Link to="/explore">
-                <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-12 h-10 font-medium transition-colors">
-                  Find a mentor
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <div className="hidden lg:block overflow-hidden pt-12 relative">
-            {/* Left fade gradient */}
-            <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
-            {/* Right fade gradient */}
-            <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
 
-            <div className="flex gap-6 animate-scroll-left hover:pause">
-              {/* First set of cards */}
-              {mentorCards.map((mentor) => (
-                <div key={mentor.id} className="flex-shrink-0">
-                  <div className="bg-white rounded-2xl shadow-xl p-6 pt-16 w-64 h-72 relative">
+            {/* Find a mentor button */}
+            <div className="flex justifCarousel */}
+          <div className="hidden lg:flex justify-center lg:justify-end lg:pr-8 pt-12">
+            <div className="relative w-64 h-72">
+              {mentorCards.map((mentor, index) => (
+                <div
+                  key={mentor.id}
+                  className={`absolute inset-0 transition-all duration-700 ${
+                    index === currentCardIndex
+                      ? "opacity-100 translate-x-0"
+                      : index < currentCardIndex
+                      ? "opacity-0 -translate-x-8"
+                      : "opacity-0 translate-x-8"
+                  }`}
+                >
+                  <div className="bg-white rounded-2xl shadow-xl p-6 pt-16 w-64 transform hover:scale-105 transition-transform duration-300 relative">
                     <div className="flex flex-col items-center">
                       <div className="w-24 h-24 rounded-full overflow-hidden mb-3 ring-4 ring-white shadow-lg absolute -top-12 left-1/2 -translate-x-1/2">
                         <img
@@ -204,12 +208,8 @@ const Hero = () => {
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">
-                        {mentor.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {mentor.title}
-                      </p>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">{mentor.name}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{mentor.title}</p>
                       <div className="w-full border-t border-gray-200 pt-4">
                         <div className="flex items-center justify-center">
                           <span className="text-lg font-bold tracking-tight">
@@ -220,36 +220,16 @@ const Hero = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-              {/* Duplicate set for seamless loop */}
-              {mentorCards.map((mentor) => (
-                <div key={`${mentor.id}-duplicate`} className="flex-shrink-0">
-                  <div className="bg-white rounded-2xl shadow-xl p-6 pt-16 w-64 h-72 relative">
-                    <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 rounded-full overflow-hidden mb-3 ring-4 ring-white shadow-lg absolute -top-12 left-1/2 -translate-x-1/2">
-                        <img
-                          src={mentor.image}
-                          alt={mentor.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">
-                        {mentor.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {mentor.title}
-                      </p>
-                      <div className="w-full border-t border-gray-200 pt-4">
-                        <div className="flex items-center justify-center">
-                          <span className="text-lg font-bold tracking-tight">
-                            {mentor.company}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+              ))}className="text-2xl font-bold text-gray-900 mb-1">T Zhu</h3>
+                <p className="text-gray-600 mb-6">Co-Founder</p>
+                <div className="w-full border-t border-gray-200 pt-6">
+                  <div className="flex items-center justify-center">
+                    <span className="text-2xl font-bold tracking-tight">
+                      tellus
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>

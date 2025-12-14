@@ -436,3 +436,21 @@
 [data-sonner-toast] [data-close-button]:hover {
   transform: rotate(90deg) scale(1.1) !important;
 }
+
+/* Infinite scroll animation for mentor cards */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 30s linear infinite;
+}
+
+.animate-scroll-left:hover {
+  animation-play-state: paused;
+}
