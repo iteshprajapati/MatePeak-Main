@@ -46,6 +46,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
 
 interface ProfileAvailabilityProps {
   mentorId: string;
@@ -230,6 +237,14 @@ export default function ProfileAvailability({
   const [alertDaysPreference, setAlertDaysPreference] = useState<string[]>([]);
   const [submittingAlert, setSubmittingAlert] = useState(false);
 
+  // All Slots Modal state
+  const [showAllSlotsModal, setShowAllSlotsModal] = useState(false);
+  const [selectedDaySlots, setSelectedDaySlots] = useState<{
+    dayName: string;
+    dateStr: string;
+    slots: { start: string; end: string }[];
+  } | null>(null);
+
   const navigate = useNavigate();
 
   const userTimezone = getUserTimezone();
@@ -366,7 +381,10 @@ export default function ProfileAvailability({
       // Add specific slots for this exact date
       specificSlots.forEach((slot) => {
         if (slot.specific_date === dateStr) {
-          slots.push({ start: slot.start_time, end: slot.end_time });
+          // Only add if not in the past
+          if (!isSlotInPast(dateStr, slot.start_time, mentorTimezone)) {
+            slots.push({ start: slot.start_time, end: slot.end_time });
+          }
         }
       });
 
@@ -374,7 +392,10 @@ export default function ProfileAvailability({
       if (!blocked) {
         recurringSlots.forEach((slot) => {
           if (slot.day_of_week === dayOfWeek) {
-            slots.push({ start: slot.start_time, end: slot.end_time });
+            // Only add if not in the past
+            if (!isSlotInPast(dateStr, slot.start_time, mentorTimezone)) {
+              slots.push({ start: slot.start_time, end: slot.end_time });
+            }
           }
         });
       }
@@ -414,6 +435,28 @@ export default function ProfileAvailability({
     return endHour * 60 + endMin - (startHour * 60 + startMin);
   };
 
+  // Helper function to check if a slot is in the past
+  const isSlotInPast = (
+    dateStr: string,
+    startTime: string,
+    timezone: string
+  ): boolean => {
+    try {
+      // Create a date-time in the specified timezone
+      const slotDateTime = new Date(`${dateStr}T${startTime}`);
+
+      // Get current time
+      const now = new Date();
+
+      // For simplicity, we'll compare in UTC
+      // A more robust solution would use a timezone library
+      return slotDateTime < now;
+    } catch (error) {
+      console.error("Error checking if slot is in past:", error);
+      return false;
+    }
+  };
+
   const handleBookSlot = async (
     date: string,
     startTime: string,
@@ -422,6 +465,13 @@ export default function ProfileAvailability({
     setIsCheckingAuth(true);
 
     try {
+      // Check if the slot is in the past (in mentor's timezone)
+      if (isSlotInPast(date, startTime, mentorTimezone)) {
+        toast.error("Cannot book a time slot that has already passed");
+        setIsCheckingAuth(false);
+        return;
+      }
+
       // Check if user is authenticated
       const {
         data: { user },
@@ -520,8 +570,19 @@ export default function ProfileAvailability({
 
   // Handle custom time request submission
   const handleCustomTimeRequest = async () => {
-    if (!requestedDate || !requestedStartTime || !requestedEndTime) {
-      toast.error("Please fill in all fields");
+    if (
+      !requestedDate ||
+      !requestedStartTime ||
+      !requestedEndTime ||
+      !requestMessage.trim()
+    ) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Check if the requested date/time is in the past
+    if (isSlotInPast(requestedDate, requestedStartTime, mentorTimezone)) {
+      toast.error("Cannot request a time that has already passed");
       return;
     }
 
@@ -728,62 +789,59 @@ export default function ProfileAvailability({
       )}
       {/* Timezone & Actions - Redesigned Combined Header */}
       {hasAnyAvailability && (
-        <Card className="shadow-sm border border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Timezone Info */}
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <Globe className="h-4 w-4 text-matepeak-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">
-                    Times shown in
-                  </p>
-                  <button
-                    onClick={() => setShowUserTimezone(!showUserTimezone)}
-                    className="text-sm font-semibold text-gray-900 hover:text-matepeak-primary transition-colors flex items-center gap-1.5 group"
-                  >
-                    {showUserTimezone ? userTimezone : mentorTimezone}
-                    <span className="text-xs text-gray-400 group-hover:text-matepeak-primary">
-                      • Click to switch
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCustomTimeDialogOpen(true)}
-                  className="border-matepeak-primary/30 text-matepeak-primary hover:bg-matepeak-primary hover:text-white transition-all"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Request Time
-                </Button>
-                <Button
-                  variant={alertsEnabled ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setAlertDialogOpen(true)}
-                  className={
-                    alertsEnabled
-                      ? "bg-green-600 hover:bg-green-700 text-white border-0"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }
-                >
-                  <Bell
-                    className={`h-4 w-4 mr-2 ${
-                      alertsEnabled ? "fill-white" : ""
-                    }`}
-                  />
-                  {alertsEnabled ? "Alerts On" : "Get Alerts"}
-                </Button>
-              </div>
+        <div className="flex flex-wrap items-center justify-between gap-6 px-4 py-3">
+          {/* Timezone Info */}
+          <div className="flex items-center gap-3">
+            <Globe className="h-4 w-4 text-matepeak-primary" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Times shown in</span>
+              <button
+                onClick={() => setShowUserTimezone(!showUserTimezone)}
+                className="px-2 py-1 text-sm font-semibold text-gray-900 bg-gray-100 hover:bg-matepeak-primary hover:text-white transition-colors rounded-md"
+              >
+                {showUserTimezone ? userTimezone : mentorTimezone}
+              </button>
+              <span className="text-xs text-gray-400">• Click to switch</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCustomTimeDialogOpen(true)}
+              className="flex items-center gap-2 text-sm font-medium text-matepeak-primary hover:text-matepeak-primary/80 transition-colors relative group"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="relative">
+                Request Time
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-matepeak-primary/90 scale-x-0 origin-right group-hover:scale-x-100 group-hover:origin-left transition-transform duration-300 ease-out"></span>
+              </span>
+            </button>
+
+            <div className="h-4 w-px bg-gray-300"></div>
+
+            <button
+              onClick={() => setAlertDialogOpen(true)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors relative group ${
+                alertsEnabled
+                  ? "text-green-600 hover:text-green-700"
+                  : "text-gray-700 hover:text-gray-900"
+              }`}
+            >
+              <Bell
+                className={`h-4 w-4 ${alertsEnabled ? "fill-green-600" : ""}`}
+              />
+              <span className="relative">
+                {alertsEnabled ? "Alerts On" : "Get Alerts"}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-[2px] scale-x-0 origin-right group-hover:scale-x-100 group-hover:origin-left transition-transform duration-300 ease-out ${
+                    alertsEnabled ? "bg-green-700" : "bg-gray-800"
+                  }`}
+                ></span>
+              </span>
+            </button>
+          </div>
+        </div>
       )}
       {/* Week View */} {/* Week View */}
       {hasAnyAvailability && (
@@ -888,7 +946,7 @@ export default function ProfileAvailability({
                     </div>
                   ) : day.slots.length > 0 ? (
                     <div className="space-y-2">
-                      {day.slots.map((slot, idx) => {
+                      {day.slots.slice(0, 3).map((slot, idx) => {
                         const slotKey = `${day.dateStr}-${idx}`;
                         const duration = calculateDuration(
                           slot.start,
@@ -972,6 +1030,25 @@ export default function ProfileAvailability({
                           </div>
                         );
                       })}
+                      {day.slots.length > 3 && (
+                        <button
+                          onClick={() => {
+                            setSelectedDaySlots({
+                              dayName: day.dayName,
+                              dateStr: day.date.toLocaleDateString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              }),
+                              slots: day.slots,
+                            });
+                            setShowAllSlotsModal(true);
+                          }}
+                          className="w-full py-2 px-3 text-xs font-medium text-matepeak-primary hover:text-matepeak-secondary underline decoration-2 hover:bg-matepeak-yellow/10 rounded-lg transition-colors"
+                        >
+                          View All {day.slots.length} Slots
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center py-4">
@@ -989,53 +1066,98 @@ export default function ProfileAvailability({
         open={customTimeDialogOpen}
         onOpenChange={setCustomTimeDialogOpen}
       >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-bold">
               Request Custom Time
             </DialogTitle>
-            <DialogDescription>
-              Don't see a suitable time? Request a custom session time and{" "}
-              {mentorName} will get back to you within 24 hours.
+            <DialogDescription className="text-sm">
+              Request a custom session time and {mentorName} will get back to
+              you within 24 hours.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="request-date">Preferred Date</Label>
-                <Input
-                  id="request-date"
-                  type="date"
-                  value={requestedDate}
-                  onChange={(e) => setRequestedDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className="border-gray-300"
-                />
-              </div>
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="request-start">Start Time</Label>
+          <div className="space-y-3 py-3">
+            {/* Date Selection with Calendar */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                Preferred Date <span className="text-red-500">*</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={`w-full justify-start text-left font-normal h-9 text-sm ${
+                      !requestedDate && "text-gray-500"
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {requestedDate ? (
+                      format(new Date(requestedDate + "T00:00:00"), "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      requestedDate
+                        ? new Date(requestedDate + "T00:00:00")
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      if (date) {
+                        setRequestedDate(format(date, "yyyy-MM-dd"));
+                      }
+                    }}
+                    disabled={(date) =>
+                      date < new Date(new Date().setHours(0, 0, 0, 0))
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Time Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="request-start" className="text-sm font-medium">
+                  Start Time <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={requestedStartTime}
                   onValueChange={setRequestedStartTime}
                 >
                   <SelectTrigger
                     id="request-start"
-                    className="border-gray-300"
+                    className="h-9 text-sm"
                     aria-label="Start Time"
                   >
-                    <SelectValue placeholder="Select start time" />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {Array.from({ length: 48 }).map((_, i) => {
                       const hour = Math.floor(i / 2);
                       const min = i % 2 === 0 ? "00" : "30";
                       const value = `${String(hour).padStart(2, "0")}:${min}`;
+
+                      // Disable past times if the selected date is today
+                      const isToday =
+                        requestedDate ===
+                        new Date().toISOString().split("T")[0];
+                      const isPast =
+                        isToday &&
+                        isSlotInPast(requestedDate, value, mentorTimezone);
+
                       return (
                         <SelectItem
                           key={value}
                           value={value}
-                          className="cursor-pointer"
+                          className="cursor-pointer text-sm"
+                          disabled={isPast}
                         >
                           {value}
                         </SelectItem>
@@ -1044,29 +1166,43 @@ export default function ProfileAvailability({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="request-end">End Time</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="request-end" className="text-sm font-medium">
+                  End Time <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={requestedEndTime}
                   onValueChange={setRequestedEndTime}
                 >
                   <SelectTrigger
                     id="request-end"
-                    className="border-gray-300"
+                    className="h-9 text-sm"
                     aria-label="End Time"
                   >
-                    <SelectValue placeholder="Select end time" />
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {Array.from({ length: 48 }).map((_, i) => {
                       const hour = Math.floor(i / 2);
                       const min = i % 2 === 0 ? "00" : "30";
                       const value = `${String(hour).padStart(2, "0")}:${min}`;
+
+                      // Disable times that would be before start time or in the past
+                      const isToday =
+                        requestedDate ===
+                        new Date().toISOString().split("T")[0];
+                      const isPast =
+                        isToday &&
+                        isSlotInPast(requestedDate, value, mentorTimezone);
+                      const isBeforeStart =
+                        requestedStartTime && value <= requestedStartTime;
+
                       return (
                         <SelectItem
                           key={value}
                           value={value}
-                          className="cursor-pointer"
+                          className="cursor-pointer text-sm"
+                          disabled={isPast || isBeforeStart}
                         >
                           {value}
                         </SelectItem>
@@ -1077,39 +1213,38 @@ export default function ProfileAvailability({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="request-message">Message (Optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="request-message" className="text-sm font-medium">
+                Message <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 id="request-message"
-                placeholder="Add any specific requirements or questions..."
+                placeholder="Describe your requirements, goals, or questions..."
                 value={requestMessage}
                 onChange={(e) => setRequestMessage(e.target.value)}
-                className="border-gray-300 min-h-[100px]"
+                className="min-h-[80px] text-sm resize-none"
               />
             </div>
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
-                <strong>Note:</strong> The mentor will review your request and
-                respond via email. You'll be notified once they confirm
-                availability.
-              </p>
-            </div>
+            <p className="text-xs text-gray-600 pt-1">
+              <span className="font-medium">Note:</span> The mentor will review
+              your request and respond via email.
+            </p>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setCustomTimeDialogOpen(false)}
               disabled={submittingRequest}
-              className="border-gray-300"
+              className="h-9 text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCustomTimeRequest}
               disabled={submittingRequest}
-              className="bg-matepeak-primary hover:bg-matepeak-primary/90"
+              className="bg-matepeak-primary hover:bg-matepeak-primary/90 h-9 text-sm"
             >
               {submittingRequest ? (
                 <>
@@ -1215,6 +1350,73 @@ export default function ProfileAvailability({
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* All Slots Modal */}
+      <Dialog open={showAllSlotsModal} onOpenChange={setShowAllSlotsModal}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              {selectedDaySlots?.dayName} - All Available Slots
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {selectedDaySlots?.dateStr}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {selectedDaySlots && selectedDaySlots.slots.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selectedDaySlots.slots.map((slot, idx) => {
+                  const duration = calculateDuration(slot.start, slot.end);
+                  return (
+                    <div
+                      key={idx}
+                      className="group relative flex items-center gap-2.5 p-3 rounded-lg border-2 bg-green-50/50 border-green-200 hover:bg-green-50 hover:border-green-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        const dateStr = selectedDaySlots.dateStr;
+                        const dateObj = new Date(dateStr);
+                        const formattedDate = getLocalDateString(dateObj);
+                        handleBookSlot(formattedDate, slot.start, slot.end);
+                        setShowAllSlotsModal(false);
+                      }}
+                    >
+                      <div className="p-1.5 rounded-lg bg-gray-100">
+                        <Clock className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div className="flex-grow">
+                        <span className="text-sm font-semibold text-gray-900 block">
+                          {formatTime(slot.start, "")} -{" "}
+                          {formatTime(slot.end, "")}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {duration} min
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-all h-8 text-xs font-semibold bg-matepeak-primary hover:bg-matepeak-secondary text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const dateStr = selectedDaySlots.dateStr;
+                          const dateObj = new Date(dateStr);
+                          const formattedDate = getLocalDateString(dateObj);
+                          handleBookSlot(formattedDate, slot.start, slot.end);
+                          setShowAllSlotsModal(false);
+                        }}
+                      >
+                        Book
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-4">
+                No slots available
+              </p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       {/* Login Confirmation Dialog */}

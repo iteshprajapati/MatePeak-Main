@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Globe } from "lucide-react";
+import { Loader2, Globe, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SimilarMentors from "./SimilarMentors";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AvailabilityPreviewProps {
   mentorId: string;
@@ -39,6 +46,12 @@ export default function AvailabilityPreview({
   const [languages, setLanguages] = useState<Language[]>([]);
   const [calendarDays, setCalendarDays] = useState<DayStatus[]>([]);
   const [showAllDates, setShowAllDates] = useState(false);
+  const [showSlotsModal, setShowSlotsModal] = useState(false);
+  const [selectedDateSlots, setSelectedDateSlots] = useState<{
+    date: string;
+    slots: { start_time: string; end_time: string }[];
+  } | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
     fetchAvailability();
@@ -189,6 +202,72 @@ export default function AvailabilityPreview({
     const date = new Date(year, month - 1, day);
     date.setHours(0, 0, 0, 0);
     return date;
+  };
+
+  const fetchSlotsForDate = async (dateStr: string) => {
+    try {
+      setLoadingSlots(true);
+      const date = parseDateString(dateStr);
+      const dayOfWeek = date.getDay();
+
+      // Fetch specific slots for this date
+      const { data: specificSlots } = await supabase
+        .from("availability_slots")
+        .select("start_time, end_time")
+        .eq("expert_id", mentorId)
+        .eq("is_recurring", false)
+        .eq("specific_date", dateStr)
+        .order("start_time", { ascending: true });
+
+      // Fetch recurring slots for this day of week
+      const { data: recurringSlots } = await supabase
+        .from("availability_slots")
+        .select("start_time, end_time")
+        .eq("expert_id", mentorId)
+        .eq("is_recurring", true)
+        .eq("day_of_week", dayOfWeek)
+        .order("start_time", { ascending: true });
+
+      const allSlots = [...(specificSlots || []), ...(recurringSlots || [])];
+
+      // Remove duplicates and sort
+      const uniqueSlots = allSlots.reduce((acc, slot) => {
+        const key = `${slot.start_time}-${slot.end_time}`;
+        if (!acc.some((s) => `${s.start_time}-${s.end_time}` === key)) {
+          acc.push(slot);
+        }
+        return acc;
+      }, [] as { start_time: string; end_time: string }[]);
+
+      uniqueSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+      setSelectedDateSlots({
+        date: date.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        slots: uniqueSlots,
+      });
+      setShowSlotsModal(true);
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const formatTime = (time: string) => {
+    try {
+      const [hours, minutes] = time.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return time;
+    }
   };
 
   const generateCalendarDays = (
@@ -397,7 +476,9 @@ export default function AvailabilityPreview({
                         className={`aspect-square flex flex-col items-center justify-center relative p-1 rounded-lg transition-colors ${
                           isPast
                             ? "opacity-40 cursor-not-allowed"
-                            : "hover:bg-gray-50 cursor-pointer"
+                            : day.status !== "unavailable"
+                            ? "hover:bg-gray-50 cursor-pointer"
+                            : ""
                         }`}
                         title={`${day.date.toLocaleDateString()} - ${
                           day.status
@@ -407,18 +488,27 @@ export default function AvailabilityPreview({
                             : ""
                         }`}
                       >
-                        <span
-                          className={`text-xs font-medium mb-1 ${
-                            isPast ? "text-gray-400" : "text-gray-700"
-                          }`}
-                        >
-                          {day.date.getDate()}
-                        </span>
-                        <div
-                          className={`w-1.5 h-1.5 rounded-full ${getDotColor(
-                            day.status
-                          )}`}
-                        />
+                        {day.status === "available" ? (
+                          <div className="relative">
+                            <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-white">
+                                {day.date.getDate()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : day.status === "blocked" ? (
+                          <div className="relative">
+                            <div className="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-white">
+                                {day.date.getDate()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-medium text-gray-400">
+                            {day.date.getDate()}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -450,30 +540,46 @@ export default function AvailabilityPreview({
                   <div className="space-y-2">
                     {availableDates
                       .slice(0, showAllDates ? availableDates.length : 3)
-                      .map((dateInfo, index) => (
-                        <div
-                          key={index}
-                          onClick={onSeeMore}
-                          className="bg-green-50/50 rounded-lg p-3 hover:bg-green-50 transition-colors cursor-pointer border-2 border-green-200"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 mb-0.5">
-                                {dateInfo.day}
-                              </p>
-                              <p className="text-sm font-bold text-gray-900">
-                                {dateInfo.dateStr}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-gray-600">
-                                {dateInfo.timeslotCount} Timeslot
-                                {dateInfo.timeslotCount !== 1 ? "s" : ""}
-                              </p>
+                      .map((dateInfo, index) => {
+                        const dateKey = getLocalDateString(dateInfo.date);
+                        const hasMultipleSlots = dateInfo.timeslotCount > 3;
+
+                        return (
+                          <div
+                            key={index}
+                            onClick={() => {
+                              if (hasMultipleSlots) {
+                                fetchSlotsForDate(dateKey);
+                              } else {
+                                onSeeMore?.();
+                              }
+                            }}
+                            className="bg-green-50/50 rounded-lg p-3 hover:bg-green-50 transition-colors cursor-pointer border-2 border-green-200 relative"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs font-semibold text-gray-500 mb-0.5">
+                                  {dateInfo.day}
+                                </p>
+                                <p className="text-sm font-bold text-gray-900">
+                                  {dateInfo.dateStr}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-600">
+                                  {dateInfo.timeslotCount} Timeslot
+                                  {dateInfo.timeslotCount !== 1 ? "s" : ""}
+                                </p>
+                                {hasMultipleSlots && (
+                                  <p className="text-xs text-blue-600 font-medium mt-0.5">
+                                    Click to view all
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
 
                   {/* Show More/Show Less Button */}
@@ -522,6 +628,53 @@ export default function AvailabilityPreview({
           </div>
         </CardContent>
       </Card>
+
+      {/* Time Slots Modal */}
+      <Dialog open={showSlotsModal} onOpenChange={setShowSlotsModal}>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              Available Time Slots
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {selectedDateSlots?.date}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {loadingSlots ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : selectedDateSlots && selectedDateSlots.slots.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {selectedDateSlots.slots.map((slot, index) => (
+                  <div
+                    key={index}
+                    className="bg-green-50 border border-green-200 rounded-lg p-3 hover:bg-green-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {formatTime(slot.start_time)}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          to {formatTime(slot.end_time)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-4">
+                No slots available
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Similar Mentors - Only show if mentor data is available */}
       {mentor && (
