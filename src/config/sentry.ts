@@ -18,7 +18,7 @@ export function initSentry() {
   }
 
   const dsn = import.meta.env.VITE_SENTRY_DSN;
-  
+
   if (!dsn) {
     console.warn("[Sentry] DSN not configured. Error tracking disabled.");
     return;
@@ -26,63 +26,65 @@ export function initSentry() {
 
   Sentry.init({
     dsn,
-    environment: import.meta.env.VITE_APP_ENV || (isDevelopment ? "development" : "production"),
-    
+    environment:
+      import.meta.env.VITE_APP_ENV ||
+      (isDevelopment ? "development" : "production"),
+
     // Performance Monitoring
     tracesSampleRate: isProduction ? 0.1 : 1.0, // 10% in prod, 100% in dev
-    
+
     // Session Replay
     replaysSessionSampleRate: 0.1, // 10% of sessions
     replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
-    
+
     integrations: [
       // Browser tracing for performance monitoring
       Sentry.browserTracingIntegration(),
-      
+
       // Session replay for debugging
       Sentry.replayIntegration({
         maskAllText: true, // Privacy: mask all text
         blockAllMedia: true, // Privacy: block all media
       }),
     ],
-    
+
     // Filter out known non-critical errors
     beforeSend(event, hint) {
       const error = hint.originalException;
-      
+
       // Filter out network errors (often user's connection issues)
-      if (error && typeof error === 'object' && 'message' in error) {
+      if (error && typeof error === "object" && "message" in error) {
         const message = String(error.message);
         if (
-          message.includes('NetworkError') ||
-          message.includes('Failed to fetch') ||
-          message.includes('Network request failed')
+          message.includes("NetworkError") ||
+          message.includes("Failed to fetch") ||
+          message.includes("Network request failed")
         ) {
           return null;
         }
       }
-      
+
       // Filter out Supabase auth session errors (expected during logout)
-      if (event.exception?.values?.[0]?.value?.includes('session')) {
+      if (event.exception?.values?.[0]?.value?.includes("session")) {
         return null;
       }
-      
+
       return event;
     },
-    
+
     // Add user context
     beforeBreadcrumb(breadcrumb) {
       // Don't log console breadcrumbs in production
-      if (isProduction && breadcrumb.category === 'console') {
+      if (isProduction && breadcrumb.category === "console") {
         return null;
       }
       return breadcrumb;
     },
-    
+
     // Performance optimizations
     maxBreadcrumbs: 50,
     attachStacktrace: true,
-    
+
     // Privacy settings
     sendDefaultPii: false, // Don't send personally identifiable information
   });
@@ -130,18 +132,25 @@ export function captureException(error: Error, context?: Record<string, any>) {
 /**
  * Capture custom message
  */
-export function captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
+export function captureMessage(
+  message: string,
+  level: "info" | "warning" | "error" = "info"
+) {
   Sentry.captureMessage(message, level);
 }
 
 /**
  * Add breadcrumb for debugging
  */
-export function addBreadcrumb(message: string, category: string, data?: Record<string, any>) {
+export function addBreadcrumb(
+  message: string,
+  category: string,
+  data?: Record<string, any>
+) {
   Sentry.addBreadcrumb({
     message,
     category,
-    level: 'info',
+    level: "info",
     data,
   });
 }

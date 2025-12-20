@@ -13,6 +13,7 @@ This document outlines additional improvements beyond rate limiting to protect, 
 **File**: `src/utils/inputSanitization.ts`
 
 **Features**:
+
 - XSS prevention (HTML sanitization)
 - SQL injection pattern detection
 - Email/URL/phone validation
@@ -21,8 +22,12 @@ This document outlines additional improvements beyond rate limiting to protect, 
 - Profile data sanitization
 
 **Usage**:
+
 ```typescript
-import { sanitizeInput, validateBookingMessage } from '@/utils/inputSanitization';
+import {
+  sanitizeInput,
+  validateBookingMessage,
+} from "@/utils/inputSanitization";
 
 // Before saving user input
 const cleanName = sanitizeInput(userInput.name);
@@ -81,6 +86,7 @@ if (!validation.valid) {
 ### 3. Session Security
 
 **Recommended Supabase Settings**:
+
 ```typescript
 // src/integrations/supabase/client.ts
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -88,7 +94,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce', // More secure than implicit flow
+    flowType: "pkce", // More secure than implicit flow
   },
 });
 ```
@@ -118,6 +124,7 @@ VITE_ENABLE_ANALYTICS=true
 **File**: `src/utils/performanceMonitor.ts`
 
 **Features**:
+
 - Component render time tracking
 - API call performance monitoring
 - Memory usage monitoring
@@ -126,11 +133,16 @@ VITE_ENABLE_ANALYTICS=true
 - Bundle size tracking
 
 **Usage**:
+
 ```typescript
-import { measureApiCall, isSlowConnection, reportWebVitals } from '@/utils/performanceMonitor';
+import {
+  measureApiCall,
+  isSlowConnection,
+  reportWebVitals,
+} from "@/utils/performanceMonitor";
 
 // Monitor API calls
-const mentors = await measureApiCall('fetchMentors', async () => {
+const mentors = await measureApiCall("fetchMentors", async () => {
   return await fetchMentorCards({ page: 1 });
 });
 
@@ -161,13 +173,13 @@ interface OptimizedImageProps {
   priority?: boolean;
 }
 
-export function OptimizedImage({ 
-  src, 
-  alt, 
-  width, 
-  height, 
+export function OptimizedImage({
+  src,
+  alt,
+  width,
+  height,
   className,
-  priority = false 
+  priority = false,
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(false);
 
@@ -184,7 +196,9 @@ export function OptimizedImage({
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         onLoad={() => setLoaded(true)}
-        className={`transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`transition-opacity duration-300 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
       />
     </div>
   );
@@ -192,6 +206,7 @@ export function OptimizedImage({
 ```
 
 **CDN Integration** (Recommended):
+
 - Use Cloudinary/ImageKit for image optimization
 - Automatic WebP conversion
 - Responsive image sizes
@@ -203,15 +218,16 @@ export function OptimizedImage({
 **Current**: Already implemented in routing
 
 **Additional Optimization**:
+
 ```typescript
 // Lazy load heavy components
-const HeavyChart = lazy(() => import('@/components/analytics/HeavyChart'));
-const VideoPlayer = lazy(() => import('@/components/VideoPlayer'));
+const HeavyChart = lazy(() => import("@/components/analytics/HeavyChart"));
+const VideoPlayer = lazy(() => import("@/components/VideoPlayer"));
 
 // Use Suspense
 <Suspense fallback={<LoadingSpinner />}>
   <HeavyChart data={data} />
-</Suspense>
+</Suspense>;
 ```
 
 ---
@@ -225,7 +241,7 @@ npm install @tanstack/react-virtual
 ```
 
 ```typescript
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 function MentorList({ mentors }: { mentors: MentorProfile[] }) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -244,10 +260,10 @@ function MentorList({ mentors }: { mentors: MentorProfile[] }) {
           <div
             key={virtualRow.index}
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
-              width: '100%',
+              width: "100%",
               height: `${virtualRow.size}px`,
               transform: `translateY(${virtualRow.start}px)`,
             }}
@@ -269,20 +285,20 @@ function MentorList({ mentors }: { mentors: MentorProfile[] }) {
 
 ```typescript
 // public/sw.js
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open('v1').then((cache) => {
+    caches.open("v1").then((cache) => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/static/css/main.css',
-        '/static/js/main.js',
+        "/",
+        "/index.html",
+        "/static/css/main.css",
+        "/static/js/main.js",
       ]);
     })
   );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
@@ -296,24 +312,26 @@ self.addEventListener('fetch', (event) => {
 ### 6. Database Query Optimization
 
 **Already Done** ✅:
+
 - Indexes on frequently queried columns
 - Server-side pagination
 - Full-text search
 
 **Additional**:
+
 ```sql
 -- Add composite indexes for common queries
-CREATE INDEX idx_bookings_user_status_date 
+CREATE INDEX idx_bookings_user_status_date
 ON bookings(user_id, status, scheduled_date);
 
 -- Analyze slow queries
-EXPLAIN ANALYZE 
-SELECT * FROM expert_profiles 
+EXPLAIN ANALYZE
+SELECT * FROM expert_profiles
 WHERE category = 'Career Development';
 
 -- Add materialized view for complex queries
 CREATE MATERIALIZED VIEW mentor_stats AS
-SELECT 
+SELECT
   expert_id,
   COUNT(*) as total_sessions,
   AVG(rating) as avg_rating,
@@ -336,7 +354,7 @@ REFRESH MATERIALIZED VIEW mentor_stats;
 
 ```typescript
 // Example: Cache mentor data in Redis
-import Redis from 'ioredis';
+import Redis from "ioredis";
 
 const redis = new Redis(process.env.REDIS_URL);
 
@@ -362,11 +380,13 @@ async function getCachedMentor(mentorId: string) {
 ### 2. CDN Integration
 
 **Recommended Providers**:
+
 - Cloudflare (Free tier available)
 - Fastly
 - AWS CloudFront
 
 **Benefits**:
+
 - Faster static asset delivery
 - Image optimization
 - DDoS protection
@@ -377,6 +397,7 @@ async function getCachedMentor(mentorId: string) {
 ### 3. Database Read Replicas
 
 **For Supabase Pro/Enterprise**:
+
 - Set up read replicas for search queries
 - Direct writes to primary database
 - Reduces load on main database
@@ -389,18 +410,18 @@ async function getCachedMentor(mentorId: string) {
 
 ```typescript
 // Example with BullMQ
-import { Queue, Worker } from 'bullmq';
+import { Queue, Worker } from "bullmq";
 
-const emailQueue = new Queue('email-notifications');
+const emailQueue = new Queue("email-notifications");
 
 // Add job
-await emailQueue.add('send-booking-confirmation', {
+await emailQueue.add("send-booking-confirmation", {
   userId: user.id,
   bookingId: booking.id,
 });
 
 // Process jobs
-const worker = new Worker('email-notifications', async (job) => {
+const worker = new Worker("email-notifications", async (job) => {
   await sendEmail(job.data);
 });
 ```
@@ -414,6 +435,7 @@ const worker = new Worker('email-notifications', async (job) => {
 **File**: `src/components/ErrorBoundary.tsx`
 
 **Usage**:
+
 ```typescript
 // Wrap app with error boundary
 <ErrorBoundary>
@@ -442,18 +464,19 @@ Sentry.init({
 ### 2. Analytics Integration
 
 **Google Analytics 4**:
+
 ```typescript
 // src/utils/analytics.ts
 export function trackEvent(eventName: string, params?: any) {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', eventName, params);
+  if (typeof window !== "undefined" && (window as any).gtag) {
+    (window as any).gtag("event", eventName, params);
   }
 }
 
 // Usage
-trackEvent('booking_created', { 
-  mentor_id: mentorId, 
-  price: totalPrice 
+trackEvent("booking_created", {
+  mentor_id: mentorId,
+  price: totalPrice,
 });
 ```
 
@@ -465,11 +488,12 @@ trackEvent('booking_created', {
 
 ```typescript
 // Real User Monitoring (RUM)
-import { analytics } from '@vercel/analytics';
+import { analytics } from "@vercel/analytics";
 
-analytics.track('PageView', {
+analytics.track("PageView", {
   page: window.location.pathname,
-  loadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
+  loadTime:
+    performance.timing.loadEventEnd - performance.timing.navigationStart,
 });
 ```
 
@@ -480,6 +504,7 @@ analytics.track('PageView', {
 ### 1. TypeScript Strict Mode
 
 **Update**: `tsconfig.json`
+
 ```json
 {
   "compilerOptions": {
@@ -505,12 +530,12 @@ npm install -D vitest @testing-library/react @testing-library/jest-dom
 
 ```typescript
 // src/services/__tests__/rateLimitService.test.ts
-import { describe, it, expect } from 'vitest';
-import { checkRateLimit } from '../rateLimitService';
+import { describe, it, expect } from "vitest";
+import { checkRateLimit } from "../rateLimitService";
 
-describe('Rate Limiting', () => {
-  it('should allow first request', async () => {
-    const result = await checkRateLimit('test_action');
+describe("Rate Limiting", () => {
+  it("should allow first request", async () => {
+    const result = await checkRateLimit("test_action");
     expect(result.allowed).toBe(true);
   });
 });
@@ -528,14 +553,14 @@ npm install -D @playwright/test
 
 ```typescript
 // e2e/booking.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('should create booking successfully', async ({ page }) => {
-  await page.goto('/mentor/john-doe');
-  await page.click('text=Book Session');
-  await page.fill('[name="message"]', 'Test booking');
-  await page.click('text=Confirm Booking');
-  await expect(page.locator('text=Booking created')).toBeVisible();
+test("should create booking successfully", async ({ page }) => {
+  await page.goto("/mentor/john-doe");
+  await page.click("text=Book Session");
+  await page.fill('[name="message"]', "Test booking");
+  await page.click("text=Confirm Booking");
+  await expect(page.locator("text=Booking created")).toBeVisible();
 });
 ```
 
@@ -544,6 +569,7 @@ test('should create booking successfully', async ({ page }) => {
 ## 🎯 **IMPLEMENTATION PRIORITY**
 
 ### Critical (Do First) 🔴
+
 1. ✅ Error Boundary (Done)
 2. ✅ Input Sanitization (Done)
 3. ✅ Performance Monitoring (Done)
@@ -551,6 +577,7 @@ test('should create booking successfully', async ({ page }) => {
 5. Sentry error tracking
 
 ### High Priority 🟡
+
 6. Image optimization with CDN
 7. Redis caching layer
 8. Service Worker (PWA)
@@ -558,6 +585,7 @@ test('should create booking successfully', async ({ page }) => {
 10. Unit testing
 
 ### Medium Priority 🟢
+
 11. Virtual scrolling
 12. Message queue for async tasks
 13. E2E testing
@@ -565,6 +593,7 @@ test('should create booking successfully', async ({ page }) => {
 15. TypeScript strict mode
 
 ### Low Priority (Nice to Have) ⚪
+
 16. Read replicas
 17. Multi-region deployment
 18. Advanced monitoring (New Relic)
@@ -573,14 +602,14 @@ test('should create booking successfully', async ({ page }) => {
 
 ## 📊 **EXPECTED IMPROVEMENTS**
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Security** | 6/10 | 9/10 | +50% |
-| **Page Load** | 2-3s | < 1s | 66% faster |
-| **Bundle Size** | ~500KB | ~300KB | 40% smaller |
-| **Error Detection** | Manual | Automatic | 100% coverage |
-| **Scalability** | 10K users | 500K users | 50x |
-| **Uptime** | 99% | 99.9% | 99.9% |
+| Metric              | Before    | After      | Improvement   |
+| ------------------- | --------- | ---------- | ------------- |
+| **Security**        | 6/10      | 9/10       | +50%          |
+| **Page Load**       | 2-3s      | < 1s       | 66% faster    |
+| **Bundle Size**     | ~500KB    | ~300KB     | 40% smaller   |
+| **Error Detection** | Manual    | Automatic  | 100% coverage |
+| **Scalability**     | 10K users | 500K users | 50x           |
+| **Uptime**          | 99%       | 99.9%      | 99.9%         |
 
 ---
 

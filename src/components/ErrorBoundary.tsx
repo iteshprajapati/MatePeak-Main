@@ -75,7 +75,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 Oops! Something went wrong
               </h2>
               <p className="text-gray-600 mb-4">
-                We're sorry for the inconvenience. The page encountered an unexpected error.
+                We're sorry for the inconvenience. The page encountered an
+                unexpected error.
               </p>
             </div>
 
@@ -115,7 +116,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <p className="mt-4 text-sm text-gray-500">
               If this problem persists, please{" "}
-              <a href="/contact" className="text-matepeak-primary hover:underline">
+              <a
+                href="/contact"
+                className="text-matepeak-primary hover:underline"
+              >
                 contact support
               </a>
             </p>

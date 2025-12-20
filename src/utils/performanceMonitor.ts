@@ -13,7 +13,9 @@ export function measureRender(componentName: string, callback: () => void) {
 
   if (duration > 16) {
     // More than one frame (60fps = 16.67ms)
-    console.warn(`[Performance] ${componentName} took ${duration.toFixed(2)}ms to render`);
+    console.warn(
+      `[Performance] ${componentName} took ${duration.toFixed(2)}ms to render`
+    );
   }
 }
 
@@ -47,7 +49,10 @@ export async function measureApiCall<T>(
     return result;
   } catch (error) {
     const duration = performance.now() - start;
-    console.error(`[Performance] ${apiName} failed after ${duration.toFixed(2)}ms`, error);
+    console.error(
+      `[Performance] ${apiName} failed after ${duration.toFixed(2)}ms`,
+      error
+    );
     throw error;
   }
 }
@@ -133,7 +138,9 @@ export function checkMemoryUsage() {
 
     if (percentUsed > 80) {
       console.warn(
-        `[Performance] High memory usage: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB (${percentUsed.toFixed(1)}%)`
+        `[Performance] High memory usage: ${usedMB.toFixed(
+          2
+        )}MB / ${limitMB.toFixed(2)}MB (${percentUsed.toFixed(1)}%)`
       );
     }
 
@@ -192,7 +199,9 @@ export function logBundleSize() {
       }
     });
 
-    console.log(`[Performance] Total bundle size: ${(totalSize / 1024).toFixed(2)} KB`);
+    console.log(
+      `[Performance] Total bundle size: ${(totalSize / 1024).toFixed(2)} KB`
+    );
   }
 }
 

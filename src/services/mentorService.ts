@@ -11,43 +11,43 @@ export interface MentorFilters {
  * Get all mentors with optional filters
  */
 export async function getMentors(filters?: MentorFilters) {
-  return measureApiCall('getMentors', async () => {
-    let query = supabase
-      .from('expert_profiles')
-      .select(`
+  return measureApiCall("getMentors", async () => {
+    let query = supabase.from("expert_profiles").select(`
         *,
         profile:profiles(full_name, email, avatar_url, role),
         reviews(rating)
       `);
-    
+
     if (filters?.category) {
-      query = query.eq('category', filters.category);
+      query = query.eq("category", filters.category);
     }
-    
+
     if (filters?.minPrice !== undefined) {
-      query = query.gte('pricing', filters.minPrice);
+      query = query.gte("pricing", filters.minPrice);
     }
-    
+
     if (filters?.maxPrice !== undefined) {
-      query = query.lte('pricing', filters.maxPrice);
+      query = query.lte("pricing", filters.maxPrice);
     }
-    
+
     const { data, error } = await query;
-    
+
     if (error) {
-      console.error('Error fetching mentors:', error);
+      console.error("Error fetching mentors:", error);
       return { success: false, error: error.message, data: [] };
     }
-    
+
     // Calculate average rating for each mentor
-    const mentorsWithRating = data.map(mentor => ({
+    const mentorsWithRating = data.map((mentor) => ({
       ...mentor,
-      averageRating: mentor.reviews.length > 0
-        ? mentor.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / mentor.reviews.length
-        : 0,
-      totalReviews: mentor.reviews.length
+      averageRating:
+        mentor.reviews.length > 0
+          ? mentor.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
+            mentor.reviews.length
+          : 0,
+      totalReviews: mentor.reviews.length,
     }));
-    
+
     return { success: true, data: mentorsWithRating };
   });
 }
@@ -57,8 +57,9 @@ export async function getMentors(filters?: MentorFilters) {
  */
 export async function getMentorById(mentorId: string) {
   const { data, error } = await supabase
-    .from('expert_profiles')
-    .select(`
+    .from("expert_profiles")
+    .select(
+      `
       *,
       profile:profiles(full_name, email, avatar_url, role),
       reviews(
@@ -68,15 +69,16 @@ export async function getMentorById(mentorId: string) {
         created_at,
         user:profiles(full_name, avatar_url)
       )
-    `)
-    .eq('id', mentorId)
+    `
+    )
+    .eq("id", mentorId)
     .single();
-  
+
   if (error) {
-    console.error('Error fetching mentor:', error);
+    console.error("Error fetching mentor:", error);
     return { success: false, error: error.message, data: null };
   }
-  
+
   return { success: true, data };
 }
 
@@ -93,15 +95,17 @@ export async function upsertMentorProfile(profileData: {
   username: string;
   full_name: string;
 }) {
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) {
-    return { success: false, error: 'You must be logged in', data: null };
+    return { success: false, error: "You must be logged in", data: null };
   }
-  
+
   // Update expert profile
   const { data: expertData, error: expertError } = await supabase
-    .from('expert_profiles')
+    .from("expert_profiles")
     .update({
       category: profileData.category,
       experience: profileData.experience,
@@ -110,18 +114,22 @@ export async function upsertMentorProfile(profileData: {
       availability_json: profileData.availability_json,
       social_links: profileData.social_links as any,
       username: profileData.username,
-      full_name: profileData.full_name
+      full_name: profileData.full_name,
     })
-    .eq('id', user.id)
+    .eq("id", user.id)
     .select()
     .single();
-  
+
   if (expertError) {
-    console.error('Error updating mentor profile:', expertError);
+    console.error("Error updating mentor profile:", expertError);
     return { success: false, error: expertError.message, data: null };
   }
-  
-  return { success: true, message: 'Profile updated successfully', data: expertData };
+
+  return {
+    success: true,
+    message: "Profile updated successfully",
+    data: expertData,
+  };
 }
 
 /**
@@ -129,14 +137,14 @@ export async function upsertMentorProfile(profileData: {
  */
 export async function getCategories() {
   const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('name');
-  
+    .from("categories")
+    .select("*")
+    .order("name");
+
   if (error) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return { success: false, error: error.message, data: [] };
   }
-  
+
   return { success: true, data };
 }
