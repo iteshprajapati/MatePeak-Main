@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { showWarningToast } from "@/utils/toast-helpers";
+import { Session } from "@supabase/supabase-js";
 
 const Explore = () => {
   const location = useLocation();
@@ -44,9 +46,13 @@ const Explore = () => {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedExpertise, setSelectedExpertise] = useState(initialExpertise);
   const [sortBy, setSortBy] = useState<
-    "newest" | "rating" | "price-low" | "price-high"
+    "newest" | "rating" | "price-low" | "price-high" | "relevance"
   >("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
 
   // Production-ready search features
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -103,6 +109,42 @@ const Explore = () => {
         console.error("Failed to parse search history", e);
       }
     }
+
+    // Check authentication and load favorites
+    const initAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setSession(session);
+
+      // Only load favorites if user is logged in
+      if (session) {
+        const savedFavorites = localStorage.getItem("favoriteMentors");
+        if (savedFavorites) {
+          try {
+            setFavorites(JSON.parse(savedFavorites));
+          } catch (e) {
+            console.error("Failed to parse favorites", e);
+          }
+        }
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+
+      // Clear favorites if user logs out
+      if (!session) {
+        setShowFavoritesOnly(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Save search to history
@@ -141,28 +183,65 @@ const Explore = () => {
 
     const timeoutId = setTimeout(async () => {
       try {
-        // Fetch suggestions based on search input
+        const search = searchInput.toLowerCase().trim();
+        const searchWords = search
+          .split(/\s+/)
+          .filter((word) => word.length > 0);
+
+        // Fetch suggestions with fuzzy matching and partial word support
         const { data, error } = await supabase
           .from("mentor_profiles")
-          .select("name, expertise")
-          .or(`name.ilike.%${searchInput}%,expertise.ilike.%${searchInput}%`)
-          .limit(5);
+          .select("name, expertise, bio")
+          .limit(10); // Get more results for better fuzzy matching
 
         if (error) throw error;
 
         const suggestionSet = new Set<string>();
+        const scoredSuggestions: Array<{ text: string; score: number }> = [];
+
         data?.forEach((item) => {
-          if (item.name.toLowerCase().includes(searchInput.toLowerCase())) {
-            suggestionSet.add(item.name);
-          }
-          if (
-            item.expertise?.toLowerCase().includes(searchInput.toLowerCase())
-          ) {
-            suggestionSet.add(item.expertise);
-          }
+          const fields = [
+            item.name || "",
+            item.expertise || "",
+            item.bio || "",
+          ].map((f) => f.toLowerCase());
+
+          searchWords.forEach((word) => {
+            fields.forEach((field) => {
+              // Calculate match score for fuzzy matching
+              let score = 0;
+
+              // Exact match (highest priority)
+              if (field === word) score = 100;
+              // Starts with (high priority)
+              else if (field.startsWith(word)) score = 80;
+              // Contains (medium priority)
+              else if (field.includes(word)) score = 60;
+              // Fuzzy match - check if word is similar (typo tolerance)
+              else {
+                const similarity = calculateSimilarity(word, field);
+                if (similarity > 0.7) score = 40; // 70% similarity threshold
+              }
+
+              if (score > 0) {
+                // Add the full field value as suggestion
+                const suggestion = item.name || item.expertise;
+                if (suggestion && !suggestionSet.has(suggestion)) {
+                  suggestionSet.add(suggestion);
+                  scoredSuggestions.push({ text: suggestion, score });
+                }
+              }
+            });
+          });
         });
 
-        setSuggestions(Array.from(suggestionSet).slice(0, 5));
+        // Sort by score and take top 5
+        const topSuggestions = scoredSuggestions
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5)
+          .map((s) => s.text);
+
+        setSuggestions(topSuggestions);
         setShowSuggestions(true);
       } catch (err) {
         console.error("Error fetching suggestions:", err);
@@ -171,6 +250,50 @@ const Explore = () => {
 
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
+
+  // Calculate string similarity for fuzzy matching (Levenshtein-based)
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+
+    if (longer.length === 0) return 1.0;
+
+    // Check if shorter is substring of longer
+    if (longer.includes(shorter)) return 0.8;
+
+    // Simple edit distance calculation
+    const editDistance = levenshteinDistance(str1, str2);
+    return (longer.length - editDistance) / longer.length;
+  };
+
+  // Levenshtein distance for typo tolerance
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  };
 
   // Real-time search with debouncing and request cancellation
   useEffect(() => {
@@ -227,6 +350,7 @@ const Explore = () => {
           expertise:
             selectedExpertise !== "all" ? selectedExpertise : undefined,
           searchQuery: searchInput || undefined,
+          priceRange: priceRange,
           page,
           limit: MENTORS_PER_PAGE,
         },
@@ -329,24 +453,83 @@ const Explore = () => {
     setSelectedCategory("all-categories");
     setSelectedExpertise("all");
     setSortBy("newest");
+    setPriceRange([0, 10000]);
+    setShowFavoritesOnly(false);
     navigate("/explore", { replace: true });
     fetchDatabaseMentors();
   };
 
-  // Sort mentors
-  const sortedMentors = [...mentorCards].sort((a, b) => {
-    switch (sortBy) {
-      case "rating":
-        return b.rating - a.rating;
-      case "price-low":
-        return a.price - b.price;
-      case "price-high":
-        return b.price - a.price;
-      case "newest":
-      default:
-        return 0;
+  // Toggle favorite - only for logged-in users
+  const toggleFavorite = (mentorId: string) => {
+    // Check if user is logged in
+    if (!session) {
+      showWarningToast("Sign in required", {
+        description: "Please sign in to save mentors to your favorites",
+        action: {
+          label: "Sign In",
+          onClick: () => navigate("/login"),
+        },
+      });
+      return;
     }
-  });
+
+    const newFavorites = favorites.includes(mentorId)
+      ? favorites.filter((id) => id !== mentorId)
+      : [...favorites, mentorId];
+
+    setFavorites(newFavorites);
+    localStorage.setItem("favoriteMentors", JSON.stringify(newFavorites));
+  };
+
+  // Calculate relevance score for sorting
+  const calculateRelevance = (mentor: MentorProfile): number => {
+    if (!searchInput) return 0;
+
+    const searchLower = searchInput.toLowerCase();
+    let score = 0;
+
+    // Name match (highest weight)
+    if (mentor.name.toLowerCase().includes(searchLower)) score += 100;
+
+    // Category exact match
+    if (mentor.categories.some((cat) => cat.toLowerCase() === searchLower))
+      score += 80;
+
+    // Category partial match
+    if (
+      mentor.categories.some((cat) => cat.toLowerCase().includes(searchLower))
+    )
+      score += 50;
+
+    // Bio match
+    if (mentor.bio.toLowerCase().includes(searchLower)) score += 30;
+
+    // Headline/tagline match
+    if (mentor.tagline?.toLowerCase().includes(searchLower)) score += 40;
+
+    return score;
+  };
+
+  // Sort mentors with relevance support
+  const sortedMentors = [...mentorCards]
+    .filter((mentor) =>
+      showFavoritesOnly ? favorites.includes(mentor.id) : true
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "relevance":
+          return calculateRelevance(b) - calculateRelevance(a);
+        case "rating":
+          return b.rating - a.rating;
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        case "newest":
+        default:
+          return 0;
+      }
+    });
 
   // Log sorting results
   console.log(`🔄 Sort by: ${sortBy}`);
@@ -362,7 +545,10 @@ const Explore = () => {
   const hasActiveFilters =
     selectedCategory !== "all-categories" ||
     selectedExpertise !== "all" ||
-    searchInput !== "";
+    searchInput !== "" ||
+    priceRange[0] !== 0 ||
+    priceRange[1] !== 10000 ||
+    showFavoritesOnly;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -371,7 +557,7 @@ const Explore = () => {
       <main className="flex-grow">
         {/* Clean Search Section with MatePeak Touch */}
         <div className="bg-white pt-16 pb-8 border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4">
+          <div className="max-w-6xl mx-auto px-4">
             {/* Simple Title */}
             <div className="mb-8">
               <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-2">
@@ -384,7 +570,7 @@ const Explore = () => {
             </div>
 
             {/* Clean Search Bar with Autocomplete and History */}
-            <div className="mb-6">
+            <div className="mb-6 max-w-3xl">
               <div className="relative">
                 <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm focus-within:border-matepeak-primary focus-within:shadow-md transition-all bg-white">
                   <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
@@ -529,133 +715,243 @@ const Explore = () => {
                 <button
                   key={cat}
                   onClick={() => {
-                    setSelectedCategory(cat);
-                    fetchDatabaseMentors();
+                    setSearchInput(cat);
+                    setSelectedCategory("all-categories"); // Reset category filter to search across all
+                    navigate(`/explore?q=${encodeURIComponent(cat)}`);
                   }}
                   className="px-4 py-1.5 rounded-full border border-gray-200 hover:border-matepeak-primary hover:bg-gray-50 text-gray-700 hover:text-matepeak-primary text-sm font-poppins transition-all"
                 >
                   {cat}
                 </button>
               ))}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-1.5 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-poppins flex items-center gap-1.5 transition-all ml-2"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                {showFilters ? "Hide filters" : "More filters"}
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Filters Section - Collapsible */}
-        {showFilters && (
-          <div className="bg-gray-50 py-6">
-            <div className="max-w-4xl mx-auto px-4">
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
-                      Category
-                    </label>
-                    <Select
-                      value={selectedCategory}
-                      onValueChange={setSelectedCategory}
-                    >
-                      <SelectTrigger className="font-poppins">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem
-                            key={cat}
-                            value={cat}
-                            className="font-poppins"
+              {/* Filters Dropdown */}
+              <div className="relative ml-2">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="px-4 py-1.5 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-poppins flex items-center gap-1.5 transition-all"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  More filters
+                </button>
+
+                {/* Dropdown Menu */}
+                {showFilters && (
+                  <>
+                    {/* Backdrop to close dropdown */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowFilters(false)}
+                    />
+
+                    {/* Dropdown Content */}
+                    <div className="absolute top-full mt-2 right-0 w-[420px] bg-white rounded-xl border border-gray-200 shadow-xl z-50 p-5">
+                      <div className="space-y-4">
+                        {/* Category Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Category
+                          </label>
+                          <Select
+                            value={selectedCategory}
+                            onValueChange={setSelectedCategory}
                           >
-                            {cat === "all-categories" ? "All Categories" : cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                            <SelectTrigger className="font-poppins">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map((cat) => (
+                                <SelectItem
+                                  key={cat}
+                                  value={cat}
+                                  className="font-poppins"
+                                >
+                                  {cat === "all-categories"
+                                    ? "All Categories"
+                                    : cat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
-                      Expertise
-                    </label>
-                    <Select
-                      value={selectedExpertise}
-                      onValueChange={setSelectedExpertise}
-                    >
-                      <SelectTrigger className="font-poppins">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {expertiseOptions.map((exp) => (
-                          <SelectItem
-                            key={exp}
-                            value={exp}
-                            className="font-poppins"
+                        {/* Expertise Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Expertise
+                          </label>
+                          <Select
+                            value={selectedExpertise}
+                            onValueChange={setSelectedExpertise}
                           >
-                            {exp === "all" ? "All Expertise" : exp}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                            <SelectTrigger className="font-poppins">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {expertiseOptions.map((exp) => (
+                                <SelectItem
+                                  key={exp}
+                                  value={exp}
+                                  className="font-poppins"
+                                >
+                                  {exp === "all" ? "All Expertise" : exp}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
-                      Sort by
-                    </label>
-                    <Select
-                      value={sortBy}
-                      onValueChange={(value: any) => setSortBy(value)}
-                    >
-                      <SelectTrigger className="font-poppins">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="newest" className="font-poppins">
-                          Newest First
-                        </SelectItem>
-                        <SelectItem value="rating" className="font-poppins">
-                          Highest Rated
-                        </SelectItem>
-                        <SelectItem value="price-low" className="font-poppins">
-                          Price: Low to High
-                        </SelectItem>
-                        <SelectItem value="price-high" className="font-poppins">
-                          Price: High to Low
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                        {/* Sort Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Sort by
+                          </label>
+                          <Select
+                            value={sortBy}
+                            onValueChange={(value: any) => setSortBy(value)}
+                          >
+                            <SelectTrigger className="font-poppins">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {searchInput && (
+                                <SelectItem
+                                  value="relevance"
+                                  className="font-poppins"
+                                >
+                                  Most Relevant
+                                </SelectItem>
+                              )}
+                              <SelectItem
+                                value="newest"
+                                className="font-poppins"
+                              >
+                                Newest First
+                              </SelectItem>
+                              <SelectItem
+                                value="rating"
+                                className="font-poppins"
+                              >
+                                Highest Rated
+                              </SelectItem>
+                              <SelectItem
+                                value="price-low"
+                                className="font-poppins"
+                              >
+                                Price: Low to High
+                              </SelectItem>
+                              <SelectItem
+                                value="price-high"
+                                className="font-poppins"
+                              >
+                                Price: High to Low
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  {hasActiveFilters && (
-                    <Button
-                      onClick={handleClearFilters}
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-600 hover:text-gray-900 font-poppins"
-                    >
-                      Clear all
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleSearch}
-                    className="bg-matepeak-primary hover:bg-matepeak-secondary text-white font-poppins"
-                    size="sm"
-                  >
-                    Apply filters
-                  </Button>
-                </div>
+                        {/* Price Range Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Price Range (₹/session)
+                          </label>
+                          <div className="space-y-3">
+                            <div className="flex gap-3 items-center">
+                              <Input
+                                type="number"
+                                placeholder="Min"
+                                value={priceRange[0]}
+                                onChange={(e) =>
+                                  setPriceRange([
+                                    Number(e.target.value),
+                                    priceRange[1],
+                                  ])
+                                }
+                                className="font-poppins"
+                                min={0}
+                              />
+                              <span className="text-gray-500">to</span>
+                              <Input
+                                type="number"
+                                placeholder="Max"
+                                value={priceRange[1]}
+                                onChange={(e) =>
+                                  setPriceRange([
+                                    priceRange[0],
+                                    Number(e.target.value),
+                                  ])
+                                }
+                                className="font-poppins"
+                                min={0}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 font-poppins">
+                              ₹{priceRange[0]} - ₹{priceRange[1]}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Favorites Toggle - Only for logged-in users */}
+                        {session && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 font-poppins">
+                              Show Favorites Only
+                            </label>
+                            <button
+                              onClick={() =>
+                                setShowFavoritesOnly(!showFavoritesOnly)
+                              }
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                showFavoritesOnly
+                                  ? "bg-matepeak-primary"
+                                  : "bg-gray-200"
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  showFavoritesOnly
+                                    ? "translate-x-6"
+                                    : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-3 border-t border-gray-100">
+                          {hasActiveFilters && (
+                            <Button
+                              onClick={() => {
+                                handleClearFilters();
+                                setShowFilters(false);
+                              }}
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-600 hover:text-gray-900 font-poppins flex-1"
+                            >
+                              Clear all
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => {
+                              handleSearch();
+                              setShowFilters(false);
+                            }}
+                            className="bg-matepeak-primary hover:bg-matepeak-secondary text-white font-poppins flex-1"
+                            size="sm"
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Results Section */}
         <div className="max-w-6xl mx-auto px-4 py-10">
@@ -683,7 +979,12 @@ const Explore = () => {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                     {sortedMentors.map((mentor) => (
-                      <MentorCard key={mentor.id} mentor={mentor} />
+                      <MentorCard
+                        key={mentor.id}
+                        mentor={mentor}
+                        isFavorite={favorites.includes(mentor.id)}
+                        onToggleFavorite={toggleFavorite}
+                      />
                     ))}
                   </div>
 
@@ -712,26 +1013,90 @@ const Explore = () => {
                 <div className="text-center py-20">
                   <Search className="h-16 w-16 text-gray-300 mx-auto mb-6" />
                   <h3 className="text-xl font-medium text-gray-900 mb-2 font-poppins">
-                    No results found
+                    {showFavoritesOnly
+                      ? "No favorites yet"
+                      : "No results found"}
                   </h3>
                   <p className="text-gray-600 font-poppins text-sm mb-6">
-                    {searchInput ? (
+                    {showFavoritesOnly ? (
+                      "Start adding mentors to your favorites by clicking the heart icon on their cards."
+                    ) : searchInput ? (
                       <>
-                        Your search -{" "}
-                        <span className="font-semibold">{searchInput}</span> -
+                        Your search for{" "}
+                        <span className="font-semibold">"{searchInput}"</span>{" "}
                         did not match any mentors.
                       </>
                     ) : (
                       "Try different keywords or adjust your filters."
                     )}
                   </p>
-                  {hasActiveFilters && (
+
+                  {/* Helpful suggestions */}
+                  {searchInput && !showFavoritesOnly && (
+                    <div className="max-w-md mx-auto mb-6">
+                      <p className="text-sm font-medium text-gray-700 mb-3 font-poppins">
+                        Try these suggestions:
+                      </p>
+                      <ul className="text-sm text-gray-600 space-y-2 text-left">
+                        <li className="flex items-start gap-2">
+                          <span className="text-matepeak-primary mt-0.5">
+                            •
+                          </span>
+                          <span>
+                            Check your spelling or try different keywords
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-matepeak-primary mt-0.5">
+                            •
+                          </span>
+                          <span>
+                            Use more general terms (e.g., "Career" instead of
+                            "Career Coaching")
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-matepeak-primary mt-0.5">
+                            •
+                          </span>
+                          <span>Try browsing popular categories below</span>
+                        </li>
+                      </ul>
+
+                      {/* Popular suggestions */}
+                      <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                        <p className="text-xs text-gray-500 w-full mb-2">
+                          Popular searches:
+                        </p>
+                        {[
+                          "Career Guidance",
+                          "Interview Prep",
+                          "Mental Health",
+                          "Programming",
+                        ].map((term) => (
+                          <button
+                            key={term}
+                            onClick={() => {
+                              setSearchInput(term);
+                              navigate(
+                                `/explore?q=${encodeURIComponent(term)}`
+                              );
+                            }}
+                            className="px-3 py-1.5 text-sm rounded-full bg-gray-100 hover:bg-matepeak-primary hover:text-white transition-all font-poppins"
+                          >
+                            {term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasActiveFilters && !showFavoritesOnly && (
                     <Button
                       onClick={handleClearFilters}
-                      variant="link"
-                      className="text-blue-600 hover:underline font-poppins"
+                      className="bg-matepeak-primary hover:bg-matepeak-secondary text-white font-poppins"
                     >
-                      Clear filters
+                      Clear all filters
                     </Button>
                   )}
                 </div>

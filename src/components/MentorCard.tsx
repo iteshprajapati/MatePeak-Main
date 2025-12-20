@@ -1,9 +1,10 @@
-import { Star, Phone, Users, MessageCircle } from "lucide-react";
+import { Star, Phone, Users, MessageCircle, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
 
 // Update the MentorProfile type to include connectionOptions
 export interface MentorProfile {
@@ -25,14 +26,29 @@ export interface MentorProfile {
 interface MentorCardProps {
   mentor: MentorProfile;
   isNew?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (mentorId: string) => void;
 }
 
-const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
+const MentorCard = ({
+  mentor,
+  isNew,
+  isFavorite = false,
+  onToggleFavorite,
+}: MentorCardProps) => {
   const nameParts = mentor.name.split(" ");
   const initials =
     nameParts.length > 1
       ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
       : mentor.name[0];
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(mentor.id);
+    }
+  };
 
   const getConnectionIcon = (option: string) => {
     const lowerOption = option.toLowerCase();
@@ -56,6 +72,26 @@ const MentorCard = ({ mentor, isNew }: MentorCardProps) => {
             </div>
           </div>
         )}
+
+        {/* Favorite Button */}
+        {onToggleFavorite && (
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm transition-all"
+            aria-label={
+              isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
+          >
+            <Heart
+              className={`h-5 w-5 transition-all ${
+                isFavorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-gray-400 hover:text-red-500"
+              }`}
+            />
+          </button>
+        )}
+
         {/* Header: Avatar, Name, Tagline, Rating */}
         <div className="flex items-start gap-4 mb-4">
           <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-gray-100">

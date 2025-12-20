@@ -166,11 +166,13 @@ const Hero = () => {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 xl:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left lg:pl-0 -mt-4">
-            <div className="mb-6">
-              <h1 className="text-[2rem] md:text-[2.75rem] font-bold font-poppins text-gray-900 mb-2 leading-tight">
-                Connect with Expert <br />
-                Mentors
+          <div className="text-center lg:text-left lg:pl-0 -mt-20">
+            <div className="mb-4">
+              <h1 className="text-[2rem] md:text-[2.75rem] font-poppins text-gray-900 mb-2 leading-tight">
+                <span className="font-light">Turn </span>
+                <span className="font-bold">Questions</span>
+                <span className="font-light"> Into </span>
+                <span className="font-bold">Conversations</span>
               </h1>
               <p className="text-lg text-gray-600 font-poppins font-light flex items-center justify-center lg:justify-start gap-2 mb-10">
                 <span>Get 1-on-1 advice on</span>
@@ -250,7 +252,7 @@ const Hero = () => {
               </div>
             </div>
           </div>
-          <div className="hidden lg:block overflow-hidden pt-0 relative -mt-8">
+          <div className="hidden lg:block overflow-hidden pt-0 relative -mt-16">
             {/* Left fade gradient */}
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
             {/* Right fade gradient */}
@@ -321,6 +323,37 @@ const Hero = () => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Expert Profiles Section - Below Moving Cards */}
+            <div className="mt-8 text-center">
+              <p className="text-gray-600 text-sm font-poppins mb-6">
+                Our experts are ready to help
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                {expertProfiles.map((expert, index) => (
+                  <div
+                    key={expert.id}
+                    className="relative"
+                    style={{
+                      marginLeft: index > 0 ? "-18px" : "0",
+                      zIndex: expertProfiles.length - index,
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow-sm hover:scale-110 transition-transform duration-200">
+                      <img
+                        src={expert.image}
+                        alt={expert.name}
+                        className="w-full h-full object-cover"
+                        title={expert.name}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className="ml-2 text-sm font-medium text-gray-700 font-poppins">
+                  and many more..
+                </div>
+              </div>
             </div>
           </div>
         </div>

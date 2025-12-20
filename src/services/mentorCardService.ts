@@ -215,8 +215,44 @@ export async function fetchMentorCards(
     // Server-side search filtering (O(log n) with proper indexes)
     if (filters?.searchQuery) {
       const search = filters.searchQuery.trim();
-      // Use OR to search across multiple fields
-      query = query.or(`full_name.ilike.%${search}%,bio.ilike.%${search}%`);
+      const searchLower = search.toLowerCase();
+
+      // Split search query into words for better partial matching
+      const searchWords = searchLower
+        .split(/\s+/)
+        .filter((word) => word.length > 0);
+
+      if (searchWords.length > 0) {
+        const searchPatterns: string[] = [];
+
+        // Strategy: Use text search that will find the terms in any field
+        // This uses PostgreSQL's text search which is more flexible
+
+        // 1. Search for full phrase in all text fields
+        searchPatterns.push(`full_name.ilike.%${search}%`);
+        searchPatterns.push(`bio.ilike.%${search}%`);
+        searchPatterns.push(`headline.ilike.%${search}%`);
+
+        // 2. Search in category field (convert array to text for partial matching)
+        // PostgreSQL will search if any category contains the search term
+        searchPatterns.push(`category.ilike.%${search}%`);
+
+        // 3. For multi-word searches, also search individual words in categories
+        // This allows "Career Growth" to match categories containing "Career" or "Growth"
+        if (searchWords.length > 1) {
+          searchWords.forEach((word) => {
+            if (word.length >= 3) {
+              // Only meaningful words
+              searchPatterns.push(`category.ilike.%${word}%`);
+              searchPatterns.push(`bio.ilike.%${word}%`);
+            }
+          });
+        }
+
+        // Combine all patterns with OR
+        const searchPattern = searchPatterns.join(",");
+        query = query.or(searchPattern);
+      }
     }
 
     // Server-side category filtering using GIN index on array
@@ -228,6 +264,10 @@ export async function fetchMentorCards(
     if (filters?.expertise && filters.expertise !== "all") {
       query = query.contains("expertise_tags", [filters.expertise]);
     }
+
+    // Price range filtering - client-side for now (can be optimized with materialized view)
+    // Note: We'll filter after transforming to get the lowest price
+    // For production, consider adding a computed column for min_price
 
     // Apply pagination - critical for scalability
     query = query
