@@ -171,14 +171,17 @@ export function transformToMentorCard(
 /**
  * Fetch active mentor profiles with server-side pagination and filtering
  */
-export async function fetchMentorCards(filters?: {
-  category?: string;
-  expertise?: string;
-  searchQuery?: string;
-  priceRange?: [number, number];
-  page?: number;
-  limit?: number;
-}): Promise<{
+export async function fetchMentorCards(
+  filters?: {
+    category?: string;
+    expertise?: string;
+    searchQuery?: string;
+    priceRange?: [number, number];
+    page?: number;
+    limit?: number;
+  },
+  signal?: AbortSignal
+): Promise<{
   data: MentorProfile[];
   total: number;
   hasMore: boolean;
@@ -198,10 +201,16 @@ export async function fetchMentorCards(filters?: {
       to,
     });
 
+    // Check if request was aborted
+    if (signal?.aborted) {
+      throw new DOMException("Request aborted", "AbortError");
+    }
+
     // Build query with server-side filtering for scalability
     let query = supabase
       .from("expert_profiles")
-      .select("*", { count: "exact" });
+      .select("*", { count: "exact" })
+      .abortSignal(signal as any);
 
     // Server-side search filtering (O(log n) with proper indexes)
     if (filters?.searchQuery) {
@@ -228,6 +237,11 @@ export async function fetchMentorCards(filters?: {
 
     const { data, error, count } = await query;
 
+    // Check if request was aborted during fetch
+    if (signal?.aborted) {
+      throw new DOMException("Request aborted", "AbortError");
+    }
+
     if (error) {
       console.error("❌ Database query error:", error);
       throw error;
@@ -242,7 +256,8 @@ export async function fetchMentorCards(filters?: {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, avatar_url")
-      .in("id", mentorIds);
+      .in("id", mentorIds)
+      .abortSignal(signal as any);
 
     if (profilesError) {
       console.error("⚠️ Error fetching profiles:", profilesError);

@@ -95,6 +95,51 @@ const CallToActionSection = () => {
           >
             Get Started
           </Button>
+
+          {/* Expert Profiles Section */}
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <span className="text-lg text-gray-400 font-light">
+              Our experts are ready to help!
+            </span>
+            <div className="flex -space-x-3">
+              <div className="relative" style={{ zIndex: 4 }}>
+                <img
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces"
+                  alt="Priya Sharma"
+                  className="w-10 h-10 rounded-full border-2 border-white object-cover hover:scale-110 transition-transform duration-200"
+                  title="Priya Sharma"
+                  loading="eager"
+                />
+              </div>
+              <div className="relative" style={{ zIndex: 3 }}>
+                <img
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces"
+                  alt="Rahul Kumar"
+                  className="w-10 h-10 rounded-full border-2 border-white object-cover hover:scale-110 transition-transform duration-200"
+                  title="Rahul Kumar"
+                  loading="eager"
+                />
+              </div>
+              <div className="relative" style={{ zIndex: 2 }}>
+                <img
+                  src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces"
+                  alt="Ananya Singh"
+                  className="w-10 h-10 rounded-full border-2 border-white object-cover hover:scale-110 transition-transform duration-200"
+                  title="Ananya Singh"
+                  loading="eager"
+                />
+              </div>
+              <div className="relative" style={{ zIndex: 1 }}>
+                <img
+                  src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces"
+                  alt="Arjun Patel"
+                  className="w-10 h-10 rounded-full border-2 border-white object-cover hover:scale-110 transition-transform duration-200"
+                  title="Arjun Patel"
+                  loading="eager"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

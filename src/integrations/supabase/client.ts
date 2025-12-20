@@ -1,18 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
+import { env } from "@/config/env";
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://hnevrdlcqhmsfubakljg.supabase.co";
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZXZyZGxjcWhtc2Z1YmFrbGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDIzMDEsImV4cCI6MjA3NTYxODMwMX0.e4OjzNc4A6d6petuDQFW-iD6JPVqwmy5Y_KWvgXabBA";
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
+/**
+ * Supabase Client
+ *
+ * Environment variables are validated at startup.
+ * If you see an error, make sure you have:
+ * 1. Created a .env file (copy from .env.example)
+ * 2. Added your VITE_SUPABASE_URL
+ * 3. Added your VITE_SUPABASE_ANON_KEY
+ *
+ * Import the supabase client like this:
+ * import { supabase } from "@/integrations/supabase/client";
+ */
 export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
+  env.VITE_SUPABASE_URL,
+  env.VITE_SUPABASE_ANON_KEY,
   {
     auth: {
       storage: localStorage,

@@ -24,12 +24,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import RoleSelectionModal from "./RoleSelectionModal";
 import SignInRoleSelection from "./SignInRoleSelection";
+import FeedbackModal from "./FeedbackModal";
 import { toast } from "sonner";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -261,7 +263,7 @@ const Navbar = () => {
       <nav
         className={`${
           isMainPage ? "sticky top-0 z-50" : "relative"
-        } bg-white/70 backdrop-blur-xl py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]`}
+        } bg-white pt-6 pb-4`}
       >
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex items-center gap-4">
@@ -273,65 +275,95 @@ const Navbar = () => {
               <img
                 src="/lovable-uploads/14bf0eea-1bc9-4675-9231-356df10eb82d.png"
                 alt="MatePeak Logo"
-                className="h-10 drop-shadow-sm"
+                className="h-10 drop-shadow-sm mt-0.5"
               />
               <span className="text-2xl font-extrabold font-poppins text-gray-900">
                 MatePeak
               </span>
             </Link>
 
-            {/* Browse Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="hidden md:flex items-center gap-1 h-10 px-4 hover:bg-gray-50 font-bold text-gray-700"
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center space-x-1 ml-8">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-1 h-10 px-3 rounded-lg hover:bg-transparent transition-all text-gray-700 font-medium text-sm font-poppins"
+                  >
+                    Explore
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-56 bg-white shadow-lg border border-gray-200 rounded-xl p-2"
+                  align="start"
                 >
-                  Browse
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48 bg-white shadow-lg border border-gray-200 rounded-xl p-2">
-                <DropdownMenuItem
-                  onClick={handleBrowseAllMentors}
-                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
-                >
-                  <span className="text-sm font-medium">All Mentors</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleBrowseCategories}
-                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
-                >
-                  <span className="text-sm font-medium">Categories</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleBrowseAdvice}
-                  className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
-                >
-                  <span className="text-sm font-medium">Advice</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem
+                    onClick={() => navigate("/explore")}
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm font-medium">Popular</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigate("/explore?filter=new")}
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm font-medium">
+                      New and Noteworthy
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-200 my-1" />
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate("/explore?category=Career%20Growth")
+                    }
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Career Growth</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate("/explore?category=Mental%20Health")
+                    }
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Mental Health</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate("/explore?category=Academic%20Success")
+                    }
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Academic Success</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate("/explore?category=Interview%20Prep")
+                    }
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Interview Prep</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate("/explore?category=Skill%20Development")
+                    }
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Skill Development</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigate("/explore?category=Life%20Choices")}
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
+                  >
+                    <span className="text-sm">Life Choices</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-            {/* Search Bar */}
-            <form
-              onSubmit={handleSearch}
-              className="hidden md:flex flex-1 max-w-md relative"
-            >
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none"
-                strokeWidth={2.5}
-              />
-              <Input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="What advice are you looking for today?"
-                className="w-full h-9 pl-10 pr-4 rounded-full border-0 bg-gray-100 focus:bg-gray-50 focus:ring-1 focus:ring-gray-400 placeholder:text-gray-500"
-              />
-            </form>
-
-            {/* Desktop Navigation */}
+            {/* Desktop User Actions */}
             <div className="hidden md:flex items-center space-x-4 ml-auto">
               {user ? (
                 <DropdownMenu>
@@ -419,14 +451,22 @@ const Navbar = () => {
               ) : (
                 <div className="flex items-center space-x-3">
                   <Button
+                    variant="ghost"
+                    className="text-gray-700 hover:text-matepeak-primary font-medium h-10 px-4 rounded-lg transition-all font-poppins"
+                    onClick={() => setIsFeedbackOpen(true)}
+                  >
+                    Share Your Feedback
+                  </Button>
+                  <span className="text-gray-300">|</span>
+                  <Button
                     variant="outline"
-                    className="text-matepeak-primary border-2 border-matepeak-primary/30 hover:bg-matepeak-primary/5 hover:border-matepeak-primary font-semibold h-10 px-6 rounded-lg transition-all duration-300 hover:shadow-md"
+                    className="text-matepeak-primary border border-matepeak-primary/30 hover:bg-matepeak-primary/5 hover:border-matepeak-primary font-semibold h-10 px-6 rounded-full transition-all duration-300 hover:shadow-md font-poppins"
                     onClick={handleSignInClick}
                   >
                     Sign In
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 font-bold rounded-lg h-10 px-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+                    className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 font-bold rounded-full h-11 px-6 transition-all duration-300 font-poppins"
                     onClick={handleGetStartedClick}
                   >
                     Get Started
@@ -527,7 +567,7 @@ const Navbar = () => {
               <div className="flex flex-col space-y-3">
                 <Button
                   variant="outline"
-                  className="text-matepeak-primary border-2 border-matepeak-primary/30 hover:bg-matepeak-primary hover:text-white w-full font-semibold justify-center transition-all duration-300 rounded-lg"
+                  className="text-matepeak-primary border border-matepeak-primary/30 hover:bg-matepeak-primary hover:text-white w-full font-semibold justify-center transition-all duration-300 rounded-full"
                   onClick={() => {
                     handleSignInClick();
                     setIsMenuOpen(false);
@@ -536,7 +576,7 @@ const Navbar = () => {
                   Sign In
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 w-full font-bold rounded-lg shadow-lg transition-all duration-300"
+                  className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white hover:from-matepeak-primary/90 hover:to-matepeak-secondary/90 w-full font-bold rounded-full h-12 transition-all duration-300"
                   onClick={() => {
                     handleGetStartedClick();
                     setIsMenuOpen(false);
@@ -556,6 +596,10 @@ const Navbar = () => {
         <SignInRoleSelection
           open={isSignInModalOpen}
           onOpenChange={setIsSignInModalOpen}
+        />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
         />
       </nav>
     </>
