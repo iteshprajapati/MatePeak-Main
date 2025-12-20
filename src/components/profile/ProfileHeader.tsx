@@ -221,7 +221,10 @@ export default function ProfileHeader({
                   className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm"
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  Message
+                  Message{" "}
+                  <span className="text-xs text-gray-400 ml-1">
+                    (Under Development)
+                  </span>
                 </Button>
               </>
             )}

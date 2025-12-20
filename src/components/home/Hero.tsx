@@ -7,7 +7,6 @@ const Hero = () => {
   const [currentField, setCurrentField] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const navigate = useNavigate();
@@ -30,47 +29,127 @@ const Hero = () => {
     "Life Coaching",
   ];
 
-  // Mentor cards data
+  // Diverse mentor cards with various categories and Indian representation
   const mentorCards = [
     {
       id: "1",
-      name: "T Zhu",
-      title: "Co-Founder",
-      company: "tellus",
+      name: "Raj Malhotra",
+      title: "Career Coach",
+      company: "CareerPath Inc",
+      image:
+        "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "2",
+      name: "Priya Sharma",
+      title: "Mental Health Counselor",
+      company: "MindWell",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "3",
+      name: "Aditya Gupta",
+      title: "Data Science Mentor",
+      company: "Tech Academy",
       image:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces",
     },
     {
-      id: "2",
-      name: "Sarah Chen",
-      title: "Product Lead",
-      company: "TechCorp",
+      id: "4",
+      name: "Neha Reddy",
+      title: "Interview Specialist",
+      company: "PrepMaster",
       image:
         "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=faces",
     },
     {
-      id: "3",
-      name: "Alex Johnson",
-      title: "Engineering Manager",
+      id: "5",
+      name: "Arjun Singh",
+      title: "Leadership Coach",
+      company: "SkillHub",
+      image:
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "6",
+      name: "Kavya Iyer",
+      title: "Life & Wellness Coach",
+      company: "LifePath",
+      image:
+        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "7",
+      name: "Vikram Mehta",
+      title: "Product Manager",
+      company: "TechCorp",
+      image:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "8",
+      name: "Anjali Desai",
+      title: "UX Design Mentor",
+      company: "DesignLab",
+      image:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "9",
+      name: "Rohan Kapoor",
+      title: "Business Strategy",
       company: "StartupHub",
       image:
         "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop&crop=faces",
     },
     {
-      id: "4",
-      name: "Maya Patel",
-      title: "Design Director",
-      company: "Creative Labs",
-      image:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=faces",
-    },
-    {
-      id: "5",
-      name: "James Lee",
-      title: "VP of Sales",
+      id: "10",
+      name: "Divya Nair",
+      title: "Content Marketing",
       company: "GrowthCo",
       image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "11",
+      name: "Karan Patel",
+      title: "Software Engineer",
+      company: "Google",
+      image:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "12",
+      name: "Sneha Joshi",
+      title: "HR & Recruitment",
+      company: "TalentFirst",
+      image:
+        "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "13",
+      name: "Siddharth Rao",
+      title: "Finance Advisor",
+      company: "WealthPro",
+      image:
+        "https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "14",
+      name: "Meera Krishnan",
+      title: "Education Consultant",
+      company: "EduExcel",
+      image:
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=faces",
+    },
+    {
+      id: "15",
+      name: "Aman Verma",
+      title: "DevOps Engineer",
+      company: "CloudTech",
+      image:
+        "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=200&fit=crop&crop=faces",
     },
   ];
 
@@ -78,25 +157,25 @@ const Hero = () => {
     {
       id: "1",
       image:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
       name: "Priya Sharma",
     },
     {
       id: "2",
       image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&h=150&fit=crop&crop=faces",
       name: "Rahul Kumar",
     },
     {
       id: "3",
       image:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
       name: "Ananya Singh",
     },
     {
       id: "4",
       image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces",
       name: "Arjun Patel",
     },
   ];
@@ -139,13 +218,6 @@ const Hero = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentCardIndex((prev) => (prev + 1) % mentorCards.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
   const popularOptions = ["Career Growth", "Mental Health", "Interview Prep"];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -166,7 +238,7 @@ const Hero = () => {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 xl:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left lg:pl-0 -mt-20">
+          <div className="text-center lg:text-left lg:pl-0 -mt-32">
             <div className="mb-4">
               <h1 className="text-[2rem] md:text-[2.75rem] font-poppins text-gray-900 mb-2 leading-tight">
                 <span className="font-light">Turn </span>
@@ -186,7 +258,7 @@ const Hero = () => {
             </div>
 
             {/* Search Bar */}
-            <div className="flex flex-col justify-center lg:justify-start mb-8">
+            <div className="flex flex-col justify-center lg:justify-start mb-8 mt-10">
               <form
                 onSubmit={handleSearch}
                 className="relative w-full max-w-lg mb-4"

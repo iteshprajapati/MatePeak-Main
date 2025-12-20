@@ -344,50 +344,58 @@ const HowItWorks = ({
   return (
     <section
       ref={sectionRef}
-      className="py-20 md:py-28 bg-gradient-to-b from-white via-gray-50/30 to-white relative overflow-visible"
+      className="py-24 md:py-32 bg-gradient-to-b from-white via-blue-50/20 to-white relative overflow-visible"
     >
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 xl:px-0 relative z-10 overflow-visible">
         {/* Header */}
-        <div className="text-center mb-16 md:mb-24">
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
-            How it works
+        <div className="text-center mb-16 md:mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-matepeak-primary/10 to-matepeak-secondary/10 rounded-full border border-matepeak-primary/20 mb-4">
+            <span className="text-xs font-bold text-matepeak-primary tracking-wide uppercase">
+              HOW IT WORKS
+            </span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+            Start Your Learning Journey
           </h2>
-          <p className="text-base md:text-lg text-gray-500 font-light max-w-3xl mx-auto leading-relaxed">
-            Connect with expert mentors in four simple steps. Your learning
-            journey starts here.
+          <p className="text-base md:text-lg text-gray-600 font-light max-w-2xl mx-auto leading-relaxed">
+            Connect with expert mentors in four simple steps and unlock your
+            potential
           </p>
         </div>
 
         {/* Steps */}
-        <div className="space-y-20 md:space-y-24 relative">
+        <div className="space-y-24 md:space-y-32 relative">
           {steps.map((step, index) => (
             <div
               key={step.number}
               ref={(el) => (stepRefs.current[index] = el)}
               className={`flex flex-col ${
                 index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-              } items-center gap-2 md:gap-0 relative overflow-visible transition-all duration-700 ${
+              } items-center gap-8 md:gap-12 relative overflow-visible transition-all duration-700 ${
                 activeStep === index
                   ? "opacity-100 translate-y-0"
                   : activeStep > index
-                  ? "opacity-50 -translate-y-8 scale-95"
-                  : "opacity-0 translate-y-12"
+                  ? "opacity-60 -translate-y-4 scale-98"
+                  : "opacity-0 translate-y-8"
               }`}
             >
               {/* Background Number with smooth transitions */}
               <div
                 className={`absolute ${
-                  index % 2 === 0 ? "left-0 md:-left-4" : "right-0 md:-right-4"
-                } text-[120px] md:text-[180px] font-bold leading-none pointer-events-none select-none z-0 transition-all duration-700 ${
+                  index % 2 === 0 ? "left-0 md:-left-8" : "right-0 md:-right-8"
+                } text-[140px] md:text-[200px] font-black leading-none pointer-events-none select-none z-0 transition-all duration-700 ${
                   activeStep === index
-                    ? "opacity-30 scale-100"
-                    : "opacity-15 scale-90"
+                    ? "opacity-[0.06] scale-100"
+                    : "opacity-[0.03] scale-95"
                 }`}
                 style={{
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "rgba(156, 163, 175, 0.3)",
-                  WebkitTextStroke: "1px rgba(156, 163, 175, 0.2)",
+                  background:
+                    "linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
                 }}
               >
                 {step.number}
@@ -396,18 +404,18 @@ const HowItWorks = ({
               {/* Mockup Card with scroll animation */}
               <div
                 className={`w-full md:w-1/2 flex justify-center relative z-10 ${
-                  index % 2 === 0 ? "md:-mr-16" : "md:-ml-16"
+                  index % 2 === 0 ? "md:-mr-20" : "md:-ml-20"
                 } transition-all duration-700 ${
                   activeStep === index
                     ? "scale-100 opacity-100"
                     : activeStep > index
-                    ? "scale-90 opacity-40"
-                    : "scale-95 opacity-0"
+                    ? "scale-95 opacity-50"
+                    : "scale-90 opacity-0"
                 }`}
               >
                 <div
                   className={`transform transition-all duration-500 ${
-                    activeStep === index ? "hover:scale-105" : ""
+                    activeStep === index ? "hover:scale-105 hover:rotate-1" : ""
                   }`}
                 >
                   <MockupCard type={step.mockup} />
@@ -417,42 +425,44 @@ const HowItWorks = ({
               {/* Text Content with scroll animation */}
               <div
                 className={`w-full md:w-1/2 relative z-10 flex items-center justify-center ${
-                  index % 2 === 0 ? "md:-ml-16" : "md:-mr-16"
+                  index % 2 === 0 ? "md:-ml-20" : "md:-mr-20"
                 } transition-all duration-700 delay-150 ${
                   activeStep === index
                     ? "opacity-100 translate-x-0"
                     : activeStep > index
-                    ? "opacity-40 translate-x-0"
+                    ? "opacity-50 translate-x-0"
                     : index % 2 === 0
                     ? "opacity-0 translate-x-12"
                     : "opacity-0 -translate-x-12"
                 }`}
               >
-                <div className="max-w-md text-center md:text-left">
+                <div className="max-w-lg text-center md:text-left">
                   {/* Step badge */}
                   <div
                     className={`flex items-center justify-center md:justify-start gap-2 mb-3 transition-all duration-500 ${
-                      activeStep === index ? "scale-100" : "scale-90"
+                      activeStep === index ? "scale-100" : "scale-95"
                     }`}
                   >
-                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-matepeak-primary/10 to-matepeak-secondary/10 rounded-full border border-matepeak-primary/20">
-                      <step.icon className="w-4 h-4 text-matepeak-primary" />
-                      <span className="text-xs font-semibold text-matepeak-primary">
+                    <div className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-matepeak-primary/10 to-matepeak-secondary/10 rounded-full border border-matepeak-primary/30 shadow-sm">
+                      <div className="p-0.5 bg-gradient-to-br from-matepeak-primary to-matepeak-secondary rounded-full">
+                        <step.icon className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-[10px] font-bold text-matepeak-primary uppercase tracking-wide">
                         Step {step.number}
                       </span>
                     </div>
                   </div>
 
                   <h3
-                    className={`text-2xl md:text-3xl font-bold mb-4 transition-all duration-500 ${
+                    className={`text-2xl md:text-3xl font-bold mb-3 transition-all duration-500 leading-tight ${
                       activeStep === index
-                        ? "text-matepeak-primary"
+                        ? "bg-gradient-to-r from-matepeak-primary to-matepeak-secondary bg-clip-text text-transparent"
                         : "text-gray-900"
                     }`}
                   >
                     {step.title}
                   </h3>
-                  <p className="text-base text-gray-600 font-light leading-relaxed">
+                  <p className="text-sm md:text-base text-gray-600 font-normal leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -462,12 +472,16 @@ const HowItWorks = ({
         </div>
 
         {/* Bottom CTA */}
-        <div className="text-center mt-20 md:mt-32">
+        <div className="text-center mt-20 md:mt-28">
           <a href="/explore">
-            <button className="px-10 py-4 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white font-semibold rounded-full hover:shadow-2xl hover:shadow-matepeak-primary/20 hover:-translate-y-1 transition-all duration-300 text-lg">
-              Get Started Today
+            <button className="group relative px-10 py-4 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white font-bold rounded-full hover:shadow-2xl hover:shadow-matepeak-primary/30 hover:-translate-y-1 transition-all duration-300 text-base overflow-hidden">
+              <span className="relative z-10">Get Started Today</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-matepeak-secondary to-matepeak-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>
           </a>
+          <p className="text-xs text-gray-500 mt-3">
+            No credit card required • Free to get started
+          </p>
         </div>
       </div>
     </section>

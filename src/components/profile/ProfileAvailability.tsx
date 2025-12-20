@@ -110,7 +110,10 @@ const isValidTimezone = (timezone: string): boolean => {
   }
 };
 
-const getTimezoneOffset = (timezone: string) => {
+const getTimezoneOffsetMinutes = (
+  timezone: string,
+  date: Date = new Date()
+): number => {
   // If timezone is not a valid IANA timezone, treat as UTC
   if (!isValidTimezone(timezone)) {
     console.warn(`Invalid timezone: ${timezone}, using UTC`);
@@ -118,39 +121,70 @@ const getTimezoneOffset = (timezone: string) => {
   }
 
   try {
-    const now = new Date();
-    const tzString = now.toLocaleString("en-US", { timeZone: timezone });
-    const tzDate = new Date(tzString);
-    const localDate = new Date(
-      now.toLocaleString("en-US", { timeZone: getUserTimezone() })
+    // Create a date string in the target timezone
+    const dateInTz = new Date(
+      date.toLocaleString("en-US", { timeZone: timezone })
     );
-    return (tzDate.getTime() - localDate.getTime()) / (1000 * 60 * 60);
+    const dateInUTC = new Date(
+      date.toLocaleString("en-US", { timeZone: "UTC" })
+    );
+
+    // Return offset in minutes
+    return (dateInTz.getTime() - dateInUTC.getTime()) / (1000 * 60);
   } catch (e) {
     console.error(`Error calculating timezone offset for ${timezone}:`, e);
     return 0;
   }
 };
 
-const convertTime = (time: string, fromTz: string, toTz: string): string => {
-  // If either timezone is invalid, return original time
+const convertTime = (
+  time: string,
+  date: string,
+  fromTz: string,
+  toTz: string
+): { time: string; dateOffset: number } => {
+  // If either timezone is invalid, return original time with no date change
   if (!isValidTimezone(fromTz) || !isValidTimezone(toTz)) {
-    return time;
+    return { time, dateOffset: 0 };
   }
 
   try {
     const [hours, minutes] = time.split(":").map(Number);
-    const offset = getTimezoneOffset(toTz) - getTimezoneOffset(fromTz);
-    let newHours = hours + offset;
 
-    if (newHours < 0) newHours += 24;
-    if (newHours >= 24) newHours -= 24;
+    // Create a proper date object with the time in the source timezone
+    const dateObj = new Date(date + "T00:00:00");
 
-    return `${String(Math.floor(newHours)).padStart(2, "0")}:${String(
-      minutes
-    ).padStart(2, "0")}`;
+    // Get offset difference in minutes
+    const offsetMinutes =
+      getTimezoneOffsetMinutes(toTz, dateObj) -
+      getTimezoneOffsetMinutes(fromTz, dateObj);
+
+    // Convert time
+    let totalMinutes = hours * 60 + minutes + offsetMinutes;
+    let dayOffset = 0;
+
+    // Handle day boundaries
+    if (totalMinutes < 0) {
+      dayOffset = -1;
+      totalMinutes += 24 * 60;
+    } else if (totalMinutes >= 24 * 60) {
+      dayOffset = 1;
+      totalMinutes -= 24 * 60;
+    }
+
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+
+    return {
+      time: `${String(newHours).padStart(2, "0")}:${String(newMinutes).padStart(
+        2,
+        "0"
+      )}`,
+      dateOffset,
+    };
   } catch (e) {
     console.error("Error converting time:", e);
-    return time;
+    return { time, dateOffset: 0 };
   }
 };
 
@@ -169,9 +203,6 @@ export default function ProfileAvailability({
   );
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     getStartOfWeek(new Date())
-  );
-  const [selectedView, setSelectedView] = useState<"week" | "recurring">(
-    "week"
   );
   const [showUserTimezone, setShowUserTimezone] = useState(false);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
@@ -257,65 +288,26 @@ export default function ProfileAvailability({
         console.error("Error fetching blocked dates:", blockedError);
       }
 
-      // If no availability_slots found, try to load from old availability_json format
-      if (
-        (!recurring || recurring.length === 0) &&
-        (!specific || specific.length === 0)
-      ) {
-        const { data: profile, error: profileError } = await supabase
-          .from("expert_profiles")
-          .select("availability_json")
-          .eq("id", mentorId)
-          .single();
-
-        if (!profileError && profile?.availability_json) {
-          try {
-            const oldAvailability = JSON.parse(profile.availability_json);
-
-            // Convert old format to new format
-            const convertedSlots: AvailabilitySlot[] = [];
-
-            if (Array.isArray(oldAvailability)) {
-              oldAvailability.forEach((slot: any, index: number) => {
-                // Map day names to day numbers
-                const dayMap: { [key: string]: number } = {
-                  Sunday: 0,
-                  Monday: 1,
-                  Tuesday: 2,
-                  Wednesday: 3,
-                  Thursday: 4,
-                  Friday: 5,
-                  Saturday: 6,
-                };
-
-                const dayOfWeek =
-                  dayMap[slot.day] ?? dayMap[slot.dayOfWeek] ?? -1;
-
-                if (dayOfWeek !== -1 && slot.from && slot.to) {
-                  convertedSlots.push({
-                    id: `legacy-${index}`,
-                    day_of_week: dayOfWeek,
-                    start_time: slot.from,
-                    end_time: slot.to,
-                    is_recurring: true,
-                    specific_date: null,
-                  });
-                }
-              });
-            }
-
-            setRecurringSlots(convertedSlots);
-            console.log("Loaded legacy availability:", convertedSlots);
-          } catch (parseError) {
-            console.error("Error parsing availability_json:", parseError);
-          }
-        }
-      } else {
-        setRecurringSlots(recurring || []);
-        setSpecificSlots(specific || []);
-      }
+      setRecurringSlots(recurring || []);
+      setSpecificSlots(specific || []);
 
       setBlockedDates(blocked || []);
+
+      // Fetch mentor's session types
+      const { data: mentorProfile } = await supabase
+        .from("expert_profiles")
+        .select("services")
+        .eq("id", mentorId)
+        .single();
+
+      if (mentorProfile?.services) {
+        const types: string[] = [];
+        if (mentorProfile.services.oneOnOneSession)
+          types.push("1-on-1 Session");
+        if (mentorProfile.services.chatAdvice) types.push("Chat Advice");
+        if (mentorProfile.services.freeDemo) types.push("Free Demo");
+        setSessionTypes(types);
+      }
 
       // Check if user has active alert subscription
       const {
@@ -343,10 +335,10 @@ export default function ProfileAvailability({
     }
   };
 
-  const formatTime = (time: string) => {
-    const convertedTime = showUserTimezone
-      ? convertTime(time, mentorTimezone, userTimezone)
-      : time;
+  const formatTime = (time: string, date: string = "2000-01-01") => {
+    const { time: convertedTime } = showUserTimezone
+      ? convertTime(time, date, mentorTimezone, userTimezone)
+      : { time, dateOffset: 0 };
     return new Date(`2000-01-01T${convertedTime}`).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -451,22 +443,53 @@ export default function ProfileAvailability({
       }
 
       // User is authenticated, proceed with booking
-      // Parse the date string to Date object
-      const dateObj = new Date(date + "T00:00:00");
+      // IMPORTANT: If user is viewing in their timezone, convert back to mentor's timezone
+      // The database should always store times in mentor's timezone
+      let actualDate = date;
+      let actualStartTime = startTime;
+      let actualEndTime = endTime;
+
+      if (showUserTimezone) {
+        // Convert times back from user timezone to mentor timezone
+        const convertedStart = convertTime(
+          startTime,
+          date,
+          userTimezone,
+          mentorTimezone
+        );
+        const convertedEnd = convertTime(
+          endTime,
+          date,
+          userTimezone,
+          mentorTimezone
+        );
+
+        actualStartTime = convertedStart.time;
+        actualEndTime = convertedEnd.time;
+
+        // Adjust date if needed (when time crosses midnight)
+        if (convertedStart.dateOffset !== 0) {
+          const dateObj = new Date(date + "T00:00:00");
+          dateObj.setDate(dateObj.getDate() + convertedStart.dateOffset);
+          actualDate = dateObj.toISOString().split("T")[0];
+        }
+      }
+
+      const dateObj = new Date(actualDate + "T00:00:00");
 
       // Use the callback if provided
       if (onBookSlot) {
-        const timezone = showUserTimezone ? userTimezone : mentorTimezone;
-        onBookSlot(dateObj, startTime, timezone);
+        // Always pass mentor's timezone - this is the source of truth
+        onBookSlot(dateObj, actualStartTime, mentorTimezone);
       } else {
         // Fallback to old navigation behavior
         const bookingData = {
           mentorId,
           mentorName,
-          date,
-          startTime,
-          endTime,
-          timezone: showUserTimezone ? userTimezone : mentorTimezone,
+          date: actualDate,
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+          timezone: mentorTimezone, // Always use mentor's timezone for storage
         };
 
         // Store booking data in session storage for the booking page
@@ -615,23 +638,11 @@ export default function ProfileAvailability({
     );
   };
 
-  const groupSlotsByDay = (slots: AvailabilitySlot[]) => {
-    const grouped: { [key: number]: AvailabilitySlot[] } = {};
-    slots.forEach((slot) => {
-      if (!grouped[slot.day_of_week]) {
-        grouped[slot.day_of_week] = [];
-      }
-      grouped[slot.day_of_week].push(slot);
-    });
-    return grouped;
-  };
-
   const isDateBlocked = (date: Date) => {
     const dateStr = date.toISOString().split("T")[0];
     return blockedDates.some((blocked) => blocked.date === dateStr);
   };
 
-  const groupedRecurring = groupSlotsByDay(recurringSlots);
   const weekSchedule = getWeekSchedule();
   const hasAnyAvailability =
     recurringSlots.length > 0 || specificSlots.length > 0;
@@ -715,104 +726,67 @@ export default function ProfileAvailability({
           </CardContent>
         </Card>
       )}
-
-      {/* Timezone Toggle */}
+      {/* Timezone & Actions - Redesigned Combined Header */}
       {hasAnyAvailability && (
-        <Card className="shadow-none border border-gray-200 bg-white rounded-xl">
+        <Card className="shadow-sm border border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-xl">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  Showing times in:
-                </span>
-                <Badge
-                  variant="outline"
-                  className="border-gray-300 text-gray-700"
-                >
-                  {showUserTimezone ? userTimezone : mentorTimezone}
-                </Badge>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Timezone Info */}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <Globe className="h-4 w-4 text-matepeak-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Times shown in
+                  </p>
+                  <button
+                    onClick={() => setShowUserTimezone(!showUserTimezone)}
+                    className="text-sm font-semibold text-gray-900 hover:text-matepeak-primary transition-colors flex items-center gap-1.5 group"
+                  >
+                    {showUserTimezone ? userTimezone : mentorTimezone}
+                    <span className="text-xs text-gray-400 group-hover:text-matepeak-primary">
+                      • Click to switch
+                    </span>
+                  </button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowUserTimezone(!showUserTimezone)}
-                className="border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Switch to {showUserTimezone ? "Mentor's" : "My"} Timezone
-              </Button>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCustomTimeDialogOpen(true)}
+                  className="border-matepeak-primary/30 text-matepeak-primary hover:bg-matepeak-primary hover:text-white transition-all"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Request Time
+                </Button>
+                <Button
+                  variant={alertsEnabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAlertDialogOpen(true)}
+                  className={
+                    alertsEnabled
+                      ? "bg-green-600 hover:bg-green-700 text-white border-0"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }
+                >
+                  <Bell
+                    className={`h-4 w-4 mr-2 ${
+                      alertsEnabled ? "fill-white" : ""
+                    }`}
+                  />
+                  {alertsEnabled ? "Alerts On" : "Get Alerts"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* View Tabs */}
+      {/* Week View */} {/* Week View */}
       {hasAnyAvailability && (
-        <div className="flex flex-wrap items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-            <Button
-              variant={selectedView === "week" ? "default" : "ghost"}
-              onClick={() => setSelectedView("week")}
-              size="sm"
-              className={`rounded-lg transition-all ${
-                selectedView === "week"
-                  ? "bg-white text-gray-900 shadow-sm hover:bg-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-            >
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              Week View
-            </Button>
-            <Button
-              variant={selectedView === "recurring" ? "default" : "ghost"}
-              onClick={() => setSelectedView("recurring")}
-              size="sm"
-              className={`rounded-lg transition-all ${
-                selectedView === "recurring"
-                  ? "bg-white text-gray-900 shadow-sm hover:bg-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              Recurring Schedule
-            </Button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCustomTimeDialogOpen(true)}
-              className="border-2 border-matepeak-primary text-matepeak-primary hover:bg-matepeak-primary hover:text-white transition-all duration-200 font-semibold"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Request Custom Time
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAlertDialogOpen(true)}
-              className={`border-2 transition-all duration-200 font-semibold ${
-                alertsEnabled
-                  ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-600"
-                  : "border-gray-400 text-gray-700 hover:bg-gray-50 hover:border-gray-500"
-              }`}
-            >
-              <Bell
-                className={`h-4 w-4 mr-2 ${
-                  alertsEnabled ? "fill-green-600" : ""
-                }`}
-              />
-              {alertsEnabled ? "Alerts Active" : "Get Notified"}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Week View */}
-      {selectedView === "week" && hasAnyAvailability && (
         <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
           <CardContent className="p-6">
             {/* Week Navigation */}
@@ -951,12 +925,31 @@ export default function ProfileAvailability({
                             </div>
                             <div className="flex-grow">
                               <span className="text-xs font-semibold text-gray-900 block">
-                                {formatTime(slot.start)} -{" "}
-                                {formatTime(slot.end)}
+                                {formatTime(slot.start, day.dateStr)} -{" "}
+                                {formatTime(slot.end, day.dateStr)}
                               </span>
                               <span className="text-xs text-gray-500">
                                 {duration} min
                               </span>
+                              {showUserTimezone &&
+                                (() => {
+                                  const startConv = convertTime(
+                                    slot.start,
+                                    day.dateStr,
+                                    mentorTimezone,
+                                    userTimezone
+                                  );
+                                  if (startConv.dateOffset !== 0) {
+                                    return (
+                                      <span className="text-xs text-orange-600 font-medium block mt-0.5">
+                                        {startConv.dateOffset > 0
+                                          ? "Next day"
+                                          : "Previous day"}
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                             </div>
                             <Button
                               size="sm"
@@ -991,77 +984,6 @@ export default function ProfileAvailability({
           </CardContent>
         </Card>
       )}
-
-      {/* Recurring Schedule View */}
-      {selectedView === "recurring" && recurringSlots.length > 0 && (
-        <Card className="shadow-sm border border-gray-200 bg-white rounded-2xl overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-              <div className="p-2.5 bg-matepeak-yellow/10 rounded-xl">
-                <Clock className="h-5 w-5 text-matepeak-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  Weekly Recurring Schedule
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Regular availability that repeats every week
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {Object.entries(groupedRecurring).map(([dayNum, slots]) => (
-                <div
-                  key={dayNum}
-                  className="group p-4 bg-green-50/30 rounded-xl border-2 border-green-200 hover:border-green-300 hover:shadow-sm transition-all duration-200"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </div>
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <h3 className="font-bold text-gray-900 mb-2.5 text-sm">
-                        {DAYS_OF_WEEK[parseInt(dayNum)]}s
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {slots.map((slot) => {
-                          const duration = calculateDuration(
-                            slot.start_time,
-                            slot.end_time
-                          );
-                          return (
-                            <div
-                              key={slot.id}
-                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-50/50 border-2 border-green-200 rounded-lg hover:bg-matepeak-yellow/10 hover:border-matepeak-primary transition-all duration-200 group/slot"
-                            >
-                              <div className="p-1 bg-white rounded-md group-hover/slot:bg-matepeak-yellow/20 transition-colors">
-                                <Clock className="h-3 w-3 text-gray-600 group-hover/slot:text-matepeak-primary transition-colors" />
-                              </div>
-                              <div>
-                                <span className="text-xs font-semibold text-gray-900 block">
-                                  {formatTime(slot.start_time)} -{" "}
-                                  {formatTime(slot.end_time)}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {duration} min
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Custom Time Request Dialog */}
       <Dialog
         open={customTimeDialogOpen}
@@ -1201,7 +1123,6 @@ export default function ProfileAvailability({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Availability Alerts Dialog */}
       <Dialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
@@ -1296,7 +1217,6 @@ export default function ProfileAvailability({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Login Confirmation Dialog */}
       <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
         <AlertDialogContent>

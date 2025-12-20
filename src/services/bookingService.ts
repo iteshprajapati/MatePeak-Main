@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { generateMeetingLink } from "./meetingService";
+import { enforceRateLimit } from "@/services/rateLimitService";
 
 export interface CreateBookingData {
   expert_id: string;
@@ -104,6 +105,18 @@ export async function createBooking(data: CreateBookingData) {
       return {
         success: false,
         error: "You must be logged in to book a session",
+        data: null,
+      };
+    }
+
+    // 2. RATE LIMITING - Prevent spam bookings
+    try {
+      await enforceRateLimit("booking_create", user.id);
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.message || "Too many booking requests. Please try again later.",
         data: null,
       };
     }

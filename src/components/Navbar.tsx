@@ -309,52 +309,45 @@ const Navbar = () => {
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm font-medium">
-                      New and Noteworthy
+                      New and Noteworthy{" "}
+                      <span className="text-xs text-gray-400 ml-1">
+                        (Under Development)
+                      </span>
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
                   <DropdownMenuItem
-                    onClick={() =>
-                      navigate("/explore?category=Career%20Growth")
-                    }
+                    onClick={() => navigate("/explore?q=Career%20Growth")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Career Growth</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() =>
-                      navigate("/explore?category=Mental%20Health")
-                    }
+                    onClick={() => navigate("/explore?q=Mental%20Health")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Mental Health</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() =>
-                      navigate("/explore?category=Academic%20Success")
-                    }
+                    onClick={() => navigate("/explore?q=Academic%20Success")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Academic Success</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() =>
-                      navigate("/explore?category=Interview%20Prep")
-                    }
+                    onClick={() => navigate("/explore?q=Interview%20Prep")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Interview Prep</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() =>
-                      navigate("/explore?category=Skill%20Development")
-                    }
+                    onClick={() => navigate("/explore?q=Skill%20Development")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Skill Development</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => navigate("/explore?category=Life%20Choices")}
+                    onClick={() => navigate("/explore?q=Life%20Choices")}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2.5 text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors"
                   >
                     <span className="text-sm">Life Choices</span>

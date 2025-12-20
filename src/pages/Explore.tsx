@@ -38,7 +38,7 @@ const Explore = () => {
   const queryParams = new URLSearchParams(location.search);
   const initialSearchQuery = queryParams.get("q") || "";
   const initialExpertise = queryParams.get("expertise") || "";
-  const initialCategory = queryParams.get("category") || "all-categories";
+  const initialCategory = "all-categories"; // Categories now use the search query
 
   const [mentorCards, setMentorCards] = useState<MentorProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,8 @@ const Explore = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [minRating, setMinRating] = useState(0);
 
   // Production-ready search features
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -97,6 +99,26 @@ const Explore = () => {
     "Career Coaching",
     "Interview Prep",
     "Resume Writing",
+  ];
+
+  const languageOptions = [
+    "all",
+    "English",
+    "Hindi",
+    "Spanish",
+    "French",
+    "German",
+    "Chinese",
+    "Japanese",
+    "Korean",
+    "Arabic",
+  ];
+
+  const ratingOptions = [
+    { label: "All Ratings", value: 0 },
+    { label: "4+ Stars", value: 4 },
+    { label: "4.5+ Stars", value: 4.5 },
+    { label: "5 Stars", value: 5 },
   ];
 
   // Load search history from localStorage
@@ -164,6 +186,20 @@ const Explore = () => {
   useEffect(() => {
     fetchDatabaseMentors();
   }, [selectedCategory, selectedExpertise]);
+
+  // Update filters when URL params change (for navbar dropdown navigation)
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlExpertise = queryParams.get("expertise") || "all";
+    const urlSearch = queryParams.get("q") || "";
+
+    if (urlExpertise !== selectedExpertise) {
+      setSelectedExpertise(urlExpertise);
+    }
+    if (urlSearch !== searchInput) {
+      setSearchInput(urlSearch);
+    }
+  }, [location.search]);
 
   // Fetch mentors when URL params change (e.g., coming from home page buttons)
   useEffect(() => {
@@ -455,6 +491,8 @@ const Explore = () => {
     setSortBy("newest");
     setPriceRange([0, 10000]);
     setShowFavoritesOnly(false);
+    setSelectedLanguage("all");
+    setMinRating(0);
     navigate("/explore", { replace: true });
     fetchDatabaseMentors();
   };
@@ -467,7 +505,7 @@ const Explore = () => {
         description: "Please sign in to save mentors to your favorites",
         action: {
           label: "Sign In",
-          onClick: () => navigate("/login"),
+          onClick: () => navigate("/student/login"),
         },
       });
       return;
@@ -515,6 +553,31 @@ const Explore = () => {
     .filter((mentor) =>
       showFavoritesOnly ? favorites.includes(mentor.id) : true
     )
+    .filter((mentor) => {
+      // Filter by minimum rating - only filter mentors who actually have ratings
+      // Mentors without ratings (rating = 0 or no reviews) should still be shown
+      if (minRating > 0 && mentor.rating > 0 && mentor.rating < minRating) {
+        return false;
+      }
+      return true;
+    })
+    .filter((mentor) => {
+      // Filter by language
+      if (selectedLanguage !== "all") {
+        // Check if mentor has languages data (assuming it's in mentor object)
+        // This might need adjustment based on actual data structure
+        const mentorLanguages = (mentor as any).languages;
+        if (!mentorLanguages) return false;
+
+        // If languages is an array of objects with language property
+        if (Array.isArray(mentorLanguages)) {
+          return mentorLanguages.some(
+            (lang: any) => lang.language === selectedLanguage
+          );
+        }
+      }
+      return true;
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case "relevance":
@@ -531,46 +594,27 @@ const Explore = () => {
       }
     });
 
-  // Log sorting results
-  console.log(`🔄 Sort by: ${sortBy}`);
-  console.log(
-    `📊 Sorted mentors (${sortedMentors.length}):`,
-    sortedMentors.map((m) => ({
-      name: m.name,
-      rating: m.rating,
-      price: m.price,
-    }))
-  );
-
   const hasActiveFilters =
     selectedCategory !== "all-categories" ||
     selectedExpertise !== "all" ||
     searchInput !== "" ||
     priceRange[0] !== 0 ||
     priceRange[1] !== 10000 ||
-    showFavoritesOnly;
+    showFavoritesOnly ||
+    selectedLanguage !== "all" ||
+    minRating > 0;
 
+  // Render component
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
       <main className="flex-grow">
         {/* Clean Search Section with MatePeak Touch */}
-        <div className="bg-white pt-16 pb-8 border-b border-gray-100">
+        <div className="bg-white pt-8 pb-6 border-b border-gray-100">
           <div className="max-w-6xl mx-auto px-4">
-            {/* Simple Title */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold font-poppins text-gray-900 mb-2">
-                Find Your Mentor
-              </h1>
-              <p className="text-base text-gray-600 font-poppins">
-                Search from {totalMentors} expert mentors across{" "}
-                {categories.length - 1} categories
-              </p>
-            </div>
-
             {/* Clean Search Bar with Autocomplete and History */}
-            <div className="mb-6 max-w-3xl">
+            <div className="mb-4 max-w-4xl">
               <div className="relative">
                 <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm focus-within:border-matepeak-primary focus-within:shadow-md transition-all bg-white">
                   <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
@@ -592,7 +636,7 @@ const Explore = () => {
                     onBlur={() =>
                       setTimeout(() => setShowSuggestions(false), 200)
                     }
-                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-900 font-poppins p-0 h-auto text-base placeholder:text-gray-500"
+                    className="!border-0 !focus-visible:ring-0 !focus-visible:ring-offset-0 !focus-visible:outline-none !focus-visible:border-0 !shadow-none !outline-none text-gray-900 font-poppins p-0 h-auto text-base placeholder:text-gray-500"
                   />
                   {searchInput && (
                     <button
@@ -703,8 +747,8 @@ const Explore = () => {
 
             {/* Clean Category Pills */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-500 font-poppins mr-1">
-                Popular:
+              <span className="text-sm text-gray-700 font-poppins font-bold mr-1">
+                Try:
               </span>
               {[
                 "Career Growth",
@@ -719,11 +763,18 @@ const Explore = () => {
                     setSelectedCategory("all-categories"); // Reset category filter to search across all
                     navigate(`/explore?q=${encodeURIComponent(cat)}`);
                   }}
-                  className="px-4 py-1.5 rounded-full border border-gray-200 hover:border-matepeak-primary hover:bg-gray-50 text-gray-700 hover:text-matepeak-primary text-sm font-poppins transition-all"
+                  className={`px-4 py-1.5 rounded-full border text-sm font-poppins transition-all ${
+                    searchInput === cat
+                      ? "border-matepeak-primary bg-matepeak-primary/5 text-matepeak-primary"
+                      : "border-gray-200 hover:border-matepeak-primary hover:bg-gray-50 text-gray-700 hover:text-matepeak-primary"
+                  }`}
                 >
                   {cat}
                 </button>
               ))}
+
+              {/* Separator Pipe */}
+              <span className="text-gray-300 text-lg font-light mx-1">|</span>
 
               {/* Filters Dropdown */}
               <div className="relative ml-2">
@@ -889,6 +940,60 @@ const Explore = () => {
                               ₹{priceRange[0]} - ₹{priceRange[1]}
                             </p>
                           </div>
+                        </div>
+
+                        {/* Language Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Language
+                          </label>
+                          <Select
+                            value={selectedLanguage}
+                            onValueChange={setSelectedLanguage}
+                          >
+                            <SelectTrigger className="font-poppins">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {languageOptions.map((lang) => (
+                                <SelectItem
+                                  key={lang}
+                                  value={lang}
+                                  className="font-poppins"
+                                >
+                                  {lang === "all" ? "All Languages" : lang}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Rating Filter */}
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block font-poppins">
+                            Minimum Rating
+                          </label>
+                          <Select
+                            value={minRating.toString()}
+                            onValueChange={(value) =>
+                              setMinRating(Number(value))
+                            }
+                          >
+                            <SelectTrigger className="font-poppins">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ratingOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value.toString()}
+                                  className="font-poppins"
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* Favorites Toggle - Only for logged-in users */}

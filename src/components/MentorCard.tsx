@@ -77,13 +77,13 @@ const MentorCard = ({
         {onToggleFavorite && (
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm transition-all"
+            className="absolute top-3 right-3 z-20 p-1 rounded-full bg-white/90 hover:bg-white shadow-sm hover:shadow-md transition-all backdrop-blur-sm"
             aria-label={
               isFavorite ? "Remove from favorites" : "Add to favorites"
             }
           >
             <Heart
-              className={`h-5 w-5 transition-all ${
+              className={`h-4 w-4 transition-all ${
                 isFavorite
                   ? "fill-red-500 text-red-500"
                   : "text-gray-400 hover:text-red-500"
@@ -93,7 +93,7 @@ const MentorCard = ({
         )}
 
         {/* Header: Avatar, Name, Tagline, Rating */}
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex items-start gap-4 mb-4 pr-10">
           <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-gray-100">
             <AvatarImage
               src={mentor.image}
@@ -106,7 +106,7 @@ const MentorCard = ({
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-base mb-0.5 line-clamp-1">
+            <h3 className="font-bold text-gray-900 text-base mb-0.5 line-clamp-1 pr-1">
               {mentor.name}
             </h3>
 
@@ -161,10 +161,10 @@ const MentorCard = ({
           </div>
         </div>
 
-        {/* Available Sessions */}
+        {/* Available Services */}
         <div className="mb-6">
           <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2.5">
-            AVAILABLE SESSIONS
+            AVAILABLE SERVICES
           </h4>
           <div className="flex flex-wrap gap-2">
             {mentor.connectionOptions.slice(0, 3).map((option, index) => (

@@ -23,13 +23,13 @@ const NewMentors = ({ sectionRef }: NewMentorsProps) => {
     try {
       setLoading(true);
 
-      // Fetch the 8 most recently created mentors
+      // Fetch the 4 most recently created mentors
       // Note: expert_profiles.id = profiles.id (both reference auth.users.id)
       const { data, error } = await supabase
         .from("expert_profiles")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(4);
 
       if (error) {
         console.error("Error fetching new mentors:", error);

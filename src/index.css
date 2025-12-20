@@ -443,12 +443,14 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(
+      calc(-264px * 15)
+    ); /* 15 cards × (256px width + 24px gap) */
   }
 }
 
 .animate-scroll-left {
-  animation: scroll-left 30s linear infinite;
+  animation: scroll-left 90s linear infinite; /* 6 seconds per card */
 }
 
 .animate-scroll-left:hover {
