@@ -115,6 +115,7 @@ export default function ProfileOverview({
         if (service.enabled) {
           services.push({
             name: service.name,
+            description: service.description,
             price: service.price,
             hasFreeDemo: service.hasFreeDemo || false,
             icon: Star, // Use a default icon for custom services
@@ -270,14 +271,15 @@ export default function ProfileOverview({
                         </div>
                       </div>
                       <p className="text-xs text-gray-600 mb-2">
-                        {service.name === "1-on-1 Sessions" &&
-                          "Live video sessions tailored to your learning pace"}
-                        {service.name === "Chat Advice" &&
-                          "Get quick guidance via text chat whenever you need"}
-                        {service.name === "Digital Products" &&
-                          "Access curated resources and learning materials"}
-                        {service.name === "Notes & Resources" &&
-                          "Download study materials and practice exercises"}
+                        {service.description ||
+                          (service.name === "1-on-1 Sessions" &&
+                            "Live video sessions tailored to your learning pace") ||
+                          (service.name === "Chat Advice" &&
+                            "Get quick guidance via text chat whenever you need") ||
+                          (service.name === "Digital Products" &&
+                            "Access curated resources and learning materials") ||
+                          (service.name === "Notes & Resources" &&
+                            "Download study materials and practice exercises")}
                       </p>
                       {service.hasFreeDemo && (
                         <div className="flex items-center gap-1 text-xs font-medium text-green-700">
