@@ -3,6 +3,7 @@
 ## Overview
 
 This backend uses **Supabase** which provides:
+
 - ✅ **Automatic JWT Authentication** (no need for custom bcrypt/JWT)
 - ✅ **Auto-generated REST APIs** for all tables
 - ✅ **Row Level Security (RLS)** for authorization
@@ -17,26 +18,32 @@ This backend uses **Supabase** which provides:
 **Method:** Use Supabase Client
 
 ```typescript
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from "@/integrations/supabase/client";
 
-const signup = async (name: string, email: string, password: string, role: 'student' | 'mentor') => {
+const signup = async (
+  name: string,
+  email: string,
+  password: string,
+  role: "student" | "mentor"
+) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: name,
-        role: role
+        role: role,
       },
-      emailRedirectTo: `${window.location.origin}/`
-    }
-  })
-  
-  return { data, error }
-}
+      emailRedirectTo: `${window.location.origin}/`,
+    },
+  });
+
+  return { data, error };
+};
 ```
 
 **Response:**
+
 ```json
 {
   "user": {
@@ -60,11 +67,11 @@ const signup = async (name: string, email: string, password: string, role: 'stud
 const login = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password
-  })
-  
-  return { data, error }
-}
+    password,
+  });
+
+  return { data, error };
+};
 ```
 
 **Response:** Same as signup
@@ -73,18 +80,21 @@ const login = async (email: string, password: string) => {
 
 ```typescript
 const logout = async () => {
-  const { error } = await supabase.auth.signOut()
-  return { error }
-}
+  const { error } = await supabase.auth.signOut();
+  return { error };
+};
 ```
 
 ### Get Current User
 
 ```typescript
 const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  return { user, error }
-}
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  return { user, error };
+};
 ```
 
 ---
@@ -97,36 +107,35 @@ const getCurrentUser = async () => {
 
 ```typescript
 const getMentors = async (filters?: {
-  category?: string
-  minPrice?: number
-  maxPrice?: number
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }) => {
-  let query = supabase
-    .from('expert_profiles')
-    .select(`
+  let query = supabase.from("expert_profiles").select(`
       *,
       profile:profiles(full_name, email, avatar_url),
       reviews(rating)
-    `)
-  
+    `);
+
   if (filters?.category) {
-    query = query.eq('category', filters.category)
+    query = query.eq("category", filters.category);
   }
-  
+
   if (filters?.minPrice) {
-    query = query.gte('pricing', filters.minPrice)
+    query = query.gte("pricing", filters.minPrice);
   }
-  
+
   if (filters?.maxPrice) {
-    query = query.lte('pricing', filters.maxPrice)
+    query = query.lte("pricing", filters.maxPrice);
   }
-  
-  const { data, error } = await query
-  return { data, error }
-}
+
+  const { data, error } = await query;
+  return { data, error };
+};
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -143,10 +152,7 @@ const getMentors = async (filters?: {
         "email": "jane@example.com",
         "avatar_url": "https://..."
       },
-      "reviews": [
-        { "rating": 5 },
-        { "rating": 4 }
-      ]
+      "reviews": [{ "rating": 5 }, { "rating": 4 }]
     }
   ]
 }
@@ -157,43 +163,47 @@ const getMentors = async (filters?: {
 ```typescript
 const getMentorById = async (mentorId: string) => {
   const { data, error } = await supabase
-    .from('expert_profiles')
-    .select(`
+    .from("expert_profiles")
+    .select(
+      `
       *,
       profile:profiles(full_name, email, avatar_url),
       reviews(id, rating, comment, user:profiles(full_name))
-    `)
-    .eq('id', mentorId)
-    .single()
-  
-  return { data, error }
-}
+    `
+    )
+    .eq("id", mentorId)
+    .single();
+
+  return { data, error };
+};
 ```
 
 ### Create/Update Mentor Profile (Mentor Only)
 
 ```typescript
 const updateMentorProfile = async (profileData: {
-  category: string
-  experience: number
-  pricing: number
-  bio: string
-  availability_json: string
-  social_links?: object
+  category: string;
+  experience: number;
+  pricing: number;
+  bio: string;
+  availability_json: string;
+  social_links?: object;
 }) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
-    .from('expert_profiles')
+    .from("expert_profiles")
     .upsert({
       id: user!.id,
-      ...profileData
+      ...profileData,
     })
     .select()
-    .single()
-  
-  return { data, error }
-}
+    .single();
+
+  return { data, error };
+};
 ```
 
 ---
@@ -206,21 +216,22 @@ const updateMentorProfile = async (profileData: {
 
 ```typescript
 const bookSession = async (bookingData: {
-  mentor_id: string
-  session_time: string  // ISO 8601 format
-  duration: number      // minutes
-  session_type: string
-  message?: string
+  mentor_id: string;
+  session_time: string; // ISO 8601 format
+  duration: number; // minutes
+  session_type: string;
+  message?: string;
 }) => {
-  const { data, error } = await supabase.functions.invoke('book-session', {
-    body: bookingData
-  })
-  
-  return { data, error }
-}
+  const { data, error } = await supabase.functions.invoke("book-session", {
+    body: bookingData,
+  });
+
+  return { data, error };
+};
 ```
 
 **Request Example:**
+
 ```json
 {
   "mentor_id": "uuid",
@@ -232,6 +243,7 @@ const bookSession = async (bookingData: {
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -254,6 +266,7 @@ const bookSession = async (bookingData: {
 ```
 
 **Error Responses:**
+
 ```json
 // Mentor not available
 {
@@ -274,32 +287,34 @@ const bookSession = async (bookingData: {
 
 ```typescript
 const getMySessions = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // Check if user is mentor
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user!.id)
-    .single()
-  
-  let query = supabase
-    .from('bookings')
-    .select(`
+    .from("profiles")
+    .select("role")
+    .eq("id", user!.id)
+    .single();
+
+  let query = supabase.from("bookings").select(`
       *,
       expert:expert_profiles(full_name, category),
       student:profiles!bookings_user_id_fkey(full_name, email)
-    `)
-  
-  if (profile?.role === 'mentor') {
-    query = query.eq('expert_id', user!.id)
+    `);
+
+  if (profile?.role === "mentor") {
+    query = query.eq("expert_id", user!.id);
   } else {
-    query = query.eq('user_id', user!.id)
+    query = query.eq("user_id", user!.id);
   }
-  
-  const { data, error } = await query.order('session_time', { ascending: false })
-  return { data, error }
-}
+
+  const { data, error } = await query.order("session_time", {
+    ascending: false,
+  });
+  return { data, error };
+};
 ```
 
 ### Update Session Status (Mentor confirms/completes)
@@ -308,16 +323,16 @@ const getMySessions = async () => {
 
 ```typescript
 const manageSession = async (sessionData: {
-  session_id: string
-  action: 'confirm' | 'complete' | 'cancel'
-  payment_status?: 'paid' | 'refunded'
+  session_id: string;
+  action: "confirm" | "complete" | "cancel";
+  payment_status?: "paid" | "refunded";
 }) => {
-  const { data, error } = await supabase.functions.invoke('manage-session', {
-    body: sessionData
-  })
-  
-  return { data, error }
-}
+  const { data, error } = await supabase.functions.invoke("manage-session", {
+    body: sessionData,
+  });
+
+  return { data, error };
+};
 ```
 
 **Request Examples:**
@@ -344,6 +359,7 @@ const manageSession = async (sessionData: {
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -363,9 +379,9 @@ const manageSession = async (sessionData: {
 const cancelSession = async (sessionId: string) => {
   return await manageSession({
     session_id: sessionId,
-    action: 'cancel'
-  })
-}
+    action: "cancel",
+  });
+};
 ```
 
 ---
@@ -376,54 +392,59 @@ const cancelSession = async (sessionId: string) => {
 
 ```typescript
 const submitFeedback = async (reviewData: {
-  expert_id: string
-  booking_id: string
-  rating: number  // 1-5
-  comment: string
+  expert_id: string;
+  booking_id: string;
+  rating: number; // 1-5
+  comment: string;
 }) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
-    .from('reviews')
+    .from("reviews")
     .insert({
       ...reviewData,
-      user_id: user!.id
+      user_id: user!.id,
     })
     .select()
-    .single()
-  
-  return { data, error }
-}
+    .single();
+
+  return { data, error };
+};
 ```
 
 ### Get Mentor Feedback
 
 ```typescript
 const getMentorFeedback = async (mentorId: string, page = 1, limit = 10) => {
-  const from = (page - 1) * limit
-  const to = from + limit - 1
-  
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   const { data, error, count } = await supabase
-    .from('reviews')
-    .select(`
+    .from("reviews")
+    .select(
+      `
       *,
       user:profiles(full_name, avatar_url)
-    `, { count: 'exact' })
-    .eq('expert_id', mentorId)
-    .order('created_at', { ascending: false })
-    .range(from, to)
-  
-  return { 
-    data, 
+    `,
+      { count: "exact" }
+    )
+    .eq("expert_id", mentorId)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  return {
+    data,
     error,
     pagination: {
       page,
       limit,
       total: count || 0,
-      totalPages: Math.ceil((count || 0) / limit)
-    }
-  }
-}
+      totalPages: Math.ceil((count || 0) / limit),
+    },
+  };
+};
 ```
 
 ---
@@ -433,18 +454,21 @@ const getMentorFeedback = async (mentorId: string, page = 1, limit = 10) => {
 All authorization is handled automatically through **Row Level Security policies**:
 
 ### Students Can:
+
 - ✅ Create bookings for themselves
 - ✅ View their own bookings
 - ✅ Cancel their bookings
 - ✅ Submit reviews for completed sessions
 
 ### Mentors Can:
+
 - ✅ Create/update their mentor profile
 - ✅ View bookings received
 - ✅ Confirm/complete/cancel bookings
 - ✅ View their reviews
 
 ### Everyone Can:
+
 - ✅ View all mentor profiles
 - ✅ View all reviews
 - ✅ View all categories
@@ -454,9 +478,11 @@ All authorization is handled automatically through **Row Level Security policies
 ## 🔧 Environment Setup
 
 **No custom environment variables needed!** Supabase is already configured in:
+
 - `src/integrations/supabase/client.ts`
 
 The following are automatically available:
+
 ```typescript
 SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -469,18 +495,22 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### Tables Created:
 
 1. **profiles** (Users)
+
    - Maps to `auth.users`
    - Additional fields: full_name, avatar_url, role
 
 2. **expert_profiles** (Mentors)
+
    - Extends profiles for mentors
    - Fields: category, experience, pricing, bio, availability
 
 3. **bookings** (Sessions)
+
    - Links students and mentors
    - Fields: session_time, duration, status, payment_status
 
 4. **reviews** (Feedback)
+
    - Student feedback on mentors
    - Fields: rating (1-5), comment
 
@@ -497,25 +527,25 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 All APIs are ready to use in your React app:
 
 ```typescript
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from "@/integrations/supabase/client";
 
 // Example: Book a session
 const handleBooking = async () => {
-  const { data, error } = await supabase.functions.invoke('book-session', {
+  const { data, error } = await supabase.functions.invoke("book-session", {
     body: {
       mentor_id: selectedMentor.id,
       session_time: new Date().toISOString(),
       duration: 60,
-      session_type: '1-on-1 Video Call'
-    }
-  })
-  
+      session_type: "1-on-1 Video Call",
+    },
+  });
+
   if (error) {
-    console.error('Booking failed:', error)
+    console.error("Booking failed:", error);
   } else {
-    console.log('Booking success:', data)
+    console.log("Booking success:", data);
   }
-}
+};
 ```
 
 ---
@@ -535,6 +565,6 @@ const handleBooking = async () => {
 - **Supabase Dashboard**: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg
 - **Authentication Settings**: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/auth/providers
 - **Database Tables**: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/editor
-- **Edge Functions Logs**: 
+- **Edge Functions Logs**:
   - book-session: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/functions/book-session/logs
   - manage-session: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/functions/manage-session/logs
