@@ -1,7 +1,15 @@
 ﻿import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 const Hero = () => {
   const [currentField, setCurrentField] = useState(0);
@@ -9,6 +17,10 @@ const Hero = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [priceRange, setPriceRange] = useState<string>("all");
+  const [experienceLevel, setExperienceLevel] = useState<string>("all");
   const navigate = useNavigate();
 
   const fields = [
@@ -220,11 +232,27 @@ const Hero = () => {
 
   const popularOptions = ["Career Growth", "Mental Health", "Interview Prep"];
 
+  const hasActiveFilters =
+    selectedCategory !== "all" ||
+    priceRange !== "all" ||
+    experienceLevel !== "all";
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/explore?q=${encodeURIComponent(searchQuery)}`);
-    }
+
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedCategory !== "all") params.set("category", selectedCategory);
+    if (priceRange !== "all") params.set("price", priceRange);
+    if (experienceLevel !== "all") params.set("experience", experienceLevel);
+
+    navigate(`/explore?${params.toString()}`);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategory("all");
+    setPriceRange("all");
+    setExperienceLevel("all");
   };
 
   const handlePopularClick = (option: string) => {
@@ -257,54 +285,219 @@ const Hero = () => {
               </p>
             </div>
 
-            {/* Search Bar */}
+            {/* Search Bar with Filters */}
             <div className="flex flex-col justify-center lg:justify-start mb-8 mt-10">
               <form
                 onSubmit={handleSearch}
-                className="relative w-full max-w-lg mb-4"
+                className="relative w-full max-w-2xl mb-4"
               >
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowSearchDropdown(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowSearchDropdown(false), 200)
-                  }
-                  placeholder="What type of mentor are you interested in?"
-                  className="w-full h-12 pl-6 pr-14 rounded-full bg-gray-100 hover:bg-white focus:bg-white border-0 text-gray-700 placeholder:text-sm placeholder:text-gray-600 outline-none hover:ring-2 hover:ring-matepeak-primary/20 focus:ring-2 focus:ring-matepeak-primary/20 transition-all focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all"
-                >
-                  <Search className="w-4 h-4 text-white" />
-                </button>
+                {/* Main Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSearchDropdown(true)}
+                    onBlur={() =>
+                      setTimeout(() => setShowSearchDropdown(false), 200)
+                    }
+                    placeholder="What type of mentor are you interested in?"
+                    className="w-full h-14 pl-6 pr-32 rounded-full bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 text-gray-700 placeholder:text-sm placeholder:text-gray-500 outline-none hover:border-gray-300 focus:border-matepeak-primary focus:ring-2 focus:ring-matepeak-primary/20 transition-all"
+                  />
 
-                {/* Search Dropdown */}
-                {showSearchDropdown && (
-                  <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    {searchSuggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(suggestion);
-                          setShowSearchDropdown(false);
-                          navigate(
-                            `/explore?q=${encodeURIComponent(suggestion)}`
-                          );
-                        }}
-                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 font-poppins"
+                  {/* Right side buttons */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    {/* Filter Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`flex items-center gap-1.5 px-3 h-10 rounded-full transition-all ${
+                        showFilters || hasActiveFilters
+                          ? "bg-matepeak-primary text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span className="text-sm font-medium hidden sm:inline">
+                        Filters
+                      </span>
+                      {hasActiveFilters && (
+                        <Badge
+                          variant="secondary"
+                          className="h-5 w-5 p-0 flex items-center justify-center text-xs bg-white text-matepeak-primary"
+                        >
+                          {
+                            [
+                              selectedCategory !== "all",
+                              priceRange !== "all",
+                              experienceLevel !== "all",
+                            ].filter(Boolean).length
+                          }
+                        </Badge>
+                      )}
+                    </button>
+
+                    {/* Search Button */}
+                    <button
+                      type="submit"
+                      className="w-10 h-10 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all shadow-sm"
+                    >
+                      <Search className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters Dropdown */}
+                {showFilters && (
+                  <div className="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Refine Your Search
+                      </h3>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={handleClearFilters}
+                          className="text-xs text-matepeak-primary hover:text-matepeak-secondary font-medium flex items-center gap-1"
+                        >
+                          <X className="w-3 h-3" />
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Category Filter */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-600">
+                          Category
+                        </label>
+                        <Select
+                          value={selectedCategory}
+                          onValueChange={setSelectedCategory}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="All Categories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="career">
+                              Career Growth
+                            </SelectItem>
+                            <SelectItem value="technical">
+                              Technical Skills
+                            </SelectItem>
+                            <SelectItem value="interview">
+                              Interview Prep
+                            </SelectItem>
+                            <SelectItem value="mental-health">
+                              Mental Health
+                            </SelectItem>
+                            <SelectItem value="academic">Academic</SelectItem>
+                            <SelectItem value="life-coaching">
+                              Life Coaching
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Price Range Filter */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-600">
+                          Price Range
+                        </label>
+                        <Select
+                          value={priceRange}
+                          onValueChange={setPriceRange}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Any Price" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any Price</SelectItem>
+                            <SelectItem value="0-500">₹0 - ₹500</SelectItem>
+                            <SelectItem value="500-1000">
+                              ₹500 - ₹1000
+                            </SelectItem>
+                            <SelectItem value="1000-2000">
+                              ₹1000 - ₹2000
+                            </SelectItem>
+                            <SelectItem value="2000+">₹2000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Experience Level Filter */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-600">
+                          Experience Level
+                        </label>
+                        <Select
+                          value={experienceLevel}
+                          onValueChange={setExperienceLevel}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Any Level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any Level</SelectItem>
+                            <SelectItem value="beginner">
+                              Beginner Friendly
+                            </SelectItem>
+                            <SelectItem value="intermediate">
+                              Intermediate
+                            </SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
+                            <SelectItem value="expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Apply Filters Button */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <Button
+                        type="submit"
+                        onClick={() => setShowFilters(false)}
+                        className="w-full bg-matepeak-primary hover:bg-matepeak-secondary h-10"
                       >
-                        <Search className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">
-                          {suggestion}
-                        </span>
-                      </button>
-                    ))}
+                        Apply Filters
+                      </Button>
+                    </div>
                   </div>
                 )}
+
+                {/* Search Dropdown */}
+                {showSearchDropdown &&
+                  !showFilters &&
+                  searchQuery.length > 0 && (
+                    <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                      {searchSuggestions
+                        .filter((s) =>
+                          s.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .slice(0, 5)
+                        .map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(suggestion);
+                              setShowSearchDropdown(false);
+                              navigate(
+                                `/explore?q=${encodeURIComponent(suggestion)}`
+                              );
+                            }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 font-poppins"
+                          >
+                            <Search className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-700">
+                              {suggestion}
+                            </span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
               </form>
 
               {/* Popular Tags */}

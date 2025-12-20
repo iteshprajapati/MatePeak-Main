@@ -26,6 +26,7 @@ import ExpertDashboard from "./pages/ExpertDashboard";
 import MentorDashboard from "./pages/MentorDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import AuthCallback from "./pages/AuthCallback";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/student/signup" element={<StudentSignup />} />
             <Route path="/student/login" element={<StudentLogin />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/mentor/signup" element={<MentorSignup />} />
             <Route path="/expert/signup" element={<MentorSignup />} />
             <Route path="/expert/login" element={<ExpertLogin />} />

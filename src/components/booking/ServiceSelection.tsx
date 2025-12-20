@@ -21,6 +21,7 @@ import { useState } from "react";
 interface ServiceSelectionProps {
   services: any;
   servicePricing: any;
+  suggestedServices?: any[]; // Add this prop
   onServiceSelect: (service: SelectedService) => void;
   averageRating?: number;
   totalReviews?: number;
@@ -29,25 +30,32 @@ interface ServiceSelectionProps {
 const serviceConfig = {
   oneOnOneSession: {
     icon: Video,
-    name: "Strategic Advisory Session",
-    shortName: "1-on-1 Video Session",
-    description: "Live video mentoring session",
+    name: "1-on-1 Career Strategy Call",
+    shortName: "1-on-1 Career Strategy Call",
+    description: "Discuss your goals, blockers & next moves",
+    benefits: ["30 min live call", "Personalized action plan after call"],
     durations: [30, 60, 90],
     typeLabel: "Video Meeting",
   },
   chatAdvice: {
     icon: MessageSquare,
-    name: "Chat Consultation",
-    shortName: "Chat Advice",
-    description: "Text-based Q&A and guidance",
+    name: "Career Clarity – Ask Anything",
+    shortName: "Career Clarity",
+    description: "Get clear direction on your next career step",
+    benefits: ["24-hour expert responses", "Actionable next steps"],
     durations: [],
     typeLabel: "Text Chat",
   },
   digitalProducts: {
     icon: ShoppingBag,
-    name: "Digital Products",
-    shortName: "Digital Products",
-    description: "Courses, ebooks, templates",
+    name: "Resume & LinkedIn Starter Pack",
+    shortName: "Resource Bundle",
+    description: "Proven templates + expert guidance",
+    benefits: [
+      "Resume templates",
+      "LinkedIn checklist",
+      "Short guidance video",
+    ],
     durations: [],
     typeLabel: "Digital Download",
   },
@@ -56,6 +64,7 @@ const serviceConfig = {
     name: "Session Notes & Resources",
     shortName: "Notes & Resources",
     description: "Study materials and guides",
+    benefits: [],
     durations: [],
     typeLabel: "Study Materials",
   },
@@ -64,6 +73,7 @@ const serviceConfig = {
 export default function ServiceSelection({
   services,
   servicePricing,
+  suggestedServices = [],
   onServiceSelect,
   averageRating = 0,
   totalReviews = 0,
@@ -119,10 +129,10 @@ export default function ServiceSelection({
     <div className="space-y-5">
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-1.5">
-          Choose Your Service
+          What do you want help with?
         </h3>
         <p className="text-sm text-gray-600">
-          Select the service that best fits your needs
+          Pick an outcome. Delivery is handled by the expert.
         </p>
       </div>
 
@@ -184,6 +194,37 @@ export default function ServiceSelection({
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {config.description}
                 </p>
+
+                {/* Benefits */}
+                {config.benefits && config.benefits.length > 0 && (
+                  <div className="space-y-2">
+                    {config.benefits.map((benefit, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-2 text-sm text-gray-700"
+                      >
+                        <span className="text-base">
+                          {benefit.startsWith("24-hour")
+                            ? "🕒"
+                            : benefit.startsWith("Personalized") ||
+                              benefit.startsWith("Actionable")
+                            ? "📌"
+                            : benefit.startsWith("Resume")
+                            ? "📁"
+                            : benefit.startsWith("LinkedIn")
+                            ? "📄"
+                            : benefit.startsWith("Short") ||
+                              benefit.startsWith("guidance")
+                            ? "🎥"
+                            : benefit.includes("min")
+                            ? "🕒"
+                            : "✓"}
+                        </span>
+                        <span className="font-medium">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Free Demo Toggle - Only show if service has free demo */}
                 {pricing.hasFreeDemo && (
@@ -289,15 +330,87 @@ export default function ServiceSelection({
             </Card>
           );
         })}
+
+        {/* Custom Services from suggested_services */}
+        {suggestedServices && suggestedServices.length > 0 && (
+          <>
+            {suggestedServices
+              .filter((service: any) => service.enabled)
+              .map((customService: any, index: number) => {
+                const customKey = `custom_${customService.id || index}`;
+                return (
+                  <Card
+                    key={customKey}
+                    className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="p-5 space-y-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                            <Star className="w-6 h-6 text-matepeak-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900 text-base leading-tight">
+                              {customService.name}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              Custom Service
+                            </span>
+                          </div>
+                        </div>
+                        {customService.hasFreeDemo && (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0 text-xs font-semibold px-2.5 py-1">
+                            Free Demo
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {customService.description}
+                      </p>
+
+                      {/* Price & Select Button */}
+                      <div className="pt-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-600">Price</span>
+                          <span className="text-2xl font-bold text-gray-900">
+                            ₹{customService.price?.toLocaleString("en-IN") || 0}
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            onServiceSelect({
+                              type: "oneOnOneSession",
+                              name: customService.name,
+                              duration: 60,
+                              price: customService.price,
+                              hasFreeDemo: customService.hasFreeDemo || false,
+                            });
+                          }}
+                          className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl transition-all group-hover:shadow-md"
+                        >
+                          Select Service
+                          <ArrowRight className="w-4 h-4 ml-1.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+          </>
+        )}
       </div>
 
-      {availableServices.length === 0 && (
-        <div className="text-center py-8 bg-gray-100 rounded-2xl border-0">
-          <p className="text-gray-500 text-sm font-medium">
-            No services available at the moment
-          </p>
-        </div>
-      )}
+      {availableServices.length === 0 &&
+        (!suggestedServices || suggestedServices.length === 0) && (
+          <div className="text-center py-8 bg-gray-100 rounded-2xl border-0">
+            <p className="text-gray-500 text-sm font-medium">
+              No services available at the moment
+            </p>
+          </div>
+        )}
     </div>
   );
 }

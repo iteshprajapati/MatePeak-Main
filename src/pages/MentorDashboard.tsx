@@ -12,9 +12,20 @@ import SessionCalendar from "@/components/dashboard/SessionCalendar";
 import SessionMessaging from "@/components/dashboard/SessionMessaging";
 import StudentDirectory from "@/components/dashboard/StudentDirectory";
 import CustomTimeRequests from "@/components/dashboard/CustomTimeRequests";
+import ServicesManagement from "@/components/dashboard/ServicesManagement";
 import { useToast } from "@/hooks/use-toast";
 
-type DashboardView = "overview" | "profile" | "sessions" | "reviews" | "availability" | "calendar" | "messages" | "students" | "requests";
+type DashboardView =
+  | "overview"
+  | "profile"
+  | "sessions"
+  | "reviews"
+  | "availability"
+  | "calendar"
+  | "messages"
+  | "students"
+  | "requests"
+  | "services";
 
 const MentorDashboard = () => {
   const navigate = useNavigate();
@@ -32,8 +43,11 @@ const MentorDashboard = () => {
   const checkAuthAndProfile = async () => {
     try {
       // Check authentication
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error: authError,
+      } = await supabase.auth.getSession();
+
       if (authError || !session) {
         toast({
           title: "Authentication required",
@@ -45,8 +59,10 @@ const MentorDashboard = () => {
       }
 
       // Security: Check if user is a student
-      const userRole = session.user.user_metadata?.role || session.user.user_metadata?.user_type;
-      if (userRole === 'student') {
+      const userRole =
+        session.user.user_metadata?.role ||
+        session.user.user_metadata?.user_type;
+      if (userRole === "student") {
         toast({
           title: "Access denied",
           description: "This dashboard is for mentors only",
@@ -90,7 +106,7 @@ const MentorDashboard = () => {
       // Flatten the email from profiles
       const profileWithEmail = {
         ...profile,
-        email: profileData?.email || session.user.email || ""
+        email: profileData?.email || session.user.email || "",
       };
 
       // Check if accessing via old route (/mentor/dashboard or /expert/dashboard)
@@ -130,7 +146,7 @@ const MentorDashboard = () => {
     // Preserve the email when updating the profile
     setMentorProfile({
       ...updatedProfile,
-      email: mentorProfile?.email || updatedProfile.email
+      email: mentorProfile?.email || updatedProfile.email,
     });
   };
 
@@ -157,8 +173,8 @@ const MentorDashboard = () => {
       user={user}
     >
       {activeView === "overview" && (
-        <DashboardOverview 
-          mentorProfile={mentorProfile} 
+        <DashboardOverview
+          mentorProfile={mentorProfile}
           onNavigate={(view) => setActiveView(view as DashboardView)}
         />
       )}
@@ -188,6 +204,9 @@ const MentorDashboard = () => {
       )}
       {activeView === "requests" && (
         <CustomTimeRequests mentorProfile={mentorProfile} />
+      )}
+      {activeView === "services" && (
+        <ServicesManagement mentorId={mentorProfile.id} />
       )}
     </DashboardLayout>
   );

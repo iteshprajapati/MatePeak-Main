@@ -25,6 +25,7 @@ interface BookingDialogProps {
   mentorImage: string;
   services: any;
   servicePricing: any;
+  suggestedServices?: any[]; // Add this prop
   timezone?: string;
   averageRating?: number;
   totalReviews?: number;
@@ -63,6 +64,7 @@ export default function BookingDialog({
   mentorImage,
   services,
   servicePricing,
+  suggestedServices = [],
   timezone = "Asia/Kolkata",
   averageRating = 0,
   totalReviews = 0,
@@ -539,6 +541,7 @@ export default function BookingDialog({
             <ServiceSelection
               services={services}
               servicePricing={servicePricing}
+              suggestedServices={suggestedServices}
               onServiceSelect={handleServiceSelect}
               averageRating={averageRating}
               totalReviews={totalReviews}

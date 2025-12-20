@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Heart, 
-  Target, 
+import {
+  Heart,
+  Target,
   Handshake,
   Video,
   MessageSquare,
@@ -11,7 +11,7 @@ import {
   Star,
   Quote,
   IndianRupee,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +24,10 @@ interface ProfileOverviewProps {
   };
 }
 
-export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps) {
+export default function ProfileOverview({
+  mentor,
+  stats,
+}: ProfileOverviewProps) {
   const [featuredReviews, setFeaturedReviews] = useState<any[]>([]);
   const [showMore, setShowMore] = useState({
     introduction: false,
@@ -55,10 +58,10 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
               .select("full_name, avatar_url")
               .eq("id", review.user_id)
               .single();
-            
+
             return {
               ...review,
-              profiles: profile || { full_name: "Anonymous", avatar_url: null }
+              profiles: profile || { full_name: "Anonymous", avatar_url: null },
             };
           })
         );
@@ -71,6 +74,8 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
 
   const getServicesList = () => {
     const services = [];
+
+    // Add predefined services from service_pricing
     if (mentor.service_pricing?.oneOnOneSession?.enabled) {
       services.push({
         name: "1-on-1 Sessions",
@@ -103,6 +108,21 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
         icon: FileText,
       });
     }
+
+    // Add custom services from suggested_services
+    if (mentor.suggested_services && Array.isArray(mentor.suggested_services)) {
+      mentor.suggested_services.forEach((service: any) => {
+        if (service.enabled) {
+          services.push({
+            name: service.name,
+            price: service.price,
+            hasFreeDemo: service.hasFreeDemo || false,
+            icon: Star, // Use a default icon for custom services
+          });
+        }
+      });
+    }
+
     return services;
   };
 
@@ -115,18 +135,32 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
         <CardContent className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Quote className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">How I'd Describe Myself</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              How I'd Describe Myself
+            </h2>
           </div>
-          <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.introduction ? 'line-clamp-3' : ''}`}>
-            {mentor.introduction || mentor.bio || "No introduction provided yet."}
+          <p
+            className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${
+              !showMore.introduction ? "line-clamp-3" : ""
+            }`}
+          >
+            {mentor.introduction ||
+              mentor.bio ||
+              "No introduction provided yet."}
           </p>
-          {((mentor.introduction || mentor.bio || '').split('\n').length > 3 || (mentor.introduction || mentor.bio || '').length > 250) && (
+          {((mentor.introduction || mentor.bio || "").split("\n").length > 3 ||
+            (mentor.introduction || mentor.bio || "").length > 250) && (
             <button
               className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
-              style={{paddingBottom: '1px', marginTop: '0'}}
-              onClick={() => setShowMore((prev) => ({ ...prev, introduction: !prev.introduction }))}
+              style={{ paddingBottom: "1px", marginTop: "0" }}
+              onClick={() =>
+                setShowMore((prev) => ({
+                  ...prev,
+                  introduction: !prev.introduction,
+                }))
+              }
             >
-              {showMore.introduction ? 'Show less' : 'Show more'}
+              {showMore.introduction ? "Show less" : "Show more"}
             </button>
           )}
         </CardContent>
@@ -138,18 +172,30 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Heart className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Why I Became a Mentor</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Why I Became a Mentor
+              </h2>
             </div>
-            <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.motivation ? 'line-clamp-3' : ''}`}>
+            <p
+              className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${
+                !showMore.motivation ? "line-clamp-3" : ""
+              }`}
+            >
               {mentor.motivation}
             </p>
-            {(mentor.motivation.split('\n').length > 3 || mentor.motivation.length > 250) && (
+            {(mentor.motivation.split("\n").length > 3 ||
+              mentor.motivation.length > 250) && (
               <button
                 className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
-                style={{paddingBottom: '1px', marginTop: '0'}}
-                onClick={() => setShowMore((prev) => ({ ...prev, motivation: !prev.motivation }))}
+                style={{ paddingBottom: "1px", marginTop: "0" }}
+                onClick={() =>
+                  setShowMore((prev) => ({
+                    ...prev,
+                    motivation: !prev.motivation,
+                  }))
+                }
               >
-                {showMore.motivation ? 'Show less' : 'Show more'}
+                {showMore.motivation ? "Show less" : "Show more"}
               </button>
             )}
           </CardContent>
@@ -162,18 +208,30 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Target className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">An Ideal Relationship To Me</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                An Ideal Relationship To Me
+              </h2>
             </div>
-            <p className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${!showMore.teaching_experience ? 'line-clamp-3' : ''}`}>
+            <p
+              className={`text-gray-700 leading-relaxed text-sm whitespace-pre-line ${
+                !showMore.teaching_experience ? "line-clamp-3" : ""
+              }`}
+            >
               {mentor.teaching_experience}
             </p>
-            {(mentor.teaching_experience.split('\n').length > 3 || mentor.teaching_experience.length > 250) && (
+            {(mentor.teaching_experience.split("\n").length > 3 ||
+              mentor.teaching_experience.length > 250) && (
               <button
                 className="text-xs text-matepeak-primary font-medium focus:outline-none border-b border-gray-200"
-                style={{paddingBottom: '1px', marginTop: '0'}}
-                onClick={() => setShowMore((prev) => ({ ...prev, teaching_experience: !prev.teaching_experience }))}
+                style={{ paddingBottom: "1px", marginTop: "0" }}
+                onClick={() =>
+                  setShowMore((prev) => ({
+                    ...prev,
+                    teaching_experience: !prev.teaching_experience,
+                  }))
+                }
               >
-                {showMore.teaching_experience ? 'Show less' : 'Show more'}
+                {showMore.teaching_experience ? "Show less" : "Show more"}
               </button>
             )}
           </CardContent>
@@ -186,7 +244,9 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Handshake className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Services & Pricing</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Services & Pricing
+              </h2>
             </div>
             <div className="space-y-3">
               {services.map((service, index) => {
@@ -201,17 +261,23 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <h3 className="font-semibold text-gray-900 text-sm">{service.name}</h3>
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {service.name}
+                        </h3>
                         <div className="flex items-center gap-0.5 text-lg font-bold text-gray-900 flex-shrink-0">
                           <IndianRupee className="h-4 w-4" />
                           <span>{service.price}</span>
                         </div>
                       </div>
                       <p className="text-xs text-gray-600 mb-2">
-                        {service.name === "1-on-1 Sessions" && "Live video sessions tailored to your learning pace"}
-                        {service.name === "Chat Advice" && "Get quick guidance via text chat whenever you need"}
-                        {service.name === "Digital Products" && "Access curated resources and learning materials"}
-                        {service.name === "Notes & Resources" && "Download study materials and practice exercises"}
+                        {service.name === "1-on-1 Sessions" &&
+                          "Live video sessions tailored to your learning pace"}
+                        {service.name === "Chat Advice" &&
+                          "Get quick guidance via text chat whenever you need"}
+                        {service.name === "Digital Products" &&
+                          "Access curated resources and learning materials"}
+                        {service.name === "Notes & Resources" &&
+                          "Download study materials and practice exercises"}
                       </p>
                       {service.hasFreeDemo && (
                         <div className="flex items-center gap-1 text-xs font-medium text-green-700">
@@ -235,7 +301,9 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-gray-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Asif's Community</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Asif's Community
+                </h2>
               </div>
               {stats.averageRating > 0 && (
                 <div className="text-sm text-gray-600">
@@ -262,10 +330,14 @@ export default function ProfileOverview({ mentor, stats }: ProfileOverviewProps)
                           {new Date(review.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
+                      <p className="text-gray-700 text-sm leading-relaxed">
+                        {review.comment}
+                      </p>
                     </div>
                   </div>
-                  {index < featuredReviews.length - 1 && <div className="my-2" />}
+                  {index < featuredReviews.length - 1 && (
+                    <div className="my-2" />
+                  )}
                 </div>
               ))}
             </div>
