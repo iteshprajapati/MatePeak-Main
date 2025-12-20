@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { validateReviewComment } from '@/utils/inputSanitization';
 
 interface StudentReviewsProps {
   studentProfile: any;
@@ -143,13 +144,15 @@ export default function StudentReviews({ studentProfile }: StudentReviewsProps) 
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async () => {
-      if (!comment.trim()) {
-        toast.error('Please write a comment');
+      // Validate comment
+      const validation = validateReviewComment(comment);
+      if (!validation.valid) {
+        toast.error(validation.error || 'Invalid comment');
         return;
       }
 
       setSubmitting(true);
-      await handleSubmitReview(session.id, session.expert_id, rating, comment);
+      await handleSubmitReview(session.id, session.expert_id, rating, validation.sanitized!);
       setSubmitting(false);
       setComment('');
       setRating(5);

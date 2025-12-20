@@ -20,6 +20,8 @@ import {
   BookingDetails,
 } from "./BookingDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { validateBookingMessage, isValidEmail, sanitizeInput } from "@/utils/inputSanitization";
+import { toast } from "sonner";
 
 interface BookingConfirmationProps {
   selectedService: SelectedService;
@@ -76,11 +78,34 @@ export default function BookingConfirmation({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedEmail = email.trim();
+    const sanitizedPhone = sanitizeInput(phone);
+    
+    if (!sanitizedName || sanitizedName.length < 2) {
+      toast.error("Please enter a valid name (minimum 2 characters)");
+      return;
+    }
+    
+    if (!sanitizedEmail || !isValidEmail(sanitizedEmail)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    
+    // Validate purpose/message
+    const messageValidation = validateBookingMessage(purpose);
+    if (!messageValidation.valid) {
+      toast.error(messageValidation.error || "Please provide a valid message");
+      return;
+    }
+    
     onSubmit({
-      name,
-      email,
-      phone,
-      purpose,
+      name: sanitizedName,
+      email: sanitizedEmail,
+      phone: sanitizedPhone,
+      purpose: messageValidation.sanitized!,
       addRecording: false,
     });
   };

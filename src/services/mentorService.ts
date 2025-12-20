@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { measureApiCall } from "@/utils/performanceMonitor";
 
 export interface MentorFilters {
   category?: string;
@@ -10,43 +11,45 @@ export interface MentorFilters {
  * Get all mentors with optional filters
  */
 export async function getMentors(filters?: MentorFilters) {
-  let query = supabase
-    .from('expert_profiles')
-    .select(`
-      *,
-      profile:profiles(full_name, email, avatar_url, role),
-      reviews(rating)
-    `);
-  
-  if (filters?.category) {
-    query = query.eq('category', filters.category);
-  }
-  
-  if (filters?.minPrice !== undefined) {
-    query = query.gte('pricing', filters.minPrice);
-  }
-  
-  if (filters?.maxPrice !== undefined) {
-    query = query.lte('pricing', filters.maxPrice);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('Error fetching mentors:', error);
-    return { success: false, error: error.message, data: [] };
-  }
-  
-  // Calculate average rating for each mentor
-  const mentorsWithRating = data.map(mentor => ({
-    ...mentor,
-    averageRating: mentor.reviews.length > 0
-      ? mentor.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / mentor.reviews.length
-      : 0,
-    totalReviews: mentor.reviews.length
-  }));
-  
-  return { success: true, data: mentorsWithRating };
+  return measureApiCall('getMentors', async () => {
+    let query = supabase
+      .from('expert_profiles')
+      .select(`
+        *,
+        profile:profiles(full_name, email, avatar_url, role),
+        reviews(rating)
+      `);
+    
+    if (filters?.category) {
+      query = query.eq('category', filters.category);
+    }
+    
+    if (filters?.minPrice !== undefined) {
+      query = query.gte('pricing', filters.minPrice);
+    }
+    
+    if (filters?.maxPrice !== undefined) {
+      query = query.lte('pricing', filters.maxPrice);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching mentors:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+    
+    // Calculate average rating for each mentor
+    const mentorsWithRating = data.map(mentor => ({
+      ...mentor,
+      averageRating: mentor.reviews.length > 0
+        ? mentor.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / mentor.reviews.length
+        : 0,
+      totalReviews: mentor.reviews.length
+    }));
+    
+    return { success: true, data: mentorsWithRating };
+  });
 }
 
 /**
