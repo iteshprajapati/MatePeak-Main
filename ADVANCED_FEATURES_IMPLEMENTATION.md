@@ -108,7 +108,7 @@ jobs:
     steps:
       - name: Trigger Supabase Function
         run: |
-          curl -X POST https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders \
+          curl -X POST https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
 ```
 
@@ -125,7 +125,7 @@ SELECT cron.schedule(
   '0 * * * *', -- Every hour at minute 0
   $$
   SELECT net.http_post(
-    url:='https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders',
+    url:='https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders',
     headers:='{"Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
   ) AS request_id;
   $$
@@ -136,7 +136,7 @@ SELECT cron.schedule(
 
 1. Create free account on cron-job.org
 2. Add new cron job:
-   - URL: `https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders`
+   - URL: `https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders`
    - Method: POST
    - Headers: `Authorization: Bearer YOUR_ANON_KEY`
    - Schedule: Every hour

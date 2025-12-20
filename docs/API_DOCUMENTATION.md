@@ -458,7 +458,7 @@ All authorization is handled automatically through **Row Level Security policies
 
 The following are automatically available:
 ```typescript
-SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co
+SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 

@@ -1,7 +1,7 @@
 -- =====================================================
 -- QUICK FIX: Copy and paste this ENTIRE script into your Supabase SQL Editor
 -- Project: hnevrdlcqhmsfubakljg
--- URL: https://hnevrdlcqhmsfubakljg.supabase.co
+-- URL: https://YOUR_PROJECT_ID.supabase.co
 -- =====================================================
 
 -- This will add the missing columns needed for the Expertise Editor feature

@@ -17,7 +17,7 @@ jobs:
       - name: Trigger Supabase Reminder Function
         run: |
           response=$(curl -s -w "\n%{http_code}" -X POST \
-            https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders \
+            https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json")
 

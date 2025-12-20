@@ -39,12 +39,12 @@ $response = Read-Host "Do you want to test the reminder function? (y/n)"
 if ($response -eq "y") {
     Write-Host "Triggering send-reminders function..." -ForegroundColor Gray
     $headers = @{
-        "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZXZyZGxjcWhtc2Z1YmFrbGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDIzMDEsImV4cCI6MjA3NTYxODMwMX0.e4OjzNc4A6d6petuDQFW-iD6JPVqwmy5Y_KWvgXabBA"
+        "Authorization" = "Bearer YOUR_SUPABASE_ANON_KEY"
         "Content-Type" = "application/json"
     }
     
     try {
-        $result = Invoke-RestMethod -Uri "https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders" -Method POST -Headers $headers
+        $result = Invoke-RestMethod -Uri "https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders" -Method POST -Headers $headers
         Write-Host "✅ Test successful!" -ForegroundColor Green
         Write-Host "Result: $($result | ConvertTo-Json)" -ForegroundColor Cyan
     } catch {

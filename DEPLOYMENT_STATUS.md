@@ -22,7 +22,7 @@ The remote database shows this migration as applied. The following columns were 
 ### 2. Send-Reminders Edge Function
 
 **Status:** ✅ Deployed  
-**Function URL:** `https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders`
+**Function URL:** `https://your-project-id.supabase.co`
 
 Successfully deployed to Supabase Cloud. You can inspect it here:
 https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/functions
@@ -44,9 +44,9 @@ Workflow will run hourly and trigger the reminder function.
 
 **Required Setup:**
 
-1. Go to GitHub repository settings: https://github.com/iteshprajapati/spark-mentor-connect-08475-37914-35681--84739/settings/secrets/actions
+1. Go to GitHub repository settings: https://github.com/YOUR_USERNAME/YOUR_REPO/settings/secrets/actions
 2. Add new secret: `SUPABASE_ANON_KEY`
-3. Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZXZyZGxjcWhtc2Z1YmFrbGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDIzMDEsImV4cCI6MjA3NTYxODMwMX0.e4OjzNc4A6d6petuDQFW-iD6JPVqwmy5Y_KWvgXabBA`
+3. Value: `YOUR_SUPABASE_ANON_KEY`
 
 Once added, you can manually test the workflow:
 
@@ -163,7 +163,7 @@ npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=eyJxxx
 ```
 
 2. **View Function Logs:**
-   - Dashboard: https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg/functions
+   - Dashboard: https://supabase.com/dashboard/project/
    - Or check in Supabase SQL Editor:
 
 ```sql
@@ -197,8 +197,8 @@ If columns don't exist, the migration wasn't fully applied.
 
 - **Full Implementation Guide:** `ADVANCED_FEATURES_IMPLEMENTATION.md`
 - **Deployment Script:** `deploy-features.ps1`
-- **Supabase Dashboard:** https://supabase.com/dashboard/project/hnevrdlcqhmsfubakljg
-- **GitHub Repository:** https://github.com/iteshprajapati/spark-mentor-connect-08475-37914-35681--84739
+- **Supabase Dashboard:** https://supabase.com/dashboard/project/
+- **GitHub Repository:** https://github.com/iteshprajapati/
 
 ---
 

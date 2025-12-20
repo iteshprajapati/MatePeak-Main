@@ -44,7 +44,7 @@ Write-Host "# Set Supabase Service Role Key (from your Supabase project settings
 Write-Host "npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_key_here" -ForegroundColor Green
 Write-Host ""
 Write-Host "# Set Supabase URL" -ForegroundColor Gray
-Write-Host "npx supabase secrets set SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co" -ForegroundColor Green
+Write-Host "npx supabase secrets set SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co" -ForegroundColor Green
 Write-Host ""
 
 $response = Read-Host "Do you want to set secrets now? (y/n)"
@@ -63,7 +63,7 @@ if ($response -eq "y") {
     
     Write-Host ""
     Write-Host "Setting SUPABASE_URL..." -ForegroundColor White
-    npx supabase secrets set SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co
+    npx supabase secrets set SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 }
 
 # Step 4: Test Function
@@ -84,8 +84,8 @@ Write-Host ""
 Write-Host "🌐 Step 5: Test with Manual Call" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Run this command to test the function manually:" -ForegroundColor White
-Write-Host "curl -X POST https://hnevrdlcqhmsfubakljg.supabase.co/functions/v1/send-reminders \`" -ForegroundColor Green
-Write-Host "  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZXZyZGxjcWhtc2Z1YmFrbGpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNDIzMDEsImV4cCI6MjA3NTYxODMwMX0.e4OjzNc4A6d6petuDQFW-iD6JPVqwmy5Y_KWvgXabBA' \`" -ForegroundColor Green
+Write-Host "curl -X POST https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-reminders \`" -ForegroundColor Green
+Write-Host "  -H 'Authorization: Bearer YOUR_SUPABASE_ANON_KEY' \`" -ForegroundColor Green
 Write-Host "  -H 'Content-Type: application/json'" -ForegroundColor Green
 Write-Host ""
 

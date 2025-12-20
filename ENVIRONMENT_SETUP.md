@@ -65,7 +65,7 @@ Missing or invalid environment variables:
 
    ```bash
    # Located at: .env
-   VITE_SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co
+   VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
    VITE_SUPABASE_ANON_KEY=eyJhbG...
    ```
 
@@ -104,8 +104,9 @@ Missing or invalid environment variables:
 Add these environment variables in your hosting dashboard:
 
 ```
-VITE_SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key_here
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+
 ```
 
 **Vercel:**
@@ -210,10 +211,11 @@ npm run dev          # Restart server
 
 ```bash
 # ❌ Wrong
-VITE_SUPABASE_URL=hnevrdlcqhmsfubakljg
+# ❌ Wrong (missing protocol)
+VITE_SUPABASE_URL=YOUR_PROJECT_ID
 
 # ✅ Correct
-VITE_SUPABASE_URL=https://hnevrdlcqhmsfubakljg.supabase.co
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 ```
 
 ### App works in dev but fails in production
