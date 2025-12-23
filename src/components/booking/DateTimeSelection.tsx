@@ -208,6 +208,31 @@ export default function DateTimeSelection({
     }
   };
 
+  // Check if user is logged in before showing custom time request form
+  const handleShowCustomTimeRequest = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Please log in to request custom time with this mentor", {
+        description: "You need to be logged in to send custom time requests",
+      });
+      return;
+    }
+
+    // Check if user is trying to request time from themselves
+    if (user.id === mentorId) {
+      toast.error("You cannot request custom time from yourself", {
+        description:
+          "Custom time requests are for students to request sessions with mentors",
+      });
+      return;
+    }
+
+    setShowCustomTimeRequest(true);
+  };
+
   const handleCustomTimeRequest = async () => {
     if (!selectedDate) {
       toast.error("Please select a date first");
@@ -228,6 +253,12 @@ export default function DateTimeSelection({
 
       if (!user) {
         toast.error("Please sign in to request custom time");
+        return;
+      }
+
+      // Prevent mentor from requesting time from themselves
+      if (user.id === mentorId) {
+        toast.error("You cannot request custom time from yourself");
         return;
       }
 
@@ -658,7 +689,7 @@ export default function DateTimeSelection({
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => setShowCustomTimeRequest(true)}
+                    onClick={handleShowCustomTimeRequest}
                     className="border-gray-300 hover:bg-white hover:border-gray-900 rounded-xl"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />

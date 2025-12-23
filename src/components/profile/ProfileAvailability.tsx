@@ -187,7 +187,7 @@ const convertTime = (
         2,
         "0"
       )}`,
-      dateOffset,
+      dateOffset: dayOffset,
     };
   } catch (e) {
     console.error("Error converting time:", e);
@@ -568,6 +568,31 @@ export default function ProfileAvailability({
     });
   };
 
+  // Check if user is logged in before opening custom time dialog
+  const handleCustomTimeDialogOpen = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Please log in to request custom time with this mentor", {
+        description: "You need to be logged in to send custom time requests",
+      });
+      return;
+    }
+
+    // Check if user is trying to request time from themselves
+    if (user.id === mentorId) {
+      toast.error("You cannot request custom time from yourself", {
+        description:
+          "Custom time requests are for students to request sessions with mentors",
+      });
+      return;
+    }
+
+    setCustomTimeDialogOpen(true);
+  };
+
   // Handle custom time request submission
   const handleCustomTimeRequest = async () => {
     if (
@@ -613,6 +638,12 @@ export default function ProfileAvailability({
         return;
       }
 
+      // Prevent mentor from requesting time from themselves
+      if (user.id === mentorId) {
+        toast.error("You cannot request custom time from yourself");
+        return;
+      }
+
       // Create custom time request record
       const { error } = await supabase.from("booking_requests").insert({
         mentee_id: user.id,
@@ -645,6 +676,30 @@ export default function ProfileAvailability({
   };
 
   // Handle availability alert subscription
+  const handleAlertDialogOpen = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Please log in to set up availability alerts", {
+        description: "You need to be logged in to receive notifications",
+      });
+      return;
+    }
+
+    // Check if user is trying to subscribe to their own alerts
+    if (user.id === mentorId) {
+      toast.error("You cannot subscribe to alerts for your own availability", {
+        description:
+          "Availability alerts are for students to get notified when mentors add new slots",
+      });
+      return;
+    }
+
+    setAlertDialogOpen(true);
+  };
+
   const handleAlertSubscription = async () => {
     if (!alertEmail || alertDaysPreference.length === 0) {
       toast.error("Please provide email and select preferred days");
@@ -660,6 +715,12 @@ export default function ProfileAvailability({
       } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Please sign in to enable alerts");
+        return;
+      }
+
+      // Prevent mentor from subscribing to their own alerts
+      if (user.id === mentorId) {
+        toast.error("You cannot subscribe to alerts for your own availability");
         return;
       }
 
@@ -761,7 +822,7 @@ export default function ProfileAvailability({
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
                   variant="outline"
-                  onClick={() => setCustomTimeDialogOpen(true)}
+                  onClick={handleCustomTimeDialogOpen}
                   className="border-2 border-matepeak-primary text-matepeak-primary hover:bg-matepeak-primary hover:text-white"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
@@ -769,7 +830,7 @@ export default function ProfileAvailability({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setAlertDialogOpen(true)}
+                  onClick={handleAlertDialogOpen}
                   className="border-2 border-gray-400 hover:bg-gray-50"
                 >
                   <Bell className="h-4 w-4 mr-2" />
@@ -808,7 +869,7 @@ export default function ProfileAvailability({
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setCustomTimeDialogOpen(true)}
+              onClick={handleCustomTimeDialogOpen}
               className="flex items-center gap-2 text-sm font-medium text-matepeak-primary hover:text-matepeak-primary/80 transition-colors relative group"
             >
               <MessageSquare className="h-4 w-4" />
@@ -821,7 +882,7 @@ export default function ProfileAvailability({
             <div className="h-4 w-px bg-gray-300"></div>
 
             <button
-              onClick={() => setAlertDialogOpen(true)}
+              onClick={handleAlertDialogOpen}
               className={`flex items-center gap-2 text-sm font-medium transition-colors relative group ${
                 alertsEnabled
                   ? "text-green-600 hover:text-green-700"
