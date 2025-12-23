@@ -74,6 +74,7 @@ interface Service {
   name: string;
   description: string;
   price: number;
+  discount_price?: number;
   enabled: boolean;
   serviceType: string;
   hasFreeDemo?: boolean;
@@ -83,20 +84,24 @@ interface ServicePricing {
   oneOnOneSession?: {
     enabled: boolean;
     price: number;
+    discount_price?: number;
     hasFreeDemo?: boolean;
   };
   chatAdvice?: {
     enabled: boolean;
     price: number;
+    discount_price?: number;
     hasFreeDemo?: boolean;
   };
   digitalProducts?: {
     enabled: boolean;
     price: number;
+    discount_price?: number;
   };
   notes?: {
     enabled: boolean;
     price: number;
+    discount_price?: number;
   };
 }
 
@@ -185,6 +190,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
     name: "",
     description: "",
     price: 0,
+    discount_price: undefined,
     enabled: true,
     serviceType: "custom",
     hasFreeDemo: false,
@@ -225,6 +231,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           name: "1-on-1 Strategy Session",
           description: "Personalized one-on-one mentoring session",
           price: pricing.oneOnOneSession.price || 0,
+          discount_price: pricing.oneOnOneSession.discount_price,
           enabled: pricing.oneOnOneSession.enabled || false,
           serviceType: "oneOnOneSession",
           hasFreeDemo: pricing.oneOnOneSession.hasFreeDemo || false,
@@ -237,6 +244,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           name: "Chat Consultation",
           description: "Quick advice and guidance via chat",
           price: pricing.chatAdvice.price || 0,
+          discount_price: pricing.chatAdvice.discount_price,
           enabled: pricing.chatAdvice.enabled || false,
           serviceType: "chatAdvice",
           hasFreeDemo: pricing.chatAdvice.hasFreeDemo || false,
@@ -249,6 +257,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           name: "Digital Products",
           description: "Resources, templates, and guides",
           price: pricing.digitalProducts.price || 0,
+          discount_price: pricing.digitalProducts.discount_price,
           enabled: pricing.digitalProducts.enabled || false,
           serviceType: "digitalProducts",
         });
@@ -260,6 +269,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           name: "Notes & Resources",
           description: "Study materials and reference notes",
           price: pricing.notes.price || 0,
+          discount_price: pricing.notes.discount_price,
           enabled: pricing.notes.enabled || false,
           serviceType: "notes",
         });
@@ -321,6 +331,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           [service.serviceType]: {
             enabled: updatedService.enabled,
             price: updatedService.price,
+            discount_price: updatedService.discount_price,
             hasFreeDemo: updatedService.hasFreeDemo || false,
           },
         };
@@ -487,6 +498,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
         name: newService.name,
         description: newService.description,
         price: newService.price,
+        discount_price: newService.discount_price,
         enabled: newService.enabled ?? true,
         serviceType: "custom",
         hasFreeDemo: newService.hasFreeDemo ?? false,
@@ -509,6 +521,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
         name: "",
         description: "",
         price: 0,
+        discount_price: undefined,
         enabled: true,
         serviceType: "custom",
         hasFreeDemo: false,
@@ -530,6 +543,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
       name: `${service.name} (Copy)`,
       description: service.description,
       price: service.price,
+      discount_price: service.discount_price,
       enabled: false,
       serviceType: "custom",
       hasFreeDemo: service.hasFreeDemo || false,
@@ -936,6 +950,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                     name: "",
                     description: "",
                     price: 0,
+                    discount_price: undefined,
                     enabled: true,
                     serviceType: "custom",
                     hasFreeDemo: false,
@@ -976,6 +991,31 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                   placeholder="499"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-discount-price">
+                Discounted Price (₹) - Optional
+              </Label>
+              <Input
+                id="new-discount-price"
+                type="number"
+                min="0"
+                value={newService.discount_price || ""}
+                onChange={(e) =>
+                  setNewService({
+                    ...newService,
+                    discount_price: e.target.value
+                      ? parseFloat(e.target.value)
+                      : undefined,
+                  })
+                }
+                placeholder="399"
+              />
+              <p className="text-xs text-gray-500">
+                Leave empty for no discount. If set, original price will show as
+                strikethrough.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1062,6 +1102,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                     name: "",
                     description: "",
                     price: 0,
+                    discount_price: undefined,
                     enabled: true,
                     serviceType: "custom",
                     hasFreeDemo: false,
@@ -1150,6 +1191,29 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                             }
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`edit-discount-price-${service.id}`}>
+                          Discounted Price (₹) - Optional
+                        </Label>
+                        <Input
+                          id={`edit-discount-price-${service.id}`}
+                          type="number"
+                          min="0"
+                          value={editForm.discount_price || ""}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              discount_price: e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            })
+                          }
+                        />
+                        <p className="text-xs text-gray-500">
+                          Leave empty to remove discount
+                        </p>
                       </div>
 
                       <div className="space-y-2">
@@ -1281,9 +1345,20 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                             {service.description}
                           </p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-lg font-bold text-gray-900">
-                              ₹{service.price}
-                            </span>
+                            {service.discount_price ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold text-green-600">
+                                  ₹{service.discount_price}
+                                </span>
+                                <span className="text-sm font-medium text-gray-500 line-through">
+                                  ₹{service.price}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-lg font-bold text-gray-900">
+                                ₹{service.price}
+                              </span>
+                            )}
                             {/* Analytics Badges */}
                             <div className="flex items-center gap-2">
                               {service.bookingsCount !== undefined &&

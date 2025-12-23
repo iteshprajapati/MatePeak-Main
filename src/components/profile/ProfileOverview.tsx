@@ -80,6 +80,7 @@ export default function ProfileOverview({
       services.push({
         name: "1-on-1 Sessions",
         price: mentor.service_pricing.oneOnOneSession.price,
+        discount_price: mentor.service_pricing.oneOnOneSession.discount_price,
         hasFreeDemo: mentor.service_pricing.oneOnOneSession.hasFreeDemo,
         icon: Video,
       });
@@ -88,6 +89,7 @@ export default function ProfileOverview({
       services.push({
         name: "Chat Advice",
         price: mentor.service_pricing.chatAdvice.price,
+        discount_price: mentor.service_pricing.chatAdvice.discount_price,
         hasFreeDemo: mentor.service_pricing.chatAdvice.hasFreeDemo,
         icon: MessageSquare,
       });
@@ -96,6 +98,7 @@ export default function ProfileOverview({
       services.push({
         name: "Digital Products",
         price: mentor.service_pricing.digitalProducts.price,
+        discount_price: mentor.service_pricing.digitalProducts.discount_price,
         hasFreeDemo: false,
         icon: FileText,
       });
@@ -104,6 +107,7 @@ export default function ProfileOverview({
       services.push({
         name: "Notes & Resources",
         price: mentor.service_pricing.notes.price,
+        discount_price: mentor.service_pricing.notes.discount_price,
         hasFreeDemo: false,
         icon: FileText,
       });
@@ -117,6 +121,7 @@ export default function ProfileOverview({
             name: service.name,
             description: service.description,
             price: service.price,
+            discount_price: service.discount_price,
             hasFreeDemo: service.hasFreeDemo || false,
             icon: Star, // Use a default icon for custom services
           });
@@ -243,34 +248,39 @@ export default function ProfileOverview({
       {services.length > 0 && (
         <Card className="shadow-none border-0 bg-gray-50 rounded-2xl">
           <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Handshake className="h-5 w-5 text-gray-600" />
+            <div className="flex items-center gap-2 mb-6">
+              <Handshake className="h-5 w-5 text-matepeak-primary" />
               <h2 className="text-lg font-semibold text-gray-900">
                 Services & Pricing
               </h2>
             </div>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {services.map((service, index) => {
                 const ServiceIcon = service.icon;
                 return (
                   <div
                     key={index}
-                    className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+                    className="group relative bg-white rounded-xl border-2 border-gray-200 hover:border-matepeak-primary p-5 transition-all duration-300 hover:shadow-lg outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 focus-visible:ring-offset-0"
+                    style={{ outline: "none" }}
                   >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
-                      <ServiceIcon className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3 mb-1">
-                        <h3 className="font-semibold text-gray-900 text-sm">
-                          {service.name}
-                        </h3>
-                        <div className="flex items-center gap-0.5 text-lg font-bold text-gray-900 flex-shrink-0">
-                          <IndianRupee className="h-4 w-4" />
-                          <span>{service.price}</span>
-                        </div>
+                    {/* Service Icon */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-matepeak-primary/10 to-matepeak-secondary/10 flex items-center justify-center group-hover:from-matepeak-primary/20 group-hover:to-matepeak-secondary/20 transition-colors">
+                        <ServiceIcon className="h-6 w-6 text-matepeak-primary" />
                       </div>
-                      <p className="text-xs text-gray-600 mb-2">
+                      {service.hasFreeDemo && (
+                        <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 hover:text-green-700 text-xs font-medium px-2 py-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 pointer-events-none">
+                          Free Demo
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Service Info */}
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-gray-900 text-base leading-tight">
+                        {service.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
                         {service.description ||
                           (service.name === "1-on-1 Sessions" &&
                             "Live video sessions tailored to your learning pace") ||
@@ -281,13 +291,61 @@ export default function ProfileOverview({
                           (service.name === "Notes & Resources" &&
                             "Download study materials and practice exercises")}
                       </p>
-                      {service.hasFreeDemo && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Free Demo Available</span>
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      {service.discount_price ? (
+                        <div className="space-y-1">
+                          <div className="flex items-baseline gap-2">
+                            <div className="flex items-baseline gap-1">
+                              <IndianRupee className="h-5 w-5 text-green-600 mt-0.5" />
+                              <span className="text-2xl font-bold text-green-600">
+                                {service.discount_price}
+                              </span>
+                            </div>
+                            <div className="flex items-baseline gap-1 opacity-60">
+                              <IndianRupee className="h-4 w-4 text-gray-500 mt-0.5" />
+                              <span className="text-lg font-medium text-gray-500 line-through">
+                                {service.price}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {service.name === "1-on-1 Sessions"
+                              ? "/ session"
+                              : service.name === "Chat Advice"
+                              ? "/ consultation"
+                              : service.name === "Notes & Resources"
+                              ? "/ resource"
+                              : service.name === "Digital Products"
+                              ? "/ product"
+                              : ""}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <IndianRupee className="h-5 w-5 text-gray-700 mt-0.5" />
+                          <span className="text-2xl font-bold text-gray-900">
+                            {service.price}
+                          </span>
+                          <span className="text-sm text-gray-500 ml-1">
+                            {service.name === "1-on-1 Sessions"
+                              ? "/ session"
+                              : service.name === "Chat Advice"
+                              ? "/ consultation"
+                              : service.name === "Notes & Resources"
+                              ? "/ resource"
+                              : service.name === "Digital Products"
+                              ? "/ product"
+                              : ""}
+                          </span>
                         </div>
                       )}
                     </div>
+
+                    {/* Hover Effect Indicator */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-matepeak-primary to-matepeak-secondary rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                 );
               })}

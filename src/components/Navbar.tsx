@@ -36,6 +36,7 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<"student" | "mentor" | null>(null);
+  const [isExploreDropdownOpen, setIsExploreDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -284,11 +285,16 @@ const Navbar = () => {
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-1 ml-8">
-              <DropdownMenu>
+              <DropdownMenu
+                open={isExploreDropdownOpen}
+                onOpenChange={setIsExploreDropdownOpen}
+              >
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-1 h-10 px-3 rounded-lg hover:bg-transparent transition-all text-gray-700 font-medium text-sm font-poppins"
+                    className="flex items-center gap-1 h-10 px-3 rounded-lg hover:bg-transparent transition-all text-gray-700 font-medium text-sm font-poppins focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    onMouseEnter={() => setIsExploreDropdownOpen(true)}
+                    onMouseLeave={() => setIsExploreDropdownOpen(false)}
                   >
                     Explore
                     <ChevronDown className="h-4 w-4" />
@@ -297,6 +303,8 @@ const Navbar = () => {
                 <DropdownMenuContent
                   className="w-56 bg-white shadow-lg border border-gray-200 rounded-xl p-2"
                   align="start"
+                  onMouseEnter={() => setIsExploreDropdownOpen(true)}
+                  onMouseLeave={() => setIsExploreDropdownOpen(false)}
                 >
                   <DropdownMenuItem
                     onClick={() => navigate("/explore")}

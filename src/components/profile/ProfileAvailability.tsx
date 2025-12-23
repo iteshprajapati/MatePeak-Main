@@ -351,9 +351,9 @@ export default function ProfileAvailability({
   };
 
   const formatTime = (time: string, date: string = "2000-01-01") => {
-    const { time: convertedTime } = showUserTimezone
-      ? convertTime(time, date, mentorTimezone, userTimezone)
-      : { time, dateOffset: 0 };
+    const convertedTime = showUserTimezone
+      ? convertTime(time, date, mentorTimezone, userTimezone).time
+      : time;
     return new Date(`2000-01-01T${convertedTime}`).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
