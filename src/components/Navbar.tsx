@@ -294,7 +294,6 @@ const Navbar = () => {
                     variant="ghost"
                     className="flex items-center gap-1 h-10 px-3 rounded-lg hover:bg-transparent transition-all text-gray-700 font-medium text-sm font-poppins focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     onMouseEnter={() => setIsExploreDropdownOpen(true)}
-                    onMouseLeave={() => setIsExploreDropdownOpen(false)}
                   >
                     Explore
                     <ChevronDown className="h-4 w-4" />
@@ -303,7 +302,6 @@ const Navbar = () => {
                 <DropdownMenuContent
                   className="w-56 bg-white shadow-lg border border-gray-200 rounded-xl p-2"
                   align="start"
-                  onMouseEnter={() => setIsExploreDropdownOpen(true)}
                   onMouseLeave={() => setIsExploreDropdownOpen(false)}
                 >
                   <DropdownMenuItem
