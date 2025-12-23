@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface AvailabilitySlot {
   id?: string;
@@ -62,12 +63,49 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   ]);
   const [saving, setSaving] = useState(false);
 
+  // Bulk operations
+  const [bulkBlockMode, setBulkBlockMode] = useState(false);
+  const [bulkBlockStart, setBulkBlockStart] = useState<Date | null>(null);
+  const [bulkBlockEnd, setBulkBlockEnd] = useState<Date | null>(null);
+
+  // Copy functionality
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [copySourceDate, setCopySourceDate] = useState<Date | null>(null);
+  const [copyTargetDates, setCopyTargetDates] = useState<Date[]>([]);
+
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const timeSlots = Array.from({ length: 48 }, (_, i) => {
     const hour = Math.floor(i / 2);
     const minute = i % 2 === 0 ? "00" : "30";
     return `${hour.toString().padStart(2, "0")}:${minute}`;
   });
+
+  // Quick templates for common availability patterns
+  const templates = [
+    {
+      name: "9-5 Workday",
+      slots: [{ start_time: "09:00", end_time: "17:00", is_recurring: false }],
+    },
+    {
+      name: "Morning (9-12)",
+      slots: [{ start_time: "09:00", end_time: "12:00", is_recurring: false }],
+    },
+    {
+      name: "Afternoon (1-5)",
+      slots: [{ start_time: "13:00", end_time: "17:00", is_recurring: false }],
+    },
+    {
+      name: "Evening (6-9)",
+      slots: [{ start_time: "18:00", end_time: "21:00", is_recurring: false }],
+    },
+    {
+      name: "Split Day",
+      slots: [
+        { start_time: "09:00", end_time: "12:00", is_recurring: false },
+        { start_time: "14:00", end_time: "18:00", is_recurring: false },
+      ],
+    },
+  ];
 
   // Helper to get date string in local timezone (avoids UTC conversion)
   const getLocalDateString = (date: Date): string => {
@@ -151,11 +189,16 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
         return;
       }
 
-      // Prevent backward time (end before start)
-      if (newSlot.start_time >= newSlot.end_time) {
+      // Allow overnight slots (end time next day)
+      const isOvernightSlot = newSlot.start_time > newSlot.end_time;
+
+      // Only reject if they're exactly equal
+      if (newSlot.start_time === newSlot.end_time) {
         toast({
           title: "Invalid Time Range",
-          description: `End time must be after start time for slot ${i + 1}`,
+          description: `Start and end time cannot be the same for slot ${
+            i + 1
+          }`,
           variant: "destructive",
         });
         return;
@@ -194,8 +237,13 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
       // Check for very short slots (less than 15 minutes)
       const [startHours, startMins] = newSlot.start_time.split(":").map(Number);
       const [endHours, endMins] = newSlot.end_time.split(":").map(Number);
-      const durationMinutes =
+      let durationMinutes =
         endHours * 60 + endMins - (startHours * 60 + startMins);
+
+      // Handle overnight slots (add 24 hours)
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60;
+      }
       if (durationMinutes < 15) {
         toast({
           title: "Slot Too Short",
@@ -512,6 +560,135 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
     }
   };
 
+  // Bulk block dates handler
+  const handleBulkBlockDates = async () => {
+    if (!bulkBlockStart || !bulkBlockEnd) {
+      toast({
+        title: "Missing Dates",
+        description: "Please select both start and end dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (bulkBlockStart > bulkBlockEnd) {
+      toast({
+        title: "Invalid Range",
+        description: "Start date must be before end date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const datesToBlock = [];
+      const currentDate = new Date(bulkBlockStart);
+
+      while (currentDate <= bulkBlockEnd) {
+        datesToBlock.push({
+          expert_id: mentorProfile.id,
+          date: getLocalDateString(currentDate),
+          reason: "Bulk blocked by mentor",
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      const { error } = await supabase
+        .from("blocked_dates")
+        .insert(datesToBlock);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Blocked ${datesToBlock.length} dates`,
+      });
+
+      setBulkBlockMode(false);
+      setBulkBlockStart(null);
+      setBulkBlockEnd(null);
+      fetchAvailability();
+    } catch (error: any) {
+      console.error("Error bulk blocking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to block dates",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Copy availability to other dates
+  const handleCopyAvailability = async () => {
+    if (!copySourceDate || copyTargetDates.length === 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please select target dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const sourceSlots = availabilitySlots.filter(
+        (slot) => slot.specific_date === getLocalDateString(copySourceDate)
+      );
+
+      if (sourceSlots.length === 0) {
+        toast({
+          title: "No Slots",
+          description: "Source date has no availability to copy",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const slotsToInsert = copyTargetDates.flatMap((targetDate) => {
+        const targetDayOfWeek = targetDate.getDay();
+        return sourceSlots.map((slot) => ({
+          expert_id: mentorProfile.id,
+          day_of_week: targetDayOfWeek,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          is_recurring: false,
+          specific_date: getLocalDateString(targetDate),
+        }));
+      });
+
+      const { error } = await supabase
+        .from("availability_slots")
+        .insert(slotsToInsert);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Copied availability to ${copyTargetDates.length} dates`,
+      });
+
+      setShowCopyDialog(false);
+      setCopySourceDate(null);
+      setCopyTargetDates([]);
+      fetchAvailability();
+    } catch (error: any) {
+      console.error("Error copying availability:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy availability",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Apply template
+  const applyTemplate = (template: (typeof templates)[0]) => {
+    setNewSlots(template.slots.map((slot) => ({ ...slot })));
+    toast({
+      title: "Template Applied",
+      description: `${template.name} template loaded`,
+    });
+  };
+
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -604,6 +781,94 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
         </div>
       </div>
 
+      {/* Quick Actions Toolbar */}
+      <Card className="border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-sm font-semibold text-gray-700 mr-2">
+              Quick Actions:
+            </h3>
+
+            <Button
+              size="sm"
+              variant={bulkBlockMode ? "default" : "outline"}
+              onClick={() => {
+                setBulkBlockMode(!bulkBlockMode);
+                if (bulkBlockMode) {
+                  setBulkBlockStart(null);
+                  setBulkBlockEnd(null);
+                }
+              }}
+              className={
+                bulkBlockMode
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "border-red-300 text-red-700 hover:bg-red-50"
+              }
+            >
+              <CalendarIcon className="h-4 w-4 mr-1.5" />
+              {bulkBlockMode ? "Cancel Bulk Block" : "Bulk Block Dates"}
+            </Button>
+          </div>
+
+          {bulkBlockMode && (
+            <div className="mt-4 p-3 bg-white rounded-lg border border-red-200">
+              <p className="text-xs text-gray-600 mb-3">
+                Select date range to block (for vacations, holidays, etc.)
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex-1 min-w-[150px]">
+                  <Label className="text-xs mb-1">Start Date</Label>
+                  <input
+                    type="date"
+                    className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    value={
+                      bulkBlockStart ? getLocalDateString(bulkBlockStart) : ""
+                    }
+                    onChange={(e) =>
+                      setBulkBlockStart(
+                        e.target.value
+                          ? new Date(e.target.value + "T00:00:00")
+                          : null
+                      )
+                    }
+                  />
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                  <Label className="text-xs mb-1">End Date</Label>
+                  <input
+                    type="date"
+                    className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    value={bulkBlockEnd ? getLocalDateString(bulkBlockEnd) : ""}
+                    onChange={(e) =>
+                      setBulkBlockEnd(
+                        e.target.value
+                          ? new Date(e.target.value + "T00:00:00")
+                          : null
+                      )
+                    }
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleBulkBlockDates}
+                  className="bg-red-600 hover:bg-red-700 h-9"
+                  disabled={!bulkBlockStart || !bulkBlockEnd}
+                >
+                  Block{" "}
+                  {bulkBlockStart && bulkBlockEnd
+                    ? Math.ceil(
+                        (bulkBlockEnd.getTime() - bulkBlockStart.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      ) + 1
+                    : ""}{" "}
+                  Dates
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Empty State */}
       {!loading &&
         availabilitySlots.length === 0 &&
@@ -628,123 +893,125 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
           </Card>
         )}
 
-      {/* Calendar Header */}
-      <Card className="border-gray-200 max-w-2xl">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={previousMonth}
-              className="border-gray-300 h-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-base font-semibold text-gray-900">
-              {currentDate.toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextMonth}
-              className="border-gray-300 h-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {daysOfWeek.map((day) => (
-              <div
-                key={day}
-                className="text-center text-xs font-semibold text-gray-700 py-1.5"
+      {
+        /* Calendar Header */
+        <Card className="border-gray-200 max-w-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={previousMonth}
+                className="border-gray-300 h-8"
               >
-                {day.slice(0, 1)}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {loading
-              ? // Loading skeleton
-                Array.from({ length: 35 }).map((_, index) => (
-                  <div
-                    key={`skeleton-${index}`}
-                    className="aspect-square border border-gray-200 rounded-2xl bg-gray-50 animate-pulse"
-                  />
-                ))
-              : days.map((date, index) => {
-                  if (!date) {
-                    return (
-                      <div key={`empty-${index}`} className="aspect-square" />
-                    );
-                  }
-
-                  const availability = getAvailabilityForDate(date);
-                  const today = isToday(date);
-
-                  return (
-                    <div
-                      key={date.toISOString()}
-                      className={`aspect-square border rounded-2xl p-1 transition-all cursor-pointer hover:shadow-sm ${
-                        today
-                          ? "border-2 border-gray-900 bg-gray-50"
-                          : availability.blocked
-                          ? "border border-red-300 bg-red-50"
-                          : availability.slots.length > 0
-                          ? "border border-green-300 bg-green-50"
-                          : "border border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                      onClick={() => {
-                        setSelectedDate(date);
-                        // Reset slots when opening dialog
-                        setNewSlots([
-                          {
-                            start_time: "09:00",
-                            end_time: "10:00",
-                            is_recurring: false,
-                          },
-                        ]);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-xs font-semibold text-gray-900">
-                          {date.getDate()}
-                        </div>
-                        {availability.blocked ? (
-                          <div className="w-1 h-1 bg-red-500 rounded-full mt-0.5" />
-                        ) : availability.slots.length > 0 ? (
-                          <div className="w-1 h-1 bg-green-500 rounded-full mt-0.5" />
-                        ) : null}
-                      </div>
-                    </div>
-                  );
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-base font-semibold text-gray-900">
+                {currentDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
                 })}
-          </div>
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextMonth}
+                className="border-gray-300 h-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 border-2 border-gray-900 bg-gray-50 rounded" />
-              <span className="text-xs text-gray-600">Today</span>
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {daysOfWeek.map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-xs font-semibold text-gray-700 py-1.5"
+                >
+                  {day.slice(0, 1)}
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 border-2 border-green-200 bg-green-50 rounded" />
-              <span className="text-xs text-gray-600">Available</span>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {loading
+                ? // Loading skeleton
+                  Array.from({ length: 35 }).map((_, index) => (
+                    <div
+                      key={`skeleton-${index}`}
+                      className="aspect-square border border-gray-200 rounded-2xl bg-gray-50 animate-pulse"
+                    />
+                  ))
+                : days.map((date, index) => {
+                    if (!date) {
+                      return (
+                        <div key={`empty-${index}`} className="aspect-square" />
+                      );
+                    }
+
+                    const availability = getAvailabilityForDate(date);
+                    const today = isToday(date);
+
+                    return (
+                      <div
+                        key={date.toISOString()}
+                        className={`aspect-square border rounded-2xl p-1 transition-all cursor-pointer hover:shadow-sm ${
+                          today
+                            ? "border-2 border-gray-900 bg-gray-50"
+                            : availability.blocked
+                            ? "border border-red-300 bg-red-50"
+                            : availability.slots.length > 0
+                            ? "border border-green-300 bg-green-50"
+                            : "border border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                        onClick={() => {
+                          setSelectedDate(date);
+                          // Reset slots when opening dialog
+                          setNewSlots([
+                            {
+                              start_time: "09:00",
+                              end_time: "10:00",
+                              is_recurring: false,
+                            },
+                          ]);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <div className="text-xs font-semibold text-gray-900">
+                            {date.getDate()}
+                          </div>
+                          {availability.blocked ? (
+                            <div className="w-1 h-1 bg-red-500 rounded-full mt-0.5" />
+                          ) : availability.slots.length > 0 ? (
+                            <div className="w-1 h-1 bg-green-500 rounded-full mt-0.5" />
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 border-2 border-red-200 bg-red-50 rounded" />
-              <span className="text-xs text-gray-600">Blocked</span>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 border-2 border-gray-900 bg-gray-50 rounded" />
+                <span className="text-xs text-gray-600">Today</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 border-2 border-green-200 bg-green-50 rounded" />
+                <span className="text-xs text-gray-600">Available</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 border-2 border-red-200 bg-red-50 rounded" />
+                <span className="text-xs text-gray-600">Blocked</span>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      }
 
       {/* Add Slot Dialog */}
       <Dialog
@@ -789,9 +1056,16 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                           >
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-green-600" />
-                              <span className="text-sm text-gray-900">
-                                {slot.start_time} - {slot.end_time}
-                              </span>
+                              <div className="text-sm text-gray-900">
+                                <span>
+                                  {slot.start_time} - {slot.end_time}
+                                </span>
+                                {slot.start_time > slot.end_time && (
+                                  <span className="block text-xs text-orange-600 mt-0.5">
+                                    ↳ Ends next day
+                                  </span>
+                                )}
+                              </div>
                               {slot.is_recurring && (
                                 <Badge
                                   variant="outline"
@@ -814,20 +1088,85 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                       </div>
                     )}
 
+                    {/* Visual Timeline */}
+                    {availability.slots.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-medium text-gray-600 mb-2">
+                          Daily Timeline
+                        </h4>
+                        <div className="relative h-12 bg-gray-100 rounded-lg overflow-hidden">
+                          {/* Hour markers */}
+                          <div className="absolute inset-0 flex">
+                            {Array.from({ length: 24 }).map((_, hour) => (
+                              <div
+                                key={hour}
+                                className="flex-1 border-r border-gray-200 relative"
+                                style={{ minWidth: "0" }}
+                              >
+                                {hour % 3 === 0 && (
+                                  <span className="absolute -bottom-5 left-0 text-[10px] text-gray-500">
+                                    {hour}:00
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Slot blocks */}
+                          {availability.slots.map((slot, idx) => {
+                            const [startH, startM] = slot.start_time
+                              .split(":")
+                              .map(Number);
+                            const [endH, endM] = slot.end_time
+                              .split(":")
+                              .map(Number);
+
+                            const startPercent =
+                              ((startH * 60 + startM) / (24 * 60)) * 100;
+                            let endPercent =
+                              ((endH * 60 + endM) / (24 * 60)) * 100;
+
+                            // Handle overnight slots
+                            if (endPercent <= startPercent) {
+                              endPercent = 100;
+                            }
+
+                            const width = endPercent - startPercent;
+
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute top-1 bottom-1 bg-green-500 rounded opacity-80 hover:opacity-100 transition-opacity"
+                                style={{
+                                  left: `${startPercent}%`,
+                                  width: `${width}%`,
+                                }}
+                                title={`${slot.start_time} - ${slot.end_time}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="h-4" />
+                      </div>
+                    )}
+
                     {/* Block/Unblock Date */}
-                    <Button
-                      variant="outline"
-                      onClick={() => handleBlockDate(selectedDate)}
-                      className={`w-full ${
-                        availability.blocked
-                          ? "border-green-300 text-green-700 hover:bg-green-50"
-                          : "border-red-300 text-red-700 hover:bg-red-50"
-                      }`}
-                    >
-                      {availability.blocked
-                        ? "Unblock This Date"
-                        : "Block This Date"}
-                    </Button>
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBlockDate(selectedDate)}
+                        className={`h-9 text-sm px-6 ${
+                          availability.blocked
+                            ? "border-green-300 text-green-700 hover:bg-green-50"
+                            : "border-red-300 text-red-700 hover:bg-red-50"
+                        }`}
+                      >
+                        {availability.blocked
+                          ? "Unblock This Date"
+                          : "Block This Date"}
+                      </Button>
+                    </div>
                   </>
                 );
               })()}
@@ -843,6 +1182,48 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     New slots will be suggested based on previous slot times
                   </p>
                 )}
+              </div>
+
+              {/* Quick Templates & Copy */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Label className="text-xs text-gray-600 w-full mb-1">
+                    Quick Templates:
+                  </Label>
+                  {templates.map((template, idx) => (
+                    <Button
+                      key={idx}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyTemplate(template)}
+                      className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      {template.name}
+                    </Button>
+                  ))}
+                </div>
+
+                {selectedDate &&
+                  getAvailabilityForDate(selectedDate).slots.length > 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                      <CalendarIcon className="h-4 w-4 text-indigo-600" />
+                      <span className="text-xs text-indigo-900 flex-1">
+                        This date has existing availability
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setCopySourceDate(selectedDate);
+                          setShowCopyDialog(true);
+                          setDialogOpen(false);
+                        }}
+                        className="h-7 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-100"
+                      >
+                        Copy to Other Dates
+                      </Button>
+                    </div>
+                  )}
               </div>
 
               {/* Multiple Slot Fields in Responsive Grid */}
@@ -873,87 +1254,71 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     {/* Start Time */}
                     <div className="space-y-2">
                       <Label>Start Time</Label>
-                      <Select
-                        value={slot.start_time}
-                        onValueChange={(value) =>
+                      <TimePicker
+                        value={slot.start_time || "09:00"}
+                        onChange={(value) =>
                           handleUpdateSlotField(index, "start_time", value)
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                          {timeSlots
-                            .filter((time) => {
-                              // If today, only allow future times
-                              if (
-                                selectedDate &&
-                                getLocalDateString(selectedDate) ===
-                                  getLocalDateString(new Date())
-                              ) {
-                                const [h, m] = time.split(":").map(Number);
+                        minTime={
+                          selectedDate &&
+                          getLocalDateString(selectedDate) ===
+                            getLocalDateString(new Date())
+                            ? (() => {
                                 const now = new Date();
-                                const nowMinutes =
-                                  now.getHours() * 60 + now.getMinutes();
-                                const slotMinutes = h * 60 + m;
-                                return slotMinutes >= nowMinutes;
-                              }
-                              return true;
-                            })
-                            .map((time) => (
-                              <SelectItem key={time} value={time}>
-                                {time}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                                return `${now
+                                  .getHours()
+                                  .toString()
+                                  .padStart(2, "0")}:${now
+                                  .getMinutes()
+                                  .toString()
+                                  .padStart(2, "0")}`;
+                              })()
+                            : undefined
+                        }
+                      />
                     </div>
                     {/* End Time */}
                     <div className="space-y-2">
                       <Label>End Time</Label>
-                      <Select
-                        value={slot.end_time}
-                        onValueChange={(value) =>
+                      <TimePicker
+                        value={slot.end_time || "10:00"}
+                        onChange={(value) =>
                           handleUpdateSlotField(index, "end_time", value)
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                          {timeSlots
-                            .filter((time) => {
-                              // Only allow end times after start time
-                              if (slot.start_time && time > slot.start_time) {
-                                // If today, only allow future times
-                                if (
-                                  selectedDate &&
-                                  getLocalDateString(selectedDate) ===
-                                    getLocalDateString(new Date())
-                                ) {
-                                  const [h, m] = time.split(":").map(Number);
-                                  const now = new Date();
-                                  const nowMinutes =
-                                    now.getHours() * 60 + now.getMinutes();
-                                  const slotMinutes = h * 60 + m;
-                                  return slotMinutes > nowMinutes;
+                        minTime={
+                          slot.start_time
+                            ? (() => {
+                                const [h, m] = slot.start_time
+                                  .split(":")
+                                  .map(Number);
+                                let newM = m + 1;
+                                let newH = h;
+                                if (newM >= 60) {
+                                  newM = 0;
+                                  newH = (h + 1) % 24;
                                 }
-                                return true;
-                              }
-                              return false;
-                            })
-                            .map((time) => (
-                              <SelectItem key={time} value={time}>
-                                {time}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                                return `${newH
+                                  .toString()
+                                  .padStart(2, "0")}:${newM
+                                  .toString()
+                                  .padStart(2, "0")}`;
+                              })()
+                            : undefined
+                        }
+                      />
                       {slot.start_time &&
                         slot.end_time &&
-                        slot.start_time >= slot.end_time && (
+                        slot.start_time > slot.end_time && (
+                          <p className="text-xs text-orange-600 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>This slot will end the next day</span>
+                          </p>
+                        )}
+                      {slot.start_time &&
+                        slot.end_time &&
+                        slot.start_time === slot.end_time && (
                           <p className="text-xs text-red-600">
-                            End time must be after start time
+                            Start and end time cannot be the same
                           </p>
                         )}
                     </div>
@@ -967,86 +1332,184 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                   size="sm"
                   variant="outline"
                   onClick={handleAddNewSlotField}
-                  className="h-8 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
+                  className="h-7 text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
                 >
                   <Plus className="h-3 w-3 mr-1" />
                   Add Another Slot
                 </Button>
               </div>
 
-              {/* Recurring - Applies to all slots */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div>
-                  <Label className="text-sm font-medium">
-                    Repeat weekly on this day
-                  </Label>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Applies to all slots above
-                  </p>
-                </div>
-                <Switch
-                  checked={newSlots[0].is_recurring}
-                  onCheckedChange={(checked) => {
-                    setNewSlots(
-                      newSlots.map((slot) => ({
-                        ...slot,
-                        is_recurring: checked,
-                      }))
-                    );
-                  }}
-                />
-              </div>
-
               {/* Add Button */}
-              <Button
-                onClick={() => {
-                  console.log("Main Add Slots button clicked");
-                  handleAddSlot();
-                }}
-                disabled={saving}
-                className="w-full bg-gray-900 hover:bg-gray-800"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Add {newSlots.length} Slot{newSlots.length > 1 ? "s" : ""}
-                    {(() => {
-                      // Calculate total duration for display
-                      const totalMinutes = newSlots.reduce((total, slot) => {
-                        if (slot.start_time && slot.end_time) {
-                          const [startHours, startMins] = slot.start_time
-                            .split(":")
-                            .map(Number);
-                          const [endHours, endMins] = slot.end_time
-                            .split(":")
-                            .map(Number);
-                          return (
-                            total +
-                            (endHours * 60 +
-                              endMins -
-                              (startHours * 60 + startMins))
-                          );
-                        }
-                        return total;
-                      }, 0);
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => {
+                    console.log("Main Add Slots button clicked");
+                    handleAddSlot();
+                  }}
+                  disabled={saving}
+                  className="bg-gray-900 hover:bg-gray-800 px-6"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Add {newSlots.length} Slot{newSlots.length > 1 ? "s" : ""}
+                      {(() => {
+                        // Calculate total duration for display
+                        const totalMinutes = newSlots.reduce((total, slot) => {
+                          if (slot.start_time && slot.end_time) {
+                            const [startHours, startMins] = slot.start_time
+                              .split(":")
+                              .map(Number);
+                            const [endHours, endMins] = slot.end_time
+                              .split(":")
+                              .map(Number);
+                            return (
+                              total +
+                              (endHours * 60 +
+                                endMins -
+                                (startHours * 60 + startMins))
+                            );
+                          }
+                          return total;
+                        }, 0);
 
-                      if (totalMinutes > 0) {
-                        const hours = Math.floor(totalMinutes / 60);
-                        const mins = totalMinutes % 60;
-                        let durationText = "";
-                        if (hours > 0) durationText += `${hours}h `;
-                        if (mins > 0) durationText += `${mins}m`;
-                        return durationText ? ` (${durationText.trim()})` : "";
-                      }
-                      return "";
-                    })()}
-                  </>
-                )}
+                        if (totalMinutes > 0) {
+                          const hours = Math.floor(totalMinutes / 60);
+                          const mins = totalMinutes % 60;
+                          let durationText = "";
+                          if (hours > 0) durationText += `${hours}h `;
+                          if (mins > 0) durationText += `${mins}m`;
+                          return durationText
+                            ? ` (${durationText.trim()})`
+                            : "";
+                        }
+                        return "";
+                      })()}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy Availability Dialog */}
+      <Dialog open={showCopyDialog} onOpenChange={setShowCopyDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Copy Availability to Other Dates</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900">
+                <strong>Source:</strong>{" "}
+                {copySourceDate?.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+              {copySourceDate && (
+                <div className="mt-2 space-y-1">
+                  {availabilitySlots
+                    .filter(
+                      (s) =>
+                        s.specific_date === getLocalDateString(copySourceDate)
+                    )
+                    .map((slot, idx) => (
+                      <div
+                        key={idx}
+                        className="text-xs text-blue-700 flex items-center gap-2"
+                      >
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {slot.start_time} - {slot.end_time}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-sm mb-2">
+                Select Target Dates (click multiple dates)
+              </Label>
+              <div className="mt-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((date, index) => {
+                    if (!date) return <div key={`empty-${index}`} />;
+
+                    const isSelected = copyTargetDates.some(
+                      (d) => getLocalDateString(d) === getLocalDateString(date)
+                    );
+                    const isSource =
+                      copySourceDate &&
+                      getLocalDateString(date) ===
+                        getLocalDateString(copySourceDate);
+
+                    return (
+                      <button
+                        key={date.toISOString()}
+                        onClick={() => {
+                          if (isSource) return;
+
+                          if (isSelected) {
+                            setCopyTargetDates((prev) =>
+                              prev.filter(
+                                (d) =>
+                                  getLocalDateString(d) !==
+                                  getLocalDateString(date)
+                              )
+                            );
+                          } else {
+                            setCopyTargetDates((prev) => [...prev, date]);
+                          }
+                        }}
+                        disabled={isSource}
+                        className={`aspect-square p-1 rounded text-xs font-medium transition-all ${
+                          isSource
+                            ? "bg-blue-100 text-blue-600 cursor-not-allowed"
+                            : isSelected
+                            ? "bg-green-500 text-white hover:bg-green-600"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {copyTargetDates.length} date(s) selected
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCopyDialog(false);
+                  setCopyTargetDates([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCopyAvailability}
+                disabled={copyTargetDates.length === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Copy to {copyTargetDates.length} Date
+                {copyTargetDates.length !== 1 ? "s" : ""}
               </Button>
             </div>
           </div>

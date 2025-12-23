@@ -130,7 +130,10 @@ export default function ProfileHeader({
       .slice(0, 2);
   };
 
-  const memberSince = new Date(mentor.created_at).getFullYear();
+  const memberSince = new Date(mentor.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 
   // Map categories to their icons
   const categoryIcons: Record<string, any> = {
