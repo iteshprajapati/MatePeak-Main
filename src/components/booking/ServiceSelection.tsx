@@ -258,30 +258,7 @@ export default function ServiceSelection({
                 {/* Duration & Type Info */}
                 <div className="bg-white rounded-xl p-3.5 space-y-3 shadow-sm">
                   {/* Duration Selection (for 1:1 sessions) */}
-                  {config.durations.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Clock className="w-4 h-4 flex-shrink-0 text-gray-600" />
-                      <div className="flex gap-2 flex-1">
-                        {config.durations.map((duration) => (
-                          <button
-                            key={duration}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDurationSelect(serviceKey, duration);
-                            }}
-                            className={cn(
-                              "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
-                              selectedDuration === duration
-                                ? "bg-gray-900 text-white shadow-sm"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            )}
-                          >
-                            {duration} mins
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* ...removed duration selection UI... */}
 
                   {/* Service Type Indicator */}
                   <div className="flex items-center gap-2 text-sm text-gray-700">

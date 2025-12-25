@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
@@ -39,9 +38,18 @@ const BookingForm = ({ mentorId, mentorName, onSubmit }: BookingFormProps) => {
   const [contactInfo, setContactInfo] = useState("");
 
   const timeSlots = [
-    "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-    "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM",
-    "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM",
+    "09:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "01:00 PM",
+    "02:00 PM",
+    "03:00 PM",
+    "04:00 PM",
+    "05:00 PM",
+    "06:00 PM",
+    "07:00 PM",
+    "08:00 PM",
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,8 +67,12 @@ const BookingForm = ({ mentorId, mentorName, onSubmit }: BookingFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-mentor-light/30 p-4 rounded-lg mb-6">
-        <h3 className="font-medium text-gray-800">Booking a Session with {mentorName}</h3>
-        <p className="text-sm text-gray-600 mt-1">Complete the form below to request a mentoring session</p>
+        <h3 className="font-medium text-gray-800">
+          Booking a Session with {mentorName}
+        </h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Complete the form below to request a mentoring session
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -93,7 +105,6 @@ const BookingForm = ({ mentorId, mentorName, onSubmit }: BookingFormProps) => {
               </Popover>
             </div>
           </div>
-
           <div>
             <Label htmlFor="time">Select Time</Label>
             <div className="grid grid-cols-3 gap-2 mt-1">
@@ -116,28 +127,7 @@ const BookingForm = ({ mentorId, mentorName, onSubmit }: BookingFormProps) => {
               ))}
             </div>
           </div>
-
-          <div>
-            <Label htmlFor="duration">Session Duration</Label>
-            <RadioGroup
-              value={duration.toString()}
-              onValueChange={(val) => setDuration(parseInt(val))}
-              className="flex space-x-2 mt-1"
-            >
-              <div className="flex items-center space-x-1">
-                <RadioGroupItem value="30" id="duration-30" />
-                <Label htmlFor="duration-30" className="text-sm">30 min</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <RadioGroupItem value="60" id="duration-60" />
-                <Label htmlFor="duration-60" className="text-sm">60 min</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <RadioGroupItem value="90" id="duration-90" />
-                <Label htmlFor="duration-90" className="text-sm">90 min</Label>
-              </div>
-            </RadioGroup>
-          </div>
+          // ...removed session duration selection UI...
         </div>
 
         <div className="space-y-4">

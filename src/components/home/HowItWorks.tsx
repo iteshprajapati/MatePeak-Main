@@ -383,19 +383,14 @@ const HowItWorks = ({
               <div
                 className={`absolute ${
                   index % 2 === 0 ? "left-0 md:-left-8" : "right-0 md:-right-8"
-                } text-[140px] md:text-[200px] font-black leading-none pointer-events-none select-none z-0 transition-all duration-700 ${
+                } text-[120px] md:text-[180px] font-black leading-none pointer-events-none select-none z-0 transition-all duration-700 ${
                   activeStep === index
-                    ? "opacity-[0.06] scale-100"
-                    : "opacity-[0.03] scale-95"
-                }`}
+                    ? "opacity-20 scale-100"
+                    : "opacity-10 scale-95"
+                } text-gray-400`}
                 style={{
                   top: "50%",
                   transform: "translateY(-50%)",
-                  background:
-                    "linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
                 }}
               >
                 {step.number}
