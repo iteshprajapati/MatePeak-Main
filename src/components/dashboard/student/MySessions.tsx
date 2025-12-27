@@ -15,8 +15,10 @@ import {
   RotateCcw,
   X,
   Download,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
+import ReviewSubmissionDialog from "@/components/reviews/ReviewSubmissionDialog";
 
 interface MySessionsProps {
   studentProfile: any;
@@ -28,6 +30,11 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [sessionsWithReviews, setSessionsWithReviews] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     fetchSessions();
@@ -64,6 +71,18 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
 
       if (error) throw error;
       setSessions(data || []);
+
+      // Fetch which sessions have reviews
+      if (data && data.length > 0) {
+        const { data: reviews } = await supabase
+          .from("reviews")
+          .select("booking_id")
+          .eq("user_id", user.id);
+
+        if (reviews) {
+          setSessionsWithReviews(new Set(reviews.map((r) => r.booking_id)));
+        }
+      }
     } catch (error: any) {
       console.error("Error fetching sessions:", error);
       toast.error("Failed to load sessions");
@@ -80,16 +99,23 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
     switch (activeTab) {
       case "upcoming":
         filtered = filtered.filter(
-          (s) => new Date(s.session_date) > now && s.status !== "cancelled"
+          (s) =>
+            new Date(s.session_date) > now &&
+            getEffectiveStatus(s) !== "cancelled" &&
+            getEffectiveStatus(s) !== "completed"
         );
         break;
       case "past":
         filtered = filtered.filter(
-          (s) => new Date(s.session_date) <= now || s.status === "completed"
+          (s) =>
+            new Date(s.session_date) <= now ||
+            getEffectiveStatus(s) === "completed"
         );
         break;
       case "cancelled":
-        filtered = filtered.filter((s) => s.status === "cancelled");
+        filtered = filtered.filter(
+          (s) => getEffectiveStatus(s) === "cancelled"
+        );
         break;
       // 'all' shows everything
     }
@@ -128,6 +154,22 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
       minute: "2-digit",
       hour12: true,
     });
+  };
+
+  // Helper function to get effective status (treat past confirmed sessions as completed)
+  const getEffectiveStatus = (session: any): string => {
+    if (session.status === "confirmed") {
+      try {
+        const sessionDate = new Date(session.session_date);
+        const now = new Date();
+        if (sessionDate < now) {
+          return "completed";
+        }
+      } catch {
+        // If date parsing fails, keep original status
+      }
+    }
+    return session.status || "pending";
   };
 
   const getStatusColor = (status: string) => {
@@ -244,7 +286,8 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
               sessions.filter(
                 (s) =>
                   new Date(s.session_date) > new Date() &&
-                  s.status !== "cancelled"
+                  getEffectiveStatus(s) !== "cancelled" &&
+                  getEffectiveStatus(s) !== "completed"
               ).length
             }
             )
@@ -255,13 +298,17 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
               sessions.filter(
                 (s) =>
                   new Date(s.session_date) <= new Date() ||
-                  s.status === "completed"
+                  getEffectiveStatus(s) === "completed"
               ).length
             }
             )
           </TabsTrigger>
           <TabsTrigger value="cancelled">
-            Cancelled ({sessions.filter((s) => s.status === "cancelled").length}
+            Cancelled (
+            {
+              sessions.filter((s) => getEffectiveStatus(s) === "cancelled")
+                .length
+            }
             )
           </TabsTrigger>
           <TabsTrigger value="all">All ({sessions.length})</TabsTrigger>
@@ -284,90 +331,112 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
             </Card>
           ) : (
             <div className="space-y-4">
-              {filteredSessions.map((session) => (
-                <Card
-                  key={session.id}
-                  className="hover:shadow-md transition-shadow"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      {/* Mentor Avatar */}
-                      <div className="h-16 w-16 rounded-full bg-gray-300 flex-shrink-0 overflow-hidden">
-                        {session.expert_profiles?.profile_picture_url ? (
-                          <img
-                            src={session.expert_profiles.profile_picture_url}
-                            alt={session.expert_profiles.full_name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center bg-blue-600 text-white text-xl font-bold">
-                            {session.expert_profiles?.full_name?.charAt(0) ||
-                              "M"}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Session Details */}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg text-gray-900">
-                              {session.expert_profiles?.full_name || "Mentor"}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {session.expert_profiles?.expertise?.join(", ") ||
-                                "Expert"}
-                            </p>
-                          </div>
-                          <Badge className={getStatusColor(session.status)}>
-                            {session.status}
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-700">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(session.session_date)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {formatTime(session.session_date)} •{" "}
-                              {session.duration || 60} min
-                            </span>
-                          </div>
-                          {session.total_price && (
-                            <div className="font-medium text-blue-600">
-                              ${session.total_price}
+              {filteredSessions.map((session) => {
+                const effectiveStatus = getEffectiveStatus(session);
+                return (
+                  <Card
+                    key={session.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {/* Mentor Avatar */}
+                        <div className="h-16 w-16 rounded-full bg-gray-300 flex-shrink-0 overflow-hidden">
+                          {session.expert_profiles?.profile_picture_url ? (
+                            <img
+                              src={session.expert_profiles.profile_picture_url}
+                              alt={session.expert_profiles.full_name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-blue-600 text-white text-xl font-bold">
+                              {session.expert_profiles?.full_name?.charAt(0) ||
+                                "M"}
                             </div>
                           )}
                         </div>
 
-                        {session.message && (
-                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                            "{session.message}"
-                          </p>
-                        )}
+                        {/* Session Details */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {session.expert_profiles?.full_name || "Mentor"}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {session.expert_profiles?.expertise?.join(
+                                  ", "
+                                ) || "Expert"}
+                              </p>
+                            </div>
+                            <Badge className={getStatusColor(effectiveStatus)}>
+                              {effectiveStatus}
+                            </Badge>
+                          </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {session.status === "confirmed" &&
-                            new Date(session.session_date) > new Date() && (
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(session.session_date)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>
+                                {formatTime(session.session_date)} •{" "}
+                                {session.duration || 60} min
+                              </span>
+                            </div>
+                            {session.total_price && (
+                              <div className="font-medium text-blue-600">
+                                ${session.total_price}
+                              </div>
+                            )}
+                          </div>
+
+                          {session.message && (
+                            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                              "{session.message}"
+                            </p>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {effectiveStatus === "confirmed" &&
+                              new Date(session.session_date) > new Date() && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="flex items-center gap-1"
+                                  >
+                                    <Video className="h-4 w-4" />
+                                    Join Session
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex items-center gap-1"
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                    Message
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleCancelSession(session.id)
+                                    }
+                                    className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                                  >
+                                    <X className="h-4 w-4" />
+                                    Cancel
+                                  </Button>
+                                </>
+                              )}
+
+                            {effectiveStatus === "pending" && (
                               <>
-                                <Button
-                                  size="sm"
-                                  className="flex items-center gap-1"
-                                >
-                                  <Video className="h-4 w-4" />
-                                  Join Session
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="flex items-center gap-1"
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                  Message
+                                <Button size="sm" variant="outline">
+                                  Awaiting Confirmation
                                 </Button>
                                 <Button
                                   size="sm"
@@ -375,58 +444,68 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
                                   onClick={() =>
                                     handleCancelSession(session.id)
                                   }
-                                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                                  className="text-red-600 hover:text-red-700"
                                 >
-                                  <X className="h-4 w-4" />
-                                  Cancel
+                                  Cancel Request
                                 </Button>
                               </>
                             )}
 
-                          {session.status === "pending" && (
-                            <>
-                              <Button size="sm" variant="outline">
-                                Awaiting Confirmation
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCancelSession(session.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                Cancel Request
-                              </Button>
-                            </>
-                          )}
-
-                          {session.status === "completed" && (
-                            <>
-                              <Button size="sm" variant="outline">
-                                Write Review
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                Book Again
-                              </Button>
-                            </>
-                          )}
-
-                          {session.status === "cancelled" &&
-                            new Date(session.session_date) > new Date() && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex items-center gap-1"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                                Rebook
-                              </Button>
+                            {effectiveStatus === "completed" && (
+                              <>
+                                {!sessionsWithReviews.has(session.id) ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedSession({
+                                        id: session.id,
+                                        expert_id: session.expert_id,
+                                        session_type: session.session_type,
+                                        scheduled_date: session.session_date,
+                                        scheduled_time: formatTime(
+                                          session.session_date
+                                        ),
+                                        mentor_name:
+                                          session.expert_profiles?.full_name,
+                                      });
+                                      setReviewDialogOpen(true);
+                                    }}
+                                    className="flex items-center gap-1"
+                                  >
+                                    <Star className="h-4 w-4" />
+                                    Write Review
+                                  </Button>
+                                ) : (
+                                  <Button size="sm" variant="outline" disabled>
+                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                    Reviewed
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline">
+                                  Book Again
+                                </Button>
+                              </>
                             )}
+
+                            {effectiveStatus === "cancelled" &&
+                              new Date(session.session_date) > new Date() && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex items-center gap-1"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                  Rebook
+                                </Button>
+                              )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -449,6 +528,19 @@ export default function MySessions({ studentProfile }: MySessionsProps) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Review Submission Dialog */}
+      {selectedSession && (
+        <ReviewSubmissionDialog
+          open={reviewDialogOpen}
+          onOpenChange={setReviewDialogOpen}
+          booking={selectedSession}
+          onSuccess={() => {
+            fetchSessions(); // Refresh to update review status
+            toast.success("Thank you for your feedback!");
+          }}
+        />
       )}
     </div>
   );

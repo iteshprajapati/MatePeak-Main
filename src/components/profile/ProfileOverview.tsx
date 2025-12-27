@@ -270,8 +270,7 @@ export default function ProfileOverview({
                 return (
                   <div
                     key={index}
-                    className="group relative bg-white rounded-xl border-2 border-gray-200 hover:border-matepeak-primary p-5 transition-all duration-300 hover:shadow-lg outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 focus-visible:ring-offset-0"
-                    style={{ outline: "none" }}
+                    className="group relative bg-white rounded-xl border-2 border-gray-200 hover:border-matepeak-primary p-5 transition-all duration-300 hover:shadow-lg"
                   >
                     {/* Service Icon */}
                     <div className="flex items-start justify-between mb-3">

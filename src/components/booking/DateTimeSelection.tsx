@@ -49,6 +49,11 @@ export default function DateTimeSelection({
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
 
   // Cache for time slot results to avoid redundant API calls
+  // Note: Cache automatically reflects booking changes because:
+  // - Only CONFIRMED bookings block slots
+  // - When a booking is confirmed, the slot becomes unavailable
+  // - When a booking is cancelled, the slot becomes available again
+  // - Cache is cleared when component remounts or date changes
   const [slotCache, setSlotCache] = useState<Map<string, TimeSlot[]>>(
     new Map()
   );

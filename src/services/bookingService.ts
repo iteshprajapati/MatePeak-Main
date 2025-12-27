@@ -2,6 +2,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateMeetingLink } from "./meetingService";
 import { enforceRateLimit } from "@/services/rateLimitService";
 
+/**
+ * BOOKING SLOT AVAILABILITY SYSTEM
+ *
+ * How it works:
+ * 1. When a user CONFIRMS a booking, that time slot is blocked for other users
+ * 2. Only CONFIRMED bookings block availability slots
+ * 3. When a booking is CANCELLED before the session:
+ *    - The time slot immediately becomes available again (if still valid/future)
+ *    - Other users can book that slot
+ * 4. Pending bookings DO NOT block slots
+ * 5. Declined bookings DO NOT block slots
+ *
+ * This ensures:
+ * - No double-booking of confirmed sessions
+ * - Cancelled slots are automatically recycled
+ * - Users always see up-to-date availability
+ */
+
 export interface CreateBookingData {
   expert_id: string;
   session_type: string;
@@ -328,6 +346,7 @@ function sanitizeInput(input: string): string {
 
 /**
  * Helper: Check for booking conflicts
+ * Only confirmed bookings create conflicts - pending, cancelled, or declined don't block slots
  */
 async function checkBookingConflict(
   expertId: string,
@@ -341,7 +360,7 @@ async function checkBookingConflict(
       .select("scheduled_time, duration")
       .eq("expert_id", expertId)
       .eq("scheduled_date", date)
-      .in("status", ["pending", "confirmed"]);
+      .eq("status", "confirmed"); // Only confirmed bookings block slots
 
     if (error) {
       return { success: false, error: "Failed to check availability" };
@@ -435,6 +454,7 @@ export async function getMentorAvailability(
 
 /**
  * Get booked time slots for a mentor on a specific date
+ * Only includes confirmed bookings - cancelled and declined bookings free up the slot
  */
 export async function getBookedSlots(mentorId: string, date: string) {
   try {
@@ -443,7 +463,7 @@ export async function getBookedSlots(mentorId: string, date: string) {
       .select("scheduled_time, duration")
       .eq("expert_id", mentorId)
       .eq("scheduled_date", date)
-      .in("status", ["pending", "confirmed"]);
+      .eq("status", "confirmed"); // Only confirmed bookings block slots
 
     if (error) throw error;
 
@@ -464,6 +484,13 @@ export async function getBookedSlots(mentorId: string, date: string) {
 /**
  * Generate available time slots for a specific date
  * Takes into account mentor's availability and existing bookings
+ *
+ * SLOT AVAILABILITY RULES:
+ * - Only CONFIRMED bookings block time slots
+ * - Pending bookings DO NOT block slots (can be overbooked until confirmed)
+ * - Cancelled bookings immediately free up the slot
+ * - Declined bookings free up the slot
+ * - Past time slots (if date is today) are automatically filtered out
  */
 export async function getAvailableTimeSlots(
   mentorId: string,

@@ -515,9 +515,21 @@ const DashboardOverview = ({
           </div>
           <CardContent className="p-5">
             {loading ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50"
+                  >
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      <Skeleton className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <Skeleton className="h-[14px] w-32" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                    <Skeleton className="h-[26px] w-20 rounded-md" />
+                  </div>
                 ))}
               </div>
             ) : upcomingSessions.length > 0 ? (
@@ -584,9 +596,18 @@ const DashboardOverview = ({
           </div>
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-6 space-y-3">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
+              <div className="divide-y divide-gray-100">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <Skeleton className="h-[14px] w-40" />
+                        <Skeleton className="h-3 w-56" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : timeRequests.length === 0 ? (
               <div className="p-8 text-center">

@@ -550,6 +550,7 @@ export default function BookingDialog({
 
           {step === 2 && selectedService && (
             <DateTimeSelection
+              key={`datetime-${step}`} // Force remount to clear cache and fetch fresh availability
               selectedService={selectedService}
               mentorId={mentorId}
               timezone={timezone}

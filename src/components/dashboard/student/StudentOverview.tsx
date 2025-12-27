@@ -41,6 +41,22 @@ export default function StudentOverview({
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Helper function to get effective status (treat past confirmed sessions as completed)
+  const getEffectiveStatus = (session: any): string => {
+    if (session.status === "confirmed") {
+      try {
+        const sessionDate = new Date(session.session_date);
+        const now = new Date();
+        if (sessionDate < now) {
+          return "completed";
+        }
+      } catch {
+        // If date parsing fails, keep original status
+      }
+    }
+    return session.status || "pending";
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -81,9 +97,14 @@ export default function StudentOverview({
       const bookingsList = bookings || [];
       const now = new Date();
       const upcoming = bookingsList.filter(
-        (b) => new Date(b.session_date) > now && b.status !== "cancelled"
+        (b) =>
+          new Date(b.session_date) > now &&
+          getEffectiveStatus(b) !== "cancelled" &&
+          getEffectiveStatus(b) !== "completed"
       );
-      const completed = bookingsList.filter((b) => b.status === "completed");
+      const completed = bookingsList.filter(
+        (b) => getEffectiveStatus(b) === "completed"
+      );
 
       // Calculate stats
       const uniqueMentors = new Set(bookingsList.map((b) => b.expert_id)).size;
@@ -339,10 +360,12 @@ export default function StudentOverview({
                   </div>
                   <Badge
                     variant={
-                      session.status === "confirmed" ? "default" : "secondary"
+                      getEffectiveStatus(session) === "confirmed"
+                        ? "default"
+                        : "secondary"
                     }
                   >
-                    {session.status}
+                    {getEffectiveStatus(session)}
                   </Badge>
                 </div>
               ))}

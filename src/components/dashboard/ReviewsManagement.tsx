@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Star, MessageSquare, Download, Filter, Loader2, Send } from "lucide-react";
+import {
+  Star,
+  MessageSquare,
+  Download,
+  Filter,
+  Loader2,
+  Send,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -23,11 +30,15 @@ interface ReviewsManagementProps {
 interface Review {
   id: string;
   rating: number;
-  review_text: string;
-  student_name: string;
+  comment: string;
   created_at: string;
   mentor_reply?: string;
   replied_at?: string;
+  user_id: string;
+  profiles?: {
+    full_name: string;
+    avatar_url?: string;
+  };
 }
 
 type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
@@ -50,7 +61,15 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
       setLoading(true);
       const { data, error } = await supabase
         .from("reviews")
-        .select("*")
+        .select(
+          `
+          *,
+          profiles:user_id (
+            full_name,
+            avatar_url
+          )
+        `
+        )
         .eq("expert_id", mentorProfile.id)
         .order("created_at", { ascending: false });
 
@@ -116,10 +135,12 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
       ...filteredReviews.map((review) => [
         new Date(review.created_at).toLocaleDateString(),
         review.rating.toString(),
-        review.student_name || "Anonymous",
-        review.review_text || "",
+        review.profiles?.full_name || "Anonymous",
+        review.comment || "",
         review.mentor_reply || "",
-        review.replied_at ? new Date(review.replied_at).toLocaleDateString() : "",
+        review.replied_at
+          ? new Date(review.replied_at).toLocaleDateString()
+          : "",
       ]),
     ]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
@@ -154,7 +175,8 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
     count: reviews.filter((r) => r.rating === rating).length,
     percentage:
       reviews.length > 0
-        ? (reviews.filter((r) => r.rating === rating).length / reviews.length) * 100
+        ? (reviews.filter((r) => r.rating === rating).length / reviews.length) *
+          100
         : 0,
   }));
 
@@ -165,7 +187,9 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
           <Star
             key={star}
             className={`h-4 w-4 ${
-              star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+              star <= rating
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-gray-300"
             }`}
           />
         ))}
@@ -178,8 +202,12 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reviews & Ratings</h1>
-          <p className="text-gray-600 mt-1">Manage student feedback and ratings</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Reviews & Ratings
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage student feedback and ratings
+          </p>
         </div>
         <Button
           onClick={exportReviews}
@@ -210,7 +238,8 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
                     {renderStars(Math.round(averageRating))}
                   </div>
                   <p className="text-sm text-gray-500">
-                    Based on {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                    Based on {reviews.length} review
+                    {reviews.length !== 1 ? "s" : ""}
                   </p>
                 </>
               )}
@@ -285,7 +314,8 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
               </SelectContent>
             </Select>
             <span className="text-sm text-gray-600">
-              {filteredReviews.length} review{filteredReviews.length !== 1 ? "s" : ""}
+              {filteredReviews.length} review
+              {filteredReviews.length !== 1 ? "s" : ""}
             </span>
           </div>
         </CardContent>
@@ -311,12 +341,12 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
                         <span className="text-sm font-semibold text-gray-700">
-                          {(review.student_name || "A")[0].toUpperCase()}
+                          {(review.profiles?.full_name || "A")[0].toUpperCase()}
                         </span>
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {review.student_name || "Anonymous"}
+                          {review.profiles?.full_name || "Anonymous"}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           {renderStars(review.rating)}
@@ -332,7 +362,7 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
 
                   {/* Review Text */}
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {review.review_text}
+                    {review.comment}
                   </p>
 
                   {/* Mentor Reply */}
@@ -350,9 +380,12 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
                           {review.replied_at && (
                             <p className="text-xs text-gray-500 mt-2">
                               Replied{" "}
-                              {formatDistanceToNow(new Date(review.replied_at), {
-                                addSuffix: true,
-                              })}
+                              {formatDistanceToNow(
+                                new Date(review.replied_at),
+                                {
+                                  addSuffix: true,
+                                }
+                              )}
                             </p>
                           )}
                         </div>
@@ -417,7 +450,9 @@ const ReviewsManagement = ({ mentorProfile }: ReviewsManagementProps) => {
           <Card className="border-gray-200">
             <CardContent className="p-12 text-center">
               <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-sm font-medium text-gray-900">No reviews yet</p>
+              <p className="text-sm font-medium text-gray-900">
+                No reviews yet
+              </p>
               <p className="text-sm text-gray-600 mt-1">
                 Reviews from students will appear here
               </p>

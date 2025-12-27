@@ -80,6 +80,24 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     session: null,
   });
 
+  // Helper function to get effective status (treat past confirmed sessions as completed)
+  const getEffectiveStatus = (session: any): string => {
+    if (session.status === "confirmed") {
+      try {
+        const sessionDate = new Date(
+          `${session.scheduled_date}T${session.scheduled_time}`
+        );
+        const now = new Date();
+        if (sessionDate < now) {
+          return "completed";
+        }
+      } catch {
+        // If date parsing fails, keep original status
+      }
+    }
+    return session.status || "pending";
+  };
+
   useEffect(() => {
     fetchSessions();
   }, [mentorProfile]);
@@ -259,14 +277,18 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
 
     return {
       all: dateFilteredSessions.length,
-      pending: dateFilteredSessions.filter((s) => s.status === "pending")
-        .length,
-      confirmed: dateFilteredSessions.filter((s) => s.status === "confirmed")
-        .length,
-      completed: dateFilteredSessions.filter((s) => s.status === "completed")
-        .length,
-      cancelled: dateFilteredSessions.filter((s) => s.status === "cancelled")
-        .length,
+      pending: dateFilteredSessions.filter(
+        (s) => getEffectiveStatus(s) === "pending"
+      ).length,
+      confirmed: dateFilteredSessions.filter(
+        (s) => getEffectiveStatus(s) === "confirmed"
+      ).length,
+      completed: dateFilteredSessions.filter(
+        (s) => getEffectiveStatus(s) === "completed"
+      ).length,
+      cancelled: dateFilteredSessions.filter(
+        (s) => getEffectiveStatus(s) === "cancelled"
+      ).length,
     };
   }, [sessions, dateRange]);
 
@@ -487,8 +509,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
   // Filter, search, and sort sessions
   const filteredAndSortedSessions = sessions
     .filter((session) => {
-      // Status filter
-      if (filter !== "all" && session.status !== filter) return false;
+      const effectiveStatus = getEffectiveStatus(session);
+
+      // Status filter - use effective status
+      if (filter !== "all" && effectiveStatus !== filter) return false;
 
       // Date range filter
       if (
@@ -1063,169 +1087,177 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <Card key={i} className="border-gray-200 rounded-xl shadow-sm">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {/* Header skeleton */}
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  </div>
+              <CardContent className="p-4 min-h-[180px]">
+                {/* Header skeleton */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-6 w-24 rounded-md" />
+                </div>
 
+                {/* Info section skeleton */}
+                <div className="space-y-2 mb-3">
                   {/* Date and time skeleton */}
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-4 w-56" />
                   </div>
 
                   {/* Student name skeleton */}
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-44" />
                   </div>
 
                   {/* Amount skeleton */}
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-28" />
                   </div>
+                </div>
 
-                  {/* Action buttons skeleton */}
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
-                    <Skeleton className="h-8 w-full" />
-                  </div>
+                {/* Action buttons skeleton */}
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-8 w-full rounded-lg" />
                 </div>
               </CardContent>
             </Card>
           ))
         ) : filteredAndSortedSessions.length > 0 ? (
-          filteredAndSortedSessions.map((session) => (
-            <Card
-              key={session.id}
-              className="bg-white border border-gray-200 rounded-xl shadow-sm"
-            >
-              <CardContent className="p-4">
-                {/* Header Section - Type, Status, and Badges */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">
-                      {formatSessionType(session.session_type)}
-                    </h3>
-                    {isUpcoming(
-                      session.scheduled_date,
-                      session.scheduled_time
-                    ) &&
-                      session.status === "confirmed" && (
-                        <Badge className="bg-blue-50 text-blue-700 border-0 rounded-md text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0">
-                          Upcoming
-                        </Badge>
-                      )}
-                  </div>
-                  {getStatusBadge(session.status || "pending")}
-                </div>
-
-                {/* Info Section */}
-                <div className="space-y-2 mb-3">
-                  {/* Date & Time */}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-700 truncate">
-                      {formatDate(
+          filteredAndSortedSessions.map((session) => {
+            const effectiveStatus = getEffectiveStatus(session);
+            return (
+              <Card
+                key={session.id}
+                className="bg-white border border-gray-200 rounded-xl shadow-sm"
+              >
+                <CardContent className="p-4">
+                  {/* Header Section - Type, Status, and Badges */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <h3 className="text-base font-semibold text-gray-900 truncate">
+                        {formatSessionType(session.session_type)}
+                      </h3>
+                      {isUpcoming(
                         session.scheduled_date,
                         session.scheduled_time
-                      )}
-                    </span>
+                      ) &&
+                        effectiveStatus === "confirmed" && (
+                          <Badge className="bg-blue-50 text-blue-700 border-0 rounded-md text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0">
+                            Upcoming
+                          </Badge>
+                        )}
+                    </div>
+                    {getStatusBadge(effectiveStatus)}
                   </div>
 
-                  {/* Amount */}
-                  {session.total_amount && session.total_amount > 0 && (
+                  {/* Info Section */}
+                  <div className="space-y-2 mb-3">
+                    {/* Date & Time */}
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-green-600">
-                        ₹{session.total_amount.toFixed(2)}
+                      <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 truncate">
+                        {formatDate(
+                          session.scheduled_date,
+                          session.scheduled_time
+                        )}
                       </span>
                     </div>
-                  )}
 
-                  {/* Message Preview */}
-                  {session.message && (
-                    <div className="pt-2 border-t border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 mb-1">
-                        Mentee's Message:
-                      </p>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {session.message}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    {/* Amount */}
+                    {session.total_amount && session.total_amount > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-green-600">
+                          ₹{session.total_amount.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between gap-2">
-                  {session.status === "pending" ? (
-                    <>
-                      <div className="flex gap-2 flex-1">
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            openConfirmDialog(session.id, "accept")
-                          }
-                          disabled={actionLoading === session.id}
-                          className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg"
-                        >
-                          {actionLoading === session.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                              Accept
-                            </>
-                          )}
-                        </Button>
+                    {/* Message Preview */}
+                    {session.message && (
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 mb-1">
+                          Mentee's Message:
+                        </p>
+                        <p className="text-xs text-gray-600 line-clamp-2">
+                          {session.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between gap-2">
+                    {session.status === "pending" ? (
+                      <>
+                        <div className="flex gap-2 flex-1">
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              openConfirmDialog(session.id, "accept")
+                            }
+                            disabled={actionLoading === session.id}
+                            className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg"
+                          >
+                            {actionLoading === session.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Accept
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              openConfirmDialog(session.id, "decline")
+                            }
+                            disabled={actionLoading === session.id}
+                            className="flex-1 h-8 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-xs font-medium rounded-lg"
+                          >
+                            {actionLoading === session.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Decline
+                              </>
+                            )}
+                          </Button>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            openConfirmDialog(session.id, "decline")
+                            setDetailsModal({ open: true, session })
                           }
-                          disabled={actionLoading === session.id}
-                          className="flex-1 h-8 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-xs font-medium rounded-lg"
+                          className="h-8 px-3 text-xs font-medium border-gray-200 rounded-lg flex items-center gap-1.5"
                         >
-                          {actionLoading === session.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                              Decline
-                            </>
-                          )}
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>View</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="w-full flex justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setDetailsModal({ open: true, session })
+                          }
+                          className="h-8 px-3 text-xs font-medium border-gray-200 rounded-lg flex items-center gap-1.5"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>View</span>
                         </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setDetailsModal({ open: true, session })}
-                        className="h-8 px-3 text-xs font-medium border-gray-200 rounded-lg flex items-center gap-1.5"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>View</span>
-                      </Button>
-                    </>
-                  ) : (
-                    <div className="w-full flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setDetailsModal({ open: true, session })}
-                        className="h-8 px-3 text-xs font-medium border-gray-200 rounded-lg flex items-center gap-1.5"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>View</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         ) : (
           <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-0 rounded-2xl shadow-none lg:col-span-2">
             <CardContent className="p-16">

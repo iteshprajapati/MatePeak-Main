@@ -403,4 +403,77 @@ export const emailTemplates = {
 </html>
     `,
   }),
+
+  reviewRequest: (data: any) => ({
+    subject: `How was your session with ${data.mentorName}? ⭐`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f3f4f6; }
+    .container { max-width: 600px; margin: 0 auto; background-color: white; }
+    .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 32px; text-align: center; }
+    .content { padding: 32px; }
+    .card { background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; }
+    .button { display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; }
+    .stars { font-size: 32px; margin: 20px 0; }
+    .footer { background-color: #f9fafb; padding: 24px; text-align: center; color: #6b7280; font-size: 14px; }
+    h1 { margin: 0; font-size: 24px; }
+    .highlight { background-color: #fef3c7; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⭐ Share Your Experience</h1>
+    </div>
+    
+    <div class="content">
+      <p>Hi ${data.studentName},</p>
+      <p>We hope you had a valuable session with <strong>${data.mentorName}</strong>!</p>
+      
+      <div class="card">
+        <p style="text-align: center; margin: 0;">
+          <strong>Session Details</strong><br>
+          ${data.serviceName}<br>
+          ${data.date} • ${data.duration} minutes
+        </p>
+      </div>
+
+      <div class="highlight">
+        <p style="margin: 0; text-align: center;">
+          <strong>Your feedback matters!</strong><br>
+          Help other students find great mentors and help ${data.mentorName} grow their profile.
+        </p>
+      </div>
+      
+      <div class="stars" style="text-align: center;">⭐ ⭐ ⭐ ⭐ ⭐</div>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${data.reviewLink}" class="button">Leave Your Review</a>
+      </div>
+
+      <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 24px;">
+        This will only take 2 minutes
+      </p>
+
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+        <p style="text-align: center;">
+          <strong>Enjoyed your session?</strong><br>
+          <a href="${data.bookAgainLink}" style="color: #6366f1; text-decoration: none; font-weight: 600;">Book another session with ${data.mentorName} →</a>
+        </p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Questions? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
+      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+  }),
 };
