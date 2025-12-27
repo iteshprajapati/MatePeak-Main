@@ -21,6 +21,8 @@ import {
   XCircle,
   Loader2,
   User,
+  UserCircle,
+  Award,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -173,7 +175,7 @@ export default function CustomTimeRequests({
         );
       case "approved":
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-200">
+          <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200 hover:border-green-300 transition-colors">
             Approved
           </Badge>
         );
@@ -270,19 +272,6 @@ export default function CustomTimeRequests({
           )}
         </button>
         <button
-          onClick={() => setStatusFilter("pending")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-            statusFilter === "pending"
-              ? "bg-gray-900 text-white shadow-sm"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          Pending
-          {pendingCount > 0 && (
-            <span className="ml-1.5 opacity-75">({pendingCount})</span>
-          )}
-        </button>
-        <button
           onClick={() => setStatusFilter("approved")}
           className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
             statusFilter === "approved"
@@ -330,20 +319,22 @@ export default function CustomTimeRequests({
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        <Card className="border-0 shadow-sm bg-white overflow-hidden">
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {filteredRequests.map((request) => (
                 <div
                   key={request.id}
-                  className={`p-5 transition-all duration-200 hover:bg-gray-50 ${
-                    request.status === "pending" ? "bg-amber-50/30" : ""
+                  className={`p-6 transition-all duration-200 hover:bg-gray-50/50 ${
+                    request.status === "pending"
+                      ? "bg-blue-50/20 border-l-2 border-blue-300"
+                      : ""
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-600" />
+                    <div className="flex-shrink-0 w-11 h-11 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center ring-2 ring-gray-50">
+                      <User className="h-5 w-5 text-gray-500" />
                     </div>
 
                     {/* Content */}
@@ -390,22 +381,24 @@ export default function CustomTimeRequests({
 
                       {/* Messages */}
                       {request.message && (
-                        <div className="mb-3 p-3 bg-blue-50/60 border border-blue-200 rounded-xl">
-                          <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-1">
-                            Student's Message
+                        <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                            <UserCircle className="h-3.5 w-3.5" />
+                            Mentee's Message
                           </p>
-                          <p className="text-sm text-gray-800 leading-relaxed">
+                          <p className="text-sm text-gray-700 leading-relaxed">
                             {request.message}
                           </p>
                         </div>
                       )}
 
                       {request.mentor_response && (
-                        <div className="mb-3 p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
-                          <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide mb-1">
+                        <div className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                            <Award className="h-3.5 w-3.5" />
                             Your Response
                           </p>
-                          <p className="text-sm text-gray-800 leading-relaxed">
+                          <p className="text-sm text-gray-700 leading-relaxed">
                             {request.mentor_response}
                           </p>
                         </div>
@@ -413,7 +406,7 @@ export default function CustomTimeRequests({
 
                       {/* Action Buttons */}
                       {request.status === "pending" && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2.5 mt-4">
                           <Button
                             size="sm"
                             onClick={() =>
@@ -423,9 +416,9 @@ export default function CustomTimeRequests({
                                 action: "approve",
                               })
                             }
-                            className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 rounded-lg"
+                            className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 rounded-lg shadow-sm transition-all hover:shadow"
                           >
-                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                            <CheckCircle className="h-4 w-4 mr-1.5" />
                             Approve
                           </Button>
                           <Button
@@ -438,9 +431,9 @@ export default function CustomTimeRequests({
                               })
                             }
                             variant="outline"
-                            className="h-9 border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 text-xs font-semibold px-4 rounded-lg"
+                            className="h-9 border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 text-xs font-semibold px-5 rounded-lg transition-all"
                           >
-                            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                            <XCircle className="h-4 w-4 mr-1.5" />
                             Decline
                           </Button>
                         </div>
