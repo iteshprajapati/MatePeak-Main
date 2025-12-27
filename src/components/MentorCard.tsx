@@ -63,12 +63,12 @@ const MentorCard = ({
   };
 
   return (
-    <Card className="overflow-visible shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[340px] mx-auto border border-gray-200 bg-white rounded-2xl">
+    <Card className="overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 h-full w-full max-w-[340px] mx-auto border border-gray-200 bg-white rounded-2xl">
       <CardContent className="p-6 relative">
         {isNew && (
-          <div className="absolute -top-2 -right-2 z-50 pointer-events-none">
-            <div className="bg-gradient-to-r from-matepeak-primary to-matepeak-secondary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-              RECENT
+          <div className="absolute top-2 right-2 z-10">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+              NEW
             </div>
           </div>
         )}

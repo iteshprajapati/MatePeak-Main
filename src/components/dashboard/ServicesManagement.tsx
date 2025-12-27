@@ -40,6 +40,11 @@ import {
   ArrowUp,
   ArrowDown,
   Sparkles,
+  CheckCircle,
+  XCircle,
+  Video,
+  FileStack,
+  Wrench,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -802,54 +807,122 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
       </div>
 
       {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+      <Card className="border-0 shadow-sm bg-gradient-to-br from-gray-50 to-white">
+        <CardContent className="p-6">
+          {/* Search Bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              placeholder="Search services by name or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-4 h-12 text-base border-gray-200 focus:border-rose-400 focus:ring-rose-400/20 rounded-xl"
+            />
+          </div>
+
+          {/* Filters Row */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            {/* Status Filters */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Status:
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setFilterStatus("all")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    filterStatus === "all"
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterStatus("active")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    filterStatus === "active"
+                      ? "bg-emerald-500 text-white shadow-sm"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300"
+                  }`}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Active
+                </button>
+                <button
+                  onClick={() => setFilterStatus("disabled")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    filterStatus === "disabled"
+                      ? "bg-gray-500 text-white shadow-sm"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Disabled
+                </button>
+              </div>
             </div>
 
-            <Select
-              value={filterStatus}
-              onValueChange={(value: any) => setFilterStatus(value)}
-            >
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Services</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="disabled">Disabled Only</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="oneOnOneSession">1-on-1 Session</SelectItem>
-                <SelectItem value="chatAdvice">Chat Consultation</SelectItem>
-                <SelectItem value="digitalProducts">
-                  Digital Products
-                </SelectItem>
-                <SelectItem value="notes">Notes & Resources</SelectItem>
-                <SelectItem value="custom">Custom Services</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Type Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Type:
+              </span>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[200px] h-9 rounded-lg border-gray-200 focus:border-rose-400 focus:ring-rose-400/20">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-gray-200">
+                  <SelectItem value="all" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-gray-500" />
+                      <span>All Types</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="oneOnOneSession" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-rose-500" />
+                      <span>1-on-1 Session</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="chatAdvice" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      <span>Chat Consultation</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="digitalProducts" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-purple-500" />
+                      <span>Digital Products</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="notes" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <FileStack className="h-4 w-4 text-amber-500" />
+                      <span>Notes & Resources</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="custom" className="rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-4 w-4 text-indigo-500" />
+                      <span>Custom Services</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {(searchQuery || filterStatus !== "all" || filterType !== "all") && (
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-sm text-gray-600">
-                Showing {filteredServices.length} of {services.length} services
+            <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-gray-100">
+              <span className="text-sm font-medium text-gray-700">
+                Showing{" "}
+                <span className="font-bold text-gray-900">
+                  {filteredServices.length}
+                </span>{" "}
+                of {services.length} services
               </span>
               <Button
                 variant="ghost"
@@ -859,8 +932,9 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
                   setFilterStatus("all");
                   setFilterType("all");
                 }}
-                className="h-7 text-xs"
+                className="h-8 text-xs hover:bg-gray-100"
               >
+                <X className="h-3.5 w-3.5 mr-1" />
                 Clear Filters
               </Button>
             </div>

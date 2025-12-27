@@ -94,8 +94,8 @@ export default function BookingDialog({
   }, [open, preSelectedDateTime]);
 
   const handleClose = () => {
-    // Don't reset state if success modal is showing
-    if (!showSuccessModal) {
+    // Don't reset state if we have a created booking (success modal will show)
+    if (!createdBooking) {
       setStep(1);
       setSelectedService(null);
       // Only reset selectedDateTime if there's no preSelectedDateTime
@@ -431,17 +431,20 @@ export default function BookingDialog({
       if (result.success) {
         // Store booking data for success modal
         setCreatedBooking(result.data);
+        console.log("✅ Booking created successfully:", result.data);
 
         // Send confirmation emails (async, don't wait)
         sendConfirmationEmails(result.data, details, selectedService);
 
         // Close booking dialog immediately
         handleClose();
+        console.log("🚪 Booking dialog closed");
 
-        // Show success modal after dialog closes smoothly
+        // Show success modal after dialog animation completes (600ms for smooth transition)
         setTimeout(() => {
+          console.log("🎉 Showing success modal");
           setShowSuccessModal(true);
-        }, 300);
+        }, 600);
       } else {
         toast.error(result.error || "Failed to create booking");
       }
@@ -492,86 +495,100 @@ export default function BookingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal>
-      <DialogContent
-        className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        {/* Header */}
-        <DialogHeader className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            {step > 1 && (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange} modal>
+        <DialogContent
+          className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          {/* Header */}
+          <DialogHeader className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center gap-3">
+              {step > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                  className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+
+              {step === 1 && mentorImage && (
+                <img
+                  src={mentorImage}
+                  alt={mentorName}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              )}
+
+              <DialogTitle className="text-xl font-bold text-gray-900 flex-1">
+                {getStepTitle()}
+              </DialogTitle>
+
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleBack}
+                onClick={handleClose}
                 className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
-            )}
+            </div>
+          </DialogHeader>
 
-            {step === 1 && mentorImage && (
-              <img
-                src={mentorImage}
-                alt={mentorName}
-                className="h-10 w-10 rounded-full object-cover"
+          {/* Content */}
+          <div className="px-6 py-6">
+            {step === 1 && (
+              <ServiceSelection
+                services={services}
+                servicePricing={servicePricing}
+                suggestedServices={suggestedServices}
+                onServiceSelect={handleServiceSelect}
+                averageRating={averageRating}
+                totalReviews={totalReviews}
               />
             )}
 
-            <DialogTitle className="text-xl font-bold text-gray-900 flex-1">
-              {getStepTitle()}
-            </DialogTitle>
+            {step === 2 && selectedService && (
+              <DateTimeSelection
+                key={`datetime-${step}`} // Force remount to clear cache and fetch fresh availability
+                selectedService={selectedService}
+                mentorId={mentorId}
+                timezone={timezone}
+                onDateTimeSelect={handleDateTimeSelect}
+              />
+            )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {step === 3 && selectedService && (
+              <BookingConfirmation
+                selectedService={selectedService}
+                selectedDateTime={selectedDateTime}
+                mentorName={mentorName}
+                onSubmit={handleBookingSubmit}
+                onChangeDateTime={() => setStep(2)}
+                isSubmitting={isSubmitting}
+              />
+            )}
           </div>
-        </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
-        {/* Content */}
-        <div className="px-6 py-6">
-          {step === 1 && (
-            <ServiceSelection
-              services={services}
-              servicePricing={servicePricing}
-              suggestedServices={suggestedServices}
-              onServiceSelect={handleServiceSelect}
-              averageRating={averageRating}
-              totalReviews={totalReviews}
-            />
-          )}
-
-          {step === 2 && selectedService && (
-            <DateTimeSelection
-              key={`datetime-${step}`} // Force remount to clear cache and fetch fresh availability
-              selectedService={selectedService}
-              mentorId={mentorId}
-              timezone={timezone}
-              onDateTimeSelect={handleDateTimeSelect}
-            />
-          )}
-
-          {step === 3 && selectedService && (
-            <BookingConfirmation
-              selectedService={selectedService}
-              selectedDateTime={selectedDateTime}
-              mentorName={mentorName}
-              onSubmit={handleBookingSubmit}
-              onChangeDateTime={() => setStep(2)}
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </div>
-      </DialogContent>
-
-      {/* Success Modal */}
+      {/* Success Modal - Separate from booking dialog */}
+      {console.log("🔍 Success Modal Check:", {
+        showSuccessModal,
+        hasCreatedBooking: !!createdBooking,
+        hasBookingDetails: !!bookingDetails,
+        hasSelectedService: !!selectedService,
+        shouldRender: !!(
+          showSuccessModal &&
+          createdBooking &&
+          bookingDetails &&
+          selectedService
+        ),
+      })}
       {showSuccessModal &&
         createdBooking &&
         bookingDetails &&
@@ -608,6 +625,6 @@ export default function BookingDialog({
             }}
           />
         )}
-    </Dialog>
+    </>
   );
 }

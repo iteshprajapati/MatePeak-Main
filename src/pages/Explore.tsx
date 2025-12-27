@@ -350,6 +350,29 @@ const Explore = () => {
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
+  // Helper function to check if mentor is a recent graduate
+  const isRecentGraduate = (mentor: any) => {
+    const education = mentor.education;
+    if (!education || education.length === 0) {
+      return false;
+    }
+
+    const currentYear = new Date().getFullYear();
+
+    // Check each education entry
+    return education.some((edu: any) => {
+      // Recent graduate if graduated within last 2 years OR currently studying
+      if (edu.currentlyStudying) return true;
+
+      const yearTo = edu.yearTo || edu.year;
+      if (yearTo) {
+        return yearTo >= currentYear - 2;
+      }
+
+      return false;
+    });
+  };
+
   const fetchDatabaseMentors = async (page = 1, append = false, retry = 0) => {
     // Cancel previous request
     if (abortControllerRef.current) {
@@ -377,6 +400,10 @@ const Explore = () => {
         limit: MENTORS_PER_PAGE,
       });
 
+      // Special handling for "Recent Graduates" - it's a computed category
+      const isRecentGraduatesSearch =
+        searchInput?.toLowerCase().trim() === "recent graduates";
+
       const result = await fetchMentorCards(
         {
           category:
@@ -385,7 +412,10 @@ const Explore = () => {
               : undefined,
           expertise:
             selectedExpertise !== "all" ? selectedExpertise : undefined,
-          searchQuery: searchInput || undefined,
+          // Don't pass searchQuery if it's "Recent Graduates" - we'll filter client-side
+          searchQuery: isRecentGraduatesSearch
+            ? undefined
+            : searchInput || undefined,
           priceRange: priceRange,
           page,
           limit: MENTORS_PER_PAGE,
@@ -403,14 +433,31 @@ const Explore = () => {
         ")"
       );
 
-      if (append) {
-        setMentorCards((prev) => [...prev, ...result.data]);
-      } else {
-        setMentorCards(result.data);
+      let filteredData = result.data;
+
+      // Apply client-side filtering for "Recent Graduates"
+      if (isRecentGraduatesSearch) {
+        console.log("🎓 Filtering for Recent Graduates...");
+        filteredData = result.data.filter((mentor: any) => {
+          const isRecent = isRecentGraduate(mentor);
+          return isRecent;
+        });
+        console.log(
+          `📊 Found ${filteredData.length} recent graduates out of ${result.data.length} mentors`
+        );
       }
 
-      setTotalMentors(result.total);
-      setHasMore(result.hasMore);
+      if (append) {
+        setMentorCards((prev) => [...prev, ...filteredData]);
+      } else {
+        setMentorCards(filteredData);
+      }
+
+      // Update total count for Recent Graduates filter
+      setTotalMentors(
+        isRecentGraduatesSearch ? filteredData.length : result.total
+      );
+      setHasMore(isRecentGraduatesSearch ? false : result.hasMore); // No pagination for filtered results
       setCurrentPage(page);
       setRetryCount(0);
     } catch (error: any) {

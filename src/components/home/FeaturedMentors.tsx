@@ -281,11 +281,7 @@ const FeaturedMentors = ({ sectionRef }: FeaturedMentorsProps) => {
                         ))}
                       </div>
                       <div className="text-center mt-8">
-                        <Link
-                          to={`/mentors?category=${encodeURIComponent(
-                            category
-                          )}`}
-                        >
+                        <Link to={`/explore?q=${encodeURIComponent(category)}`}>
                           <Button
                             variant="outline"
                             className="border-matepeak-primary text-matepeak-primary hover:bg-matepeak-primary hover:text-white transition-all duration-200"

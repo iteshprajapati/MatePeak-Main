@@ -14,8 +14,6 @@ import ProfileExperiences from "@/components/profile/ProfileExperiences";
 import ProfileReviews from "@/components/profile/ProfileReviews";
 import ProfileAbout from "@/components/profile/ProfileAbout";
 import AvailabilityPreview from "@/components/profile/AvailabilityPreview";
-import BookingDialog from "@/components/booking/BookingDialog";
-import { SelectedDateTime } from "@/components/booking/BookingDialog";
 
 export type ProfileTab =
   | "overview"
@@ -64,9 +62,6 @@ export default function MentorPublicProfile() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-  const [preSelectedDateTime, setPreSelectedDateTime] =
-    useState<SelectedDateTime | null>(null);
   const [stats, setStats] = useState({
     averageRating: 0,
     reviewCount: 0,
@@ -169,12 +164,17 @@ export default function MentorPublicProfile() {
     time: string,
     timezone: string
   ) => {
-    setPreSelectedDateTime({
-      date,
-      time,
-      timezone,
-    });
-    setBookingDialogOpen(true);
+    if (mentor) {
+      // Navigate to booking page with pre-selected date/time as query params
+      const dateStr = date.toISOString().split("T")[0];
+      navigate(
+        `/booking?mentorId=${
+          mentor.id
+        }&date=${dateStr}&time=${encodeURIComponent(
+          time
+        )}&timezone=${encodeURIComponent(timezone)}`
+      );
+    }
   };
 
   if (loading) {
@@ -249,8 +249,7 @@ export default function MentorPublicProfile() {
                   stats={stats}
                   isOwnProfile={isOwnProfile}
                   onOpenBooking={() => {
-                    setPreSelectedDateTime(null);
-                    setBookingDialogOpen(true);
+                    navigate(`/booking?mentorId=${mentor.id}`);
                   }}
                 />
               </div>
@@ -319,30 +318,6 @@ export default function MentorPublicProfile() {
       </main>
 
       <Footer />
-
-      {/* Booking Dialog */}
-      {mentor && (
-        <BookingDialog
-          open={bookingDialogOpen}
-          onOpenChange={(open) => {
-            setBookingDialogOpen(open);
-            if (!open) {
-              // Clear pre-selected date/time when dialog closes
-              setPreSelectedDateTime(null);
-            }
-          }}
-          mentorId={mentor.id}
-          mentorName={mentor.full_name}
-          mentorImage={mentor.profile_picture_url}
-          services={mentor.services}
-          servicePricing={mentor.service_pricing}
-          suggestedServices={mentor.suggested_services || []}
-          timezone={mentor.timezone}
-          averageRating={stats.averageRating}
-          totalReviews={stats.reviewCount}
-          preSelectedDateTime={preSelectedDateTime}
-        />
-      )}
     </div>
   );
 }

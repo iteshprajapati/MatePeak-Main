@@ -149,36 +149,6 @@ export default function BookingConfirmation({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl mx-auto">
-      {/* FREE Beta Banner */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="bg-green-500 text-white rounded-full p-2 flex-shrink-0">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-green-900 font-bold text-base">
-              🎉 Beta Launch Special - 100% FREE!
-            </p>
-            <p className="text-green-700 text-sm">
-              All sessions are completely free during our beta period. No
-              payment required!
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-1.5">

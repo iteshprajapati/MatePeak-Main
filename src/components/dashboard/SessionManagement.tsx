@@ -744,10 +744,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           {Array.from({ length: 4 }).map((_, i) => (
             <Card
               key={i}
-              className="bg-gray-100 border-0 rounded-2xl shadow-none"
+              className="bg-gray-100 border-0 rounded-2xl shadow-none h-[116px]"
             >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-6 h-full">
+                <div className="flex items-center justify-between h-full">
                   <div className="flex-1">
                     <Skeleton className="h-3 w-20 mb-3" />
                     <Skeleton className="h-8 w-16" />
@@ -761,9 +761,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Upcoming Sessions */}
-          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200 h-[116px]">
+            <CardContent className="p-6 h-full">
+              <div className="flex items-center justify-between h-full">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Upcoming
@@ -782,9 +782,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           </Card>
 
           {/* This Week */}
-          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200 h-[116px]">
+            <CardContent className="p-6 h-full">
+              <div className="flex items-center justify-between h-full">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     This Week
@@ -803,9 +803,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           </Card>
 
           {/* This Month */}
-          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200 h-[116px]">
+            <CardContent className="p-6 h-full">
+              <div className="flex items-center justify-between h-full">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     This Month
@@ -824,9 +824,9 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           </Card>
 
           {/* Total Sessions */}
-          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200 h-[116px]">
+            <CardContent className="p-6 h-full">
+              <div className="flex items-center justify-between h-full">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Total Sessions
