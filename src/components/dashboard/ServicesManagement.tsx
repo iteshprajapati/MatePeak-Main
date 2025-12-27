@@ -301,7 +301,13 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
       setSaving(true);
 
       const service = services.find((s) => s.id === serviceId);
-      if (!service) return;
+      if (!service) {
+        console.log("❌ Service not found:", serviceId);
+        return;
+      }
+
+      console.log("📝 Starting save for service:", service);
+      console.log("📝 Edit form data:", editForm);
 
       // Validate
       if (!editForm.name?.trim()) {
@@ -318,6 +324,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
       }
 
       const updatedService = { ...service, ...editForm };
+      console.log("✏️ Updated service object:", updatedService);
 
       // Update based on service type
       if (
@@ -325,6 +332,7 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           service.serviceType
         )
       ) {
+        console.log("🔧 Updating predefined service:", service.serviceType);
         // Update service_pricing
         const updatedPricing = {
           ...servicePricing,
@@ -336,25 +344,41 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
           },
         };
 
-        const { error } = await supabase
+        console.log("💾 Saving service_pricing to database:", updatedPricing);
+        const { data, error } = await supabase
           .from("expert_profiles")
           .update({ service_pricing: updatedPricing })
-          .eq("id", mentorId);
+          .eq("id", mentorId)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Database error:", error);
+          throw error;
+        }
+        console.log("✅ Database update successful:", data);
         setServicePricing(updatedPricing);
       } else {
+        console.log("🔧 Updating custom service");
         // Update suggested_services (custom services)
         const updatedServices = services
           .map((s) => (s.id === serviceId ? updatedService : s))
           .filter((s) => s.serviceType === "custom");
 
-        const { error } = await supabase
+        console.log(
+          "💾 Saving suggested_services to database:",
+          updatedServices
+        );
+        const { data, error } = await supabase
           .from("expert_profiles")
           .update({ suggested_services: updatedServices })
-          .eq("id", mentorId);
+          .eq("id", mentorId)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Database error:", error);
+          throw error;
+        }
+        console.log("✅ Database update successful:", data);
       }
 
       // Update local state
@@ -363,10 +387,13 @@ export default function ServicesManagement({ mentorId }: { mentorId: string }) {
       );
       setEditingService(null);
       setEditForm({});
-      toast.success("Service updated successfully!");
+      toast.success("Service updated successfully!", { duration: 5000 });
+      console.log("✅ Service save complete!");
     } catch (error: any) {
-      console.error("Error saving service:", error);
-      toast.error("Failed to save service");
+      console.error("❌ Error saving service:", error);
+      toast.error("Failed to save service: " + error.message, {
+        duration: 5000,
+      });
     } finally {
       setSaving(false);
     }

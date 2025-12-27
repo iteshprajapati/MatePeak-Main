@@ -73,6 +73,10 @@ export default function ProfileOverview({
   };
 
   const getServicesList = () => {
+    console.log("🎯 Building services list from:");
+    console.log("   service_pricing:", mentor.service_pricing);
+    console.log("   suggested_services:", mentor.suggested_services);
+
     const services = [];
 
     // Add predefined services from service_pricing
@@ -84,6 +88,7 @@ export default function ProfileOverview({
         hasFreeDemo: mentor.service_pricing.oneOnOneSession.hasFreeDemo,
         icon: Video,
       });
+      console.log("   ✅ Added 1-on-1 Sessions");
     }
     if (mentor.service_pricing?.chatAdvice?.enabled) {
       services.push({
@@ -93,6 +98,7 @@ export default function ProfileOverview({
         hasFreeDemo: mentor.service_pricing.chatAdvice.hasFreeDemo,
         icon: MessageSquare,
       });
+      console.log("   ✅ Added Chat Advice");
     }
     if (mentor.service_pricing?.digitalProducts?.enabled) {
       services.push({
@@ -102,6 +108,7 @@ export default function ProfileOverview({
         hasFreeDemo: false,
         icon: FileText,
       });
+      console.log("   ✅ Added Digital Products");
     }
     if (mentor.service_pricing?.notes?.enabled) {
       services.push({
@@ -111,6 +118,7 @@ export default function ProfileOverview({
         hasFreeDemo: false,
         icon: FileText,
       });
+      console.log("   ✅ Added Notes & Resources");
     }
 
     // Add custom services from suggested_services
@@ -125,10 +133,12 @@ export default function ProfileOverview({
             hasFreeDemo: service.hasFreeDemo || false,
             icon: Star, // Use a default icon for custom services
           });
+          console.log("   ✅ Added custom service:", service.name);
         }
       });
     }
 
+    console.log("🎯 Final services list:", services);
     return services;
   };
 

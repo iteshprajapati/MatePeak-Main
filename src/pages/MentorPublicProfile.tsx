@@ -111,6 +111,11 @@ export default function MentorPublicProfile() {
       }
 
       console.log("Profile data fetched:", profileData);
+      console.log("📊 Service pricing data:", profileData.service_pricing);
+      console.log(
+        "📊 Suggested services data:",
+        profileData.suggested_services
+      );
       setMentor(profileData as any);
 
       // Check if the logged-in user is viewing their own profile
