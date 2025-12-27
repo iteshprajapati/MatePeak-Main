@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -72,6 +73,9 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [copySourceDate, setCopySourceDate] = useState<Date | null>(null);
   const [copyTargetDates, setCopyTargetDates] = useState<Date[]>([]);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
+  const [dateToUnblock, setDateToUnblock] = useState<Date | null>(null);
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const timeSlots = Array.from({ length: 48 }, (_, i) => {
@@ -571,6 +575,20 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
       return;
     }
 
+    // Prevent blocking past dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (bulkBlockStart < today) {
+      toast({
+        title: "Invalid Date",
+        description:
+          "Cannot block dates in the past. Please select current or future dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (bulkBlockStart > bulkBlockEnd) {
       toast({
         title: "Invalid Range",
@@ -599,20 +617,64 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
 
       if (error) throw error;
 
+      // Refresh blocked dates list
+      await fetchAvailability();
+
       toast({
-        title: "Success",
-        description: `Blocked ${datesToBlock.length} dates`,
+        title: "✓ Dates Blocked Successfully",
+        description: `Successfully blocked ${datesToBlock.length} date${
+          datesToBlock.length > 1 ? "s" : ""
+        } from your availability`,
+        duration: 5000,
       });
 
       setBulkBlockMode(false);
       setBulkBlockStart(null);
       setBulkBlockEnd(null);
-      fetchAvailability();
     } catch (error: any) {
       console.error("Error bulk blocking:", error);
       toast({
         title: "Error",
         description: "Failed to block dates",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Unblock date handler
+  const handleUnblockDate = async () => {
+    if (!dateToUnblock) return;
+
+    try {
+      const dateString = getLocalDateString(dateToUnblock);
+
+      const { error } = await supabase
+        .from("blocked_dates")
+        .delete()
+        .eq("expert_id", mentorProfile.id)
+        .eq("date", dateString);
+
+      if (error) throw error;
+
+      // Refresh blocked dates list
+      await fetchAvailability();
+
+      toast({
+        title: "✓ Date Unblocked",
+        description: `${format(
+          dateToUnblock,
+          "MMMM d, yyyy"
+        )} is now available for bookings`,
+        duration: 5000,
+      });
+
+      setUnblockDialogOpen(false);
+      setDateToUnblock(null);
+    } catch (error: any) {
+      console.error("Error unblocking date:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unblock date",
         variant: "destructive",
       });
     }
@@ -763,10 +825,10 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
             Availability Calendar
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 text-sm">
             Manage your availability and block dates
           </p>
         </div>
@@ -781,46 +843,180 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
         </div>
       </div>
 
-      {/* Quick Actions Toolbar */}
-      <Card className="border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="text-sm font-semibold text-gray-700 mr-2">
-              Quick Actions:
-            </h3>
+      {/* Two Column Layout: Add Availability (Left) + Calendar (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Add Availability */}
+        <div className="space-y-6">
+          <Card className="border-0 shadow-sm bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Add Availability
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Day Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-sm font-semibold text-gray-900">
+                    Select Day
+                  </Label>
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-white hover:shadow-sm transition-all"
+                      onClick={() => setWeekOffset(weekOffset - 1)}
+                    >
+                      <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    </Button>
+                    <span className="text-xs font-medium text-gray-600 px-2">
+                      Week
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-white hover:shadow-sm transition-all"
+                      onClick={() => setWeekOffset(weekOffset + 1)}
+                    >
+                      <ChevronRight className="h-4 w-4 text-gray-600" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {Array.from({ length: 7 }, (_, i) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const targetDate = new Date(today);
+                    targetDate.setDate(today.getDate() + weekOffset * 7 + i);
 
-            <Button
-              size="sm"
-              variant={bulkBlockMode ? "default" : "outline"}
-              onClick={() => {
-                setBulkBlockMode(!bulkBlockMode);
-                if (bulkBlockMode) {
-                  setBulkBlockStart(null);
-                  setBulkBlockEnd(null);
-                }
-              }}
-              className={
-                bulkBlockMode
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "border-red-300 text-red-700 hover:bg-red-50"
-              }
-            >
-              <CalendarIcon className="h-4 w-4 mr-1.5" />
-              {bulkBlockMode ? "Cancel Bulk Block" : "Bulk Block Dates"}
-            </Button>
-          </div>
+                    const isPast = targetDate < today;
+                    const dayShort = format(targetDate, "EEE");
+                    const isToday = targetDate.getTime() === today.getTime();
+                    const isBlocked = blockedDates.includes(
+                      getLocalDateString(targetDate)
+                    );
 
-          {bulkBlockMode && (
-            <div className="mt-4 p-3 bg-white rounded-lg border border-red-200">
-              <p className="text-xs text-gray-600 mb-3">
-                Select date range to block (for vacations, holidays, etc.)
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          if (isPast) return;
+                          if (isBlocked) {
+                            setDateToUnblock(targetDate);
+                            setUnblockDialogOpen(true);
+                            return;
+                          }
+                          setSelectedDate(targetDate);
+                          setNewSlots([
+                            {
+                              start_time: "09:00",
+                              end_time: "10:00",
+                              is_recurring: false,
+                            },
+                          ]);
+                          setDialogOpen(true);
+                        }}
+                        disabled={isPast}
+                        className={`group relative p-3.5 text-sm font-medium rounded-xl border-2 transition-all text-center ${
+                          isPast
+                            ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+                            : isBlocked
+                            ? "bg-red-50 border-red-200 cursor-pointer hover:bg-red-100 hover:border-red-300 opacity-75 hover:opacity-100"
+                            : isToday
+                            ? "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:shadow-md"
+                            : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-md"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`text-[10px] font-semibold uppercase tracking-wider ${
+                              isPast
+                                ? "text-gray-400"
+                                : isBlocked
+                                ? "text-red-500"
+                                : isToday
+                                ? "text-blue-600"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {dayShort}
+                          </span>
+                          <span
+                            className={`text-2xl font-bold leading-none ${
+                              isPast
+                                ? "text-gray-400"
+                                : isBlocked
+                                ? "text-red-600"
+                                : isToday
+                                ? "text-blue-600"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {targetDate.getDate()}
+                          </span>
+                          <span
+                            className={`text-[9px] font-medium uppercase tracking-wide ${
+                              isPast
+                                ? "text-gray-400"
+                                : isBlocked
+                                ? "text-red-500"
+                                : isToday
+                                ? "text-blue-500"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {format(targetDate, "MMM")}
+                          </span>
+                          {isBlocked && (
+                            <span className="text-[8px] font-semibold text-red-600 mt-0.5">
+                              BLOCKED
+                            </span>
+                          )}
+                        </div>
+                        {!isPast && !isBlocked && (
+                          <ChevronRight
+                            className={`h-4 w-4 transition-all duration-200 group-hover:translate-x-1 absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 ${
+                              isToday
+                                ? "text-blue-500"
+                                : "text-gray-400 group-hover:text-gray-700"
+                            }`}
+                          />
+                        )}
+                        {isToday && !isBlocked && (
+                          <div className="absolute -top-1 -right-1 h-3 w-3 bg-blue-500 rounded-full border-2 border-white" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-4 flex items-center gap-1.5 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                  <Clock className="h-3.5 w-3.5 text-gray-400" />
+                  Click on a day to set availability for that day
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions for Bulk Block */}
+          <Card className="border-0 shadow-sm bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Bulk Block Dates
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Block multiple dates at once (vacations, holidays)
               </p>
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[150px]">
-                  <Label className="text-xs mb-1">Start Date</Label>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-gray-900 mb-2 block">
+                    Start Date
+                  </Label>
                   <input
                     type="date"
-                    className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    min={getLocalDateString(new Date())}
+                    className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white transition-all hover:border-gray-300"
                     value={
                       bulkBlockStart ? getLocalDateString(bulkBlockStart) : ""
                     }
@@ -833,11 +1029,14 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     }
                   />
                 </div>
-                <div className="flex-1 min-w-[150px]">
-                  <Label className="text-xs mb-1">End Date</Label>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-900 mb-2 block">
+                    End Date
+                  </Label>
                   <input
                     type="date"
-                    className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    min={getLocalDateString(new Date())}
+                    className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white transition-all hover:border-gray-300"
                     value={bulkBlockEnd ? getLocalDateString(bulkBlockEnd) : ""}
                     onChange={(e) =>
                       setBulkBlockEnd(
@@ -848,170 +1047,168 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
                     }
                   />
                 </div>
+              </div>
+              <Button
+                onClick={handleBulkBlockDates}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl shadow-sm transition-all hover:shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
+                disabled={!bulkBlockStart || !bulkBlockEnd}
+              >
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                Block{" "}
+                {bulkBlockStart && bulkBlockEnd
+                  ? Math.ceil(
+                      (bulkBlockEnd.getTime() - bulkBlockStart.getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    ) + 1
+                  : ""}{" "}
+                Dates
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Calendar */}
+        <div>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-6">
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between mb-6">
                 <Button
+                  variant="ghost"
                   size="sm"
-                  onClick={handleBulkBlockDates}
-                  className="bg-red-600 hover:bg-red-700 h-9"
-                  disabled={!bulkBlockStart || !bulkBlockEnd}
+                  onClick={previousMonth}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
-                  Block{" "}
-                  {bulkBlockStart && bulkBlockEnd
-                    ? Math.ceil(
-                        (bulkBlockEnd.getTime() - bulkBlockStart.getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      ) + 1
-                    : ""}{" "}
-                  Dates
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {format(currentDate, "MMMM yyyy")}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={nextMonth}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Empty State */}
-      {!loading &&
-        availabilitySlots.length === 0 &&
-        blockedDates.length === 0 && (
-          <Card className="border-gray-200 bg-gradient-to-br from-rose-50 to-orange-50">
-            <CardContent className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white mb-4 shadow-sm">
-                <CalendarIcon className="h-8 w-8 text-rose-400" />
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-2">
+                {/* Day Headers */}
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day) => (
+                    <div
+                      key={day}
+                      className="text-center text-xs font-semibold text-gray-600 pb-2"
+                    >
+                      {day}
+                    </div>
+                  )
+                )}
+
+                {/* Calendar Days */}
+                {days.map((date, index) => {
+                  if (!date) {
+                    return (
+                      <div key={`empty-${index}`} className="aspect-square" />
+                    );
+                  }
+
+                  const availability = getAvailabilityForDate(date);
+                  const today = isToday(date);
+                  const isPast =
+                    date < new Date(new Date().setHours(0, 0, 0, 0));
+
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      className={`aspect-square rounded-xl flex items-center justify-center transition-all relative ${
+                        isPast
+                          ? "bg-gray-50 text-gray-300 cursor-not-allowed"
+                          : today
+                          ? "bg-blue-50 text-blue-600 font-semibold cursor-pointer hover:bg-blue-100 border border-blue-200"
+                          : availability.blocked
+                          ? "bg-red-50 text-red-700 border border-red-100 cursor-pointer hover:bg-red-100"
+                          : availability.slots.length > 0
+                          ? "bg-green-50 text-green-700 border border-green-100 cursor-pointer hover:bg-green-100"
+                          : "bg-white text-gray-700 border border-gray-100 cursor-pointer hover:bg-gray-50 hover:border-gray-200"
+                      }`}
+                      onClick={() => {
+                        if (isPast) return;
+                        if (availability.blocked) {
+                          setDateToUnblock(date);
+                          setUnblockDialogOpen(true);
+                          return;
+                        }
+                        setSelectedDate(date);
+                        setNewSlots([
+                          {
+                            start_time: "09:00",
+                            end_time: "10:00",
+                            is_recurring: false,
+                          },
+                        ]);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <span className="text-sm font-medium">
+                        {date.getDate()}
+                      </span>
+                      {today && (
+                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-blue-500 rounded-full border-2 border-white" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No Availability Set Yet
-              </h3>
-              <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
-                Set your available time slots so students can book sessions with
-                you. Click any date on the calendar below to get started.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>Tip: Use recurring slots for weekly schedules</span>
+
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-blue-50 border border-blue-200" />
+                  <span className="text-xs font-medium text-gray-600">
+                    Today
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-green-50 border border-green-100" />
+                  <span className="text-xs font-medium text-gray-600">
+                    Available
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-red-50 border border-red-100" />
+                  <span className="text-xs font-medium text-gray-600">
+                    Blocked
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+
+      {/* Empty State - only show if no availability is set */}
+      {!loading &&
+        availabilitySlots.length === 0 &&
+        blockedDates.length === 0 && (
+          <Card className="border-gray-200">
+            <CardContent className="p-6 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-50 mb-3">
+                <CalendarIcon className="h-6 w-6 text-rose-400" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
+                No Availability Set Yet
+              </h3>
+              <p className="text-sm text-gray-600 max-w-md mx-auto">
+                Select a date from the calendar and add time slots to get
+                started.
+              </p>
+            </CardContent>
+          </Card>
         )}
-
-      {
-        /* Calendar Header */
-        <Card className="border-gray-200 max-w-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={previousMonth}
-                className="border-gray-300 h-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <h2 className="text-base font-semibold text-gray-900">
-                {currentDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextMonth}
-                className="border-gray-300 h-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Day Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {daysOfWeek.map((day) => (
-                <div
-                  key={day}
-                  className="text-center text-xs font-semibold text-gray-700 py-1.5"
-                >
-                  {day.slice(0, 1)}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
-              {loading
-                ? // Loading skeleton
-                  Array.from({ length: 35 }).map((_, index) => (
-                    <div
-                      key={`skeleton-${index}`}
-                      className="aspect-square border border-gray-200 rounded-2xl bg-gray-50 animate-pulse"
-                    />
-                  ))
-                : days.map((date, index) => {
-                    if (!date) {
-                      return (
-                        <div key={`empty-${index}`} className="aspect-square" />
-                      );
-                    }
-
-                    const availability = getAvailabilityForDate(date);
-                    const today = isToday(date);
-
-                    return (
-                      <div
-                        key={date.toISOString()}
-                        className={`aspect-square border rounded-2xl p-1 transition-all cursor-pointer hover:shadow-sm ${
-                          today
-                            ? "border-2 border-gray-900 bg-gray-50"
-                            : availability.blocked
-                            ? "border border-red-300 bg-red-50"
-                            : availability.slots.length > 0
-                            ? "border border-green-300 bg-green-50"
-                            : "border border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
-                        onClick={() => {
-                          setSelectedDate(date);
-                          // Reset slots when opening dialog
-                          setNewSlots([
-                            {
-                              start_time: "09:00",
-                              end_time: "10:00",
-                              is_recurring: false,
-                            },
-                          ]);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <div className="flex flex-col items-center justify-center h-full">
-                          <div className="text-xs font-semibold text-gray-900">
-                            {date.getDate()}
-                          </div>
-                          {availability.blocked ? (
-                            <div className="w-1 h-1 bg-red-500 rounded-full mt-0.5" />
-                          ) : availability.slots.length > 0 ? (
-                            <div className="w-1 h-1 bg-green-500 rounded-full mt-0.5" />
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 border-2 border-gray-900 bg-gray-50 rounded" />
-                <span className="text-xs text-gray-600">Today</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 border-2 border-green-200 bg-green-50 rounded" />
-                <span className="text-xs text-gray-600">Available</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 border-2 border-red-200 bg-red-50 rounded" />
-                <span className="text-xs text-gray-600">Blocked</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      }
 
       {/* Add Slot Dialog */}
       <Dialog
@@ -1510,6 +1707,49 @@ const AvailabilityCalendar = ({ mentorProfile }: AvailabilityCalendarProps) => {
               >
                 Copy to {copyTargetDates.length} Date
                 {copyTargetDates.length !== 1 ? "s" : ""}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unblock Date Dialog */}
+      <Dialog open={unblockDialogOpen} onOpenChange={setUnblockDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              Unblock Date
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700">
+                Are you sure you want to unblock{" "}
+                <span className="font-semibold text-red-700">
+                  {dateToUnblock && format(dateToUnblock, "EEEE, MMMM d, yyyy")}
+                </span>
+                ?
+              </p>
+              <p className="text-xs text-gray-600 mt-2">
+                This date will become available for students to book sessions.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setUnblockDialogOpen(false);
+                  setDateToUnblock(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUnblockDate}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Unblock Date
               </Button>
             </div>
           </div>

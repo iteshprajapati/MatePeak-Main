@@ -12,6 +12,7 @@ import {
   User,
   CheckCircle,
   XCircle,
+  Settings,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,20 +91,56 @@ const DashboardOverview = ({
           break;
       }
 
-      // Fetch sessions data
-      let query = supabase
+      // Fetch sessions where user is the mentor
+      let mentorQuery = supabase
         .from("bookings")
         .select("*")
         .eq("expert_id", mentorProfile.id);
 
-      // Apply date filter if not "all time"
+      // Fetch sessions where user is the student
+      let studentQuery = supabase
+        .from("bookings")
+        .select("*")
+        .eq("user_id", mentorProfile.id);
+
+      const { data: mentorSessions } = await mentorQuery;
+      const { data: studentSessions } = await studentQuery;
+
+      // Combine both types of sessions for total count
+      const allSessions = [
+        ...(mentorSessions || []),
+        ...(studentSessions || []),
+      ];
+
+      // Apply date filter for other stats
+      let filteredMentorQuery = supabase
+        .from("bookings")
+        .select("*")
+        .eq("expert_id", mentorProfile.id);
+
+      let filteredStudentQuery = supabase
+        .from("bookings")
+        .select("*")
+        .eq("user_id", mentorProfile.id);
+
       if (startDate) {
-        query = query.gte("created_at", startDate.toISOString());
+        filteredMentorQuery = filteredMentorQuery.gte(
+          "created_at",
+          startDate.toISOString()
+        );
+        filteredStudentQuery = filteredStudentQuery.gte(
+          "created_at",
+          startDate.toISOString()
+        );
       }
 
-      const { data: sessions, error: sessionsError } = await query;
+      const { data: filteredMentorSessions } = await filteredMentorQuery;
+      const { data: filteredStudentSessions } = await filteredStudentQuery;
 
-      if (sessionsError) throw sessionsError;
+      const sessions = [
+        ...(filteredMentorSessions || []),
+        ...(filteredStudentSessions || []),
+      ];
 
       // Calculate stats
       const upcoming =
@@ -114,7 +151,7 @@ const DashboardOverview = ({
           return sessionDate > now && s.status === "confirmed";
         }) || [];
       const completed = sessions?.filter((s) => s.status === "completed") || [];
-      const total = sessions?.length || 0;
+      const total = allSessions?.length || 0; // Total includes all sessions from both roles
 
       // Calculate total earnings
       const earnings = completed.reduce((sum, session) => {
@@ -325,7 +362,13 @@ const DashboardOverview = ({
                 className="bg-gray-100 border-0 rounded-2xl shadow-none"
               >
                 <CardContent className="p-6">
-                  <Skeleton className="h-20 w-full" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Skeleton className="h-3 w-20 mb-3" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                  </div>
                 </CardContent>
               </Card>
             ))
@@ -415,28 +458,34 @@ const DashboardOverview = ({
               </div>
             </button>
 
-            {/* View Public Profile */}
+            {/* Profile Management */}
             <button
               onClick={() => {
-                if (mentorProfile.username) {
-                  window.open(`/mentor/${mentorProfile.username}`, "_blank");
+                if (onNavigate) {
+                  onNavigate("profile");
+                } else {
+                  toast({
+                    title: "Error",
+                    description: "Navigation function not available",
+                    variant: "destructive",
+                  });
                 }
               }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group cursor-pointer"
             >
               <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">
-                <Eye className="h-4 w-4 text-rose-400" />
+                <Settings className="h-4 w-4 text-rose-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">
-                  View Profile
+                  Profile Management
                 </p>
               </div>
             </button>
 
             {/* Message Support */}
             <a
-              href="mailto:support@sparkmentorconnect.com"
+              href="mailto:iteshofficial@gmail.com"
               className="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-rose-300 transition-all text-left group"
             >
               <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-rose-50 transition-colors">

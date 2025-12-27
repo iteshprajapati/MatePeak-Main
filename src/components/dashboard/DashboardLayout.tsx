@@ -9,7 +9,6 @@ import {
   LogOut,
   ChevronDown,
   Star,
-  CalendarCheck,
   MessageSquare,
   Users,
   Clock,
@@ -42,7 +41,6 @@ type DashboardView =
   | "sessions"
   | "reviews"
   | "availability"
-  | "calendar"
   | "messages"
   | "students"
   | "requests"
@@ -89,12 +87,6 @@ const DashboardLayout = ({
           id: "sessions" as DashboardView,
           label: "Sessions",
           icon: Calendar,
-          badge: null,
-        },
-        {
-          id: "calendar" as DashboardView,
-          label: "Calendar",
-          icon: CalendarCheck,
           badge: null,
         },
         {

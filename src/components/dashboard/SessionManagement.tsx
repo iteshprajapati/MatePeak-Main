@@ -204,7 +204,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
 
-    // Filter sessions by current date range first
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Filter sessions by current date range first (for display in the list)
     const dateFilteredSessions = sessions.filter((s) =>
       isWithinDateRange(s.scheduled_date, s.scheduled_time, dateRange)
     );
@@ -212,7 +215,7 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     const pending = dateFilteredSessions.filter(
       (s) => s.status === "pending"
     ).length;
-    const thisWeek = dateFilteredSessions.filter((s) => {
+    const thisWeek = sessions.filter((s) => {
       try {
         const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
         return sessionDate >= weekStart && sessionDate < weekEnd;
@@ -221,7 +224,16 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       }
     }).length;
 
-    const upcoming = dateFilteredSessions.filter((s) => {
+    const thisMonth = sessions.filter((s) => {
+      try {
+        const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
+        return sessionDate >= monthStart && sessionDate <= monthEnd;
+      } catch {
+        return false;
+      }
+    }).length;
+
+    const upcoming = sessions.filter((s) => {
       try {
         const sessionDate = new Date(`${s.scheduled_date}T${s.scheduled_time}`);
         return sessionDate > now && s.status === "confirmed";
@@ -231,9 +243,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
     }).length;
 
     return {
-      total: dateFilteredSessions.length,
+      total: sessions.length, // Total should always be ALL sessions
       pending,
       thisWeek,
+      thisMonth,
       upcoming,
     };
   }, [sessions, dateRange]);
@@ -318,6 +331,17 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         enrichedExpertSessions = expertSessions.map((session) => ({
           ...session,
           student: studentsData?.find((s) => s.id === session.user_id),
+          display_name:
+            studentsData?.find((s) => s.id === session.user_id)?.full_name ||
+            session.student_name ||
+            "Student",
+          display_email:
+            studentsData?.find((s) => s.id === session.user_id)?.email ||
+            session.student_email ||
+            "",
+          display_phone:
+            studentsData?.find((s) => s.id === session.user_id)?.phone || "",
+          user_role: "expert" as const,
         }));
       }
 
@@ -349,6 +373,14 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         enrichedStudentSessions = studentSessions.map((session) => ({
           ...session,
           mentor_profile: mentorsData?.find((m) => m.id === session.expert_id),
+          display_name:
+            mentorsData?.find((m) => m.id === session.expert_id)?.full_name ||
+            "Mentor",
+          display_email:
+            mentorsData?.find((m) => m.id === session.expert_id)?.email || "",
+          display_phone:
+            mentorsData?.find((m) => m.id === session.expert_id)?.phone || "",
+          user_role: "student" as const,
         }));
       }
 
@@ -359,23 +391,10 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
         );
       }
 
-      // Combine and enrich sessions with display information
+      // Combine both types of sessions
       const allSessions = [
-        ...enrichedExpertSessions.map((session) => ({
-          ...session,
-          display_name:
-            session.student?.full_name || session.student_name || "Student",
-          display_email: session.student?.email || session.student_email || "",
-          display_phone: session.student?.phone || "",
-          user_role: "expert" as const,
-        })),
-        ...enrichedStudentSessions.map((session) => ({
-          ...session,
-          display_name: session.mentor_profile?.full_name || "Mentor",
-          display_email: session.mentor_profile?.email || "",
-          display_phone: session.mentor_profile?.phone || "",
-          user_role: "student" as const,
-        })),
+        ...enrichedExpertSessions,
+        ...enrichedStudentSessions,
       ].sort((a, b) => {
         // Sort by date and time combined (most recent first)
         const dateTimeA = new Date(
@@ -696,45 +715,43 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       </div>
 
       {/* Statistics Cards - Matching DashboardOverview Style */}
-      {!loading && (
+      {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Total Sessions */}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card
+              key={i}
+              className="bg-gray-100 border-0 rounded-2xl shadow-none"
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Skeleton className="h-3 w-20 mb-3" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Upcoming Sessions */}
           <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Total Sessions
+                    Upcoming
                   </p>
                   <div className="flex items-baseline mt-3">
                     <p className="text-3xl font-bold text-gray-900">
-                      {statistics.total}
+                      {statistics.upcoming}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Calendar className="h-6 w-6 text-rose-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pending Sessions */}
-          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Pending
-                  </p>
-                  <div className="flex items-baseline mt-3">
-                    <p className="text-3xl font-bold text-gray-900">
-                      {statistics.pending}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <ClockAlert className="h-6 w-6 text-rose-400" />
+                  <Clock className="h-6 w-6 text-rose-400" />
                 </div>
               </div>
             </CardContent>
@@ -761,22 +778,43 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
             </CardContent>
           </Card>
 
-          {/* Upcoming Sessions */}
+          {/* This Month */}
           <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Upcoming
+                    This Month
                   </p>
                   <div className="flex items-baseline mt-3">
                     <p className="text-3xl font-bold text-gray-900">
-                      {statistics.upcoming}
+                      {statistics.thisMonth}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Clock className="h-6 w-6 text-rose-400" />
+                  <Calendar className="h-6 w-6 text-rose-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Total Sessions */}
+          <Card className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Total Sessions
+                  </p>
+                  <div className="flex items-baseline mt-3">
+                    <p className="text-3xl font-bold text-gray-900">
+                      {statistics.total}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users className="h-6 w-6 text-rose-400" />
                 </div>
               </div>
             </CardContent>
@@ -845,19 +883,6 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
           All Sessions
           {statusCounts.all > 0 && (
             <span className="ml-1.5 opacity-75">({statusCounts.all})</span>
-          )}
-        </button>
-        <button
-          onClick={() => setFilter("pending")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-            filter === "pending"
-              ? "bg-gray-900 text-white shadow-sm"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          Pending
-          {statusCounts.pending > 0 && (
-            <span className="ml-1.5 opacity-75">({statusCounts.pending})</span>
           )}
         </button>
         <button
@@ -1036,10 +1061,39 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
       {/* Sessions List - 2 Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="border-gray-200 rounded-xl shadow-none">
+          Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="border-gray-200 rounded-xl shadow-sm">
               <CardContent className="p-4">
-                <Skeleton className="h-28 w-full" />
+                <div className="space-y-3">
+                  {/* Header skeleton */}
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+
+                  {/* Date and time skeleton */}
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+
+                  {/* Student name skeleton */}
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+
+                  {/* Amount skeleton */}
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+
+                  {/* Action buttons skeleton */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))
@@ -1095,7 +1149,7 @@ const SessionManagement = ({ mentorProfile }: SessionManagementProps) => {
                   {session.message && (
                     <div className="pt-2 border-t border-gray-100">
                       <p className="text-xs font-medium text-gray-500 mb-1">
-                        Users Message:
+                        Mentee's Message:
                       </p>
                       <p className="text-xs text-gray-600 line-clamp-2">
                         {session.message}

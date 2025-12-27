@@ -142,7 +142,7 @@ const SessionDetailsModal = ({
                     Duration
                   </p>
                   <p className="text-sm text-gray-900 mt-1 font-medium">
-                    {session.duration || 60} minutes
+                    {session.duration || session.session_duration || 30} minutes
                   </p>
                 </div>
               </div>
@@ -172,7 +172,10 @@ const SessionDetailsModal = ({
                     Session Type
                   </p>
                   <p className="text-sm text-gray-900 mt-1 font-medium">
-                    {session.session_type || "1-on-1 Video Call"}
+                    {session.session_type === "oneOnOneSession" ||
+                    session.session_type === "one-on-one"
+                      ? "1:1 Session"
+                      : session.session_type || "1:1 Session"}
                   </p>
                 </div>
               </div>
@@ -184,8 +187,7 @@ const SessionDetailsModal = ({
           {/* Participant Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              {session.user_role === "expert" ? "Student" : "Mentor"}{" "}
-              Information
+              Mentee Information
             </h3>
 
             <div className="space-y-3">
@@ -233,7 +235,7 @@ const SessionDetailsModal = ({
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Message
+                  Mentee's Message
                 </h3>
                 <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
                   <p className="text-sm text-gray-900 whitespace-pre-wrap">

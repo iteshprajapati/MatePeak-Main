@@ -8,7 +8,6 @@ import ProfileManagement from "@/components/dashboard/ProfileManagement";
 import SessionManagement from "@/components/dashboard/SessionManagement";
 import ReviewsManagement from "@/components/dashboard/ReviewsManagement";
 import AvailabilityCalendar from "@/components/dashboard/AvailabilityCalendar";
-import SessionCalendar from "@/components/dashboard/SessionCalendar";
 import SessionMessaging from "@/components/dashboard/SessionMessaging";
 import StudentDirectory from "@/components/dashboard/StudentDirectory";
 import CustomTimeRequests from "@/components/dashboard/CustomTimeRequests";
@@ -21,7 +20,6 @@ type DashboardView =
   | "sessions"
   | "reviews"
   | "availability"
-  | "calendar"
   | "messages"
   | "students"
   | "requests"
@@ -192,9 +190,6 @@ const MentorDashboard = () => {
       )}
       {activeView === "availability" && (
         <AvailabilityCalendar mentorProfile={mentorProfile} />
-      )}
-      {activeView === "calendar" && (
-        <SessionCalendar mentorProfile={mentorProfile} />
       )}
       {activeView === "messages" && (
         <SessionMessaging mentorProfile={mentorProfile} />

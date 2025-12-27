@@ -104,17 +104,7 @@ export default function DateTimeSelection({
 
     setDatesWithSlots(datesWithAvailability);
 
-    // Cache the results for reuse
-    results.forEach(({ date, dateStr }) => {
-      const cacheKey = `${mentorId}-${dateStr}-${selectedService.duration}`;
-      if (!slotCache.has(cacheKey)) {
-        // Store in cache for future use
-        const result = results.find((r) => r.dateStr === dateStr);
-        if (result) {
-          setSlotCache((prev) => new Map(prev).set(cacheKey, [])); // Placeholder
-        }
-      }
-    });
+    // Do not cache empty placeholders here. Only cache real slot data after fetching in fetchTimeSlots.
 
     // Auto-select first available date if not already selected
     if (!hasAutoSelectedDate) {
