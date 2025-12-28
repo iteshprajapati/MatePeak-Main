@@ -251,7 +251,7 @@ export async function createBooking(data: CreateBookingData) {
         user_email: data.user_email,
         user_phone: sanitizedPhone,
         price_verified: true,
-        payment_status: "completed", // Use 'completed' for free beta bookings (temporary until DB updated)
+        payment_status: "free", // Use 'free' for beta bookings without payment
       })
       .select()
       .single();

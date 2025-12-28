@@ -36,6 +36,7 @@ interface BookingDetails {
   mentor_image: string;
   student_name: string;
   student_email: string;
+  meeting_link?: string;
 }
 
 const BookingConfirmed = () => {
@@ -69,29 +70,29 @@ const BookingConfirmed = () => {
           return;
         }
 
-        // Fetch booking details with mentor and student info
+        // Fetch booking details with mentor info
         const { data: bookingData, error: bookingError } = await supabase
-          .from("booking_requests")
+          .from("bookings")
           .select(
             `
             id,
-            student_id,
-            mentor_id,
-            service_type,
-            service_name,
-            date,
-            time_slot,
+            user_id,
+            expert_id,
+            session_type,
+            scheduled_date,
+            scheduled_time,
             duration,
             status,
+            total_amount,
+            meeting_link,
+            user_name,
+            user_email,
             created_at,
-            mentor:expert_profiles!booking_requests_mentor_id_fkey(
+            expert_profiles!bookings_expert_id_fkey(
               full_name,
               email,
-              avatar_url
-            ),
-            student:profiles!booking_requests_student_id_fkey(
-              full_name,
-              email
+              avatar_url,
+              username
             )
           `
           )
@@ -100,8 +101,18 @@ const BookingConfirmed = () => {
 
         if (bookingError) {
           console.error("Booking fetch error:", bookingError);
+          console.error("Booking ID:", bookingId);
+          console.error("Error details:", {
+            code: bookingError.code,
+            message: bookingError.message,
+            details: bookingError.details,
+            hint: bookingError.hint,
+          });
           setError(
-            "Unable to find booking details. Please check your bookings in the dashboard."
+            `Unable to find booking details. ${
+              bookingError.message ||
+              "Please check your bookings in the dashboard."
+            }`
           );
           setLoading(false);
           return;
@@ -116,8 +127,8 @@ const BookingConfirmed = () => {
         // Verify user has access to this booking
         const userId = session.user.id;
         if (
-          bookingData.student_id !== userId &&
-          bookingData.mentor_id !== userId
+          bookingData.user_id !== userId &&
+          bookingData.expert_id !== userId
         ) {
           setError("You don't have permission to view this booking.");
           setLoading(false);
@@ -125,33 +136,48 @@ const BookingConfirmed = () => {
         }
 
         // Determine user role
-        setUserRole(bookingData.student_id === userId ? "student" : "mentor");
+        setUserRole(bookingData.user_id === userId ? "student" : "mentor");
 
-        // Extract mentor and student data (Supabase returns single object, not array)
-        const mentorData = Array.isArray(bookingData.mentor)
-          ? bookingData.mentor[0]
-          : bookingData.mentor;
-        const studentData = Array.isArray(bookingData.student)
-          ? bookingData.student[0]
-          : bookingData.student;
+        // Extract mentor data
+        const mentorData = bookingData.expert_profiles;
+
+        // For student name, use the user_name field from booking (which was captured at booking time)
+        // If viewing as student, fetch their own profile for full data
+        let studentName = bookingData.user_name || "Student";
+        let studentEmail = bookingData.user_email || "";
+
+        if (bookingData.user_id === userId) {
+          // If current user is the student, fetch their profile
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", userId)
+            .single();
+
+          if (profileData) {
+            studentName = profileData.full_name || studentName;
+            studentEmail = profileData.email || studentEmail;
+          }
+        }
 
         // Format booking data
         const formattedBooking: BookingDetails = {
           id: bookingData.id,
-          student_id: bookingData.student_id,
-          mentor_id: bookingData.mentor_id,
-          service_type: bookingData.service_type,
-          service_name: bookingData.service_name,
-          date: bookingData.date,
-          time_slot: bookingData.time_slot,
+          student_id: bookingData.user_id,
+          mentor_id: bookingData.expert_id,
+          service_type: bookingData.session_type,
+          service_name: bookingData.session_type, // Use session_type as service name
+          date: bookingData.scheduled_date,
+          time_slot: bookingData.scheduled_time,
           duration: bookingData.duration,
           status: bookingData.status,
           created_at: bookingData.created_at,
           mentor_name: mentorData?.full_name || "Unknown Mentor",
           mentor_email: mentorData?.email || "",
           mentor_image: mentorData?.avatar_url || "",
-          student_name: studentData?.full_name || "Unknown Student",
-          student_email: studentData?.email || "",
+          student_name: studentName,
+          student_email: studentEmail,
+          meeting_link: bookingData.meeting_link,
         };
 
         setBooking(formattedBooking);
@@ -361,6 +387,33 @@ const BookingConfirmed = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Meeting Link - Show if available */}
+              {booking.meeting_link && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Video Meeting
+                  </h3>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Video className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm text-emerald-800 mb-2">
+                          Your meeting link is ready!
+                        </p>
+                        <a
+                          href={booking.meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm underline break-all"
+                        >
+                          {booking.meeting_link}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* What's Next */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
