@@ -6,13 +6,13 @@ import { toast } from 'sonner';
 import StudentDashboardLayout from '@/components/dashboard/student/StudentDashboardLayout';
 import StudentOverview from '@/components/dashboard/student/StudentOverview';
 import MySessions from '@/components/dashboard/student/MySessions';
-import StudentCalendar from '@/components/dashboard/student/StudentCalendar';
 import StudentMessaging from '@/components/dashboard/student/StudentMessaging';
 import MyMentors from '@/components/dashboard/student/MyMentors';
 import StudentReviews from '@/components/dashboard/student/StudentReviews';
 import StudentProfile from '@/components/dashboard/student/StudentProfile';
+import StudentTimeRequest from '@/components/dashboard/student/StudentTimeRequest';
 
-type StudentView = "overview" | "sessions" | "calendar" | "messages" | "mentors" | "reviews" | "profile";
+type StudentView = "overview" | "sessions" | "time-request" | "messages" | "mentors" | "reviews" | "profile";
 
 export default function StudentDashboard() {
   const [activeView, setActiveView] = useState<StudentView>('overview');
@@ -67,7 +67,7 @@ export default function StudentDashboard() {
 
       // Fetch or create student profile
       const { data: profile, error: profileError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
@@ -82,11 +82,12 @@ export default function StudentDashboard() {
           id: session.user.id,
           email: session.user.email || '',
           full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+          type: 'student',
           created_at: new Date().toISOString(),
         };
 
         const { data: createdProfile } = await supabase
-          .from('student_profiles')
+          .from('profiles')
           .insert(newProfile)
           .select()
           .single();
@@ -137,7 +138,7 @@ export default function StudentDashboard() {
         />
       )}
       {activeView === 'sessions' && <MySessions studentProfile={studentProfile} />}
-      {activeView === 'calendar' && <StudentCalendar studentProfile={studentProfile} />}
+      {activeView === 'time-request' && <StudentTimeRequest studentProfile={studentProfile} />}
       {activeView === 'messages' && <StudentMessaging studentProfile={studentProfile} />}
       {activeView === 'mentors' && <MyMentors studentProfile={studentProfile} />}
       {activeView === 'reviews' && <StudentReviews studentProfile={studentProfile} />}

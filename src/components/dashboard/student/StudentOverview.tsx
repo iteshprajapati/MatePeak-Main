@@ -41,22 +41,6 @@ export default function StudentOverview({
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper function to get effective status (treat past confirmed sessions as completed)
-  const getEffectiveStatus = (session: any): string => {
-    if (session.status === "confirmed") {
-      try {
-        const sessionDate = new Date(session.session_date);
-        const now = new Date();
-        if (sessionDate < now) {
-          return "completed";
-        }
-      } catch {
-        // If date parsing fails, keep original status
-      }
-    }
-    return session.status || "pending";
-  };
-
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -66,12 +50,12 @@ export default function StudentOverview({
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
       if (!user) {
         setLoading(false);
         return;
       }
 
-      // Fetch all bookings
       const { data: bookings, error } = await supabase
         .from("bookings")
         .select(
@@ -81,15 +65,13 @@ export default function StudentOverview({
             id,
             full_name,
             username,
-            profile_picture_url,
-            expertise
+            profile_picture_url
           )
         `
         )
         .eq("student_id", user.id)
         .order("session_date", { ascending: true });
 
-      // Handle error but don't fail if it's just empty results
       if (error && error.code !== "PGRST116") {
         console.error("Error fetching bookings:", error);
       }
@@ -106,14 +88,12 @@ export default function StudentOverview({
         (b) => getEffectiveStatus(b) === "completed"
       );
 
-      // Calculate stats
       const uniqueMentors = new Set(bookingsList.map((b) => b.expert_id)).size;
       const totalMinutes = completed.reduce(
         (sum, b) => sum + (b.duration || 60),
         0
       );
 
-      // Get reviews to find pending
       const { data: reviews } = await supabase
         .from("reviews")
         .select("booking_id")
@@ -137,13 +117,28 @@ export default function StudentOverview({
       setUpcomingSessions(upcoming.slice(0, 3));
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
-      // Don't show error toast for empty results, only real errors
       if (error.code !== "PGRST116") {
         toast.error("Failed to load dashboard data. Please refresh the page.");
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to get effective status (treat past confirmed sessions as completed)
+  const getEffectiveStatus = (session: any): string => {
+    if (session.status === "confirmed") {
+      try {
+        const sessionDate = new Date(session.session_date);
+        const now = new Date();
+        if (sessionDate < now) {
+          return "completed";
+        }
+      } catch {
+        // If date parsing fails, keep original status
+      }
+    }
+    return session.status || "pending";
   };
 
   const formatDate = (dateString: string) => {
@@ -245,70 +240,6 @@ export default function StudentOverview({
         </CardContent>
       </Card>
 
-      {/* Next Session */}
-      {nextSession && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              Next Session
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="h-16 w-16 rounded-full bg-gray-300 flex-shrink-0 overflow-hidden">
-                  {nextSession.expert_profiles?.profile_picture_url ? (
-                    <img
-                      src={nextSession.expert_profiles.profile_picture_url}
-                      alt={nextSession.expert_profiles.full_name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-blue-600 text-white text-xl font-bold">
-                      {nextSession.expert_profiles?.full_name?.charAt(0) || "M"}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-gray-900">
-                    {nextSession.expert_profiles?.full_name || "Mentor"}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {nextSession.expert_profiles?.expertise?.[0] || "Expert"}
-                  </p>
-
-                  <div className="space-y-1 text-sm">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(nextSession.session_date)}</span>
-                      <span className="text-blue-600 font-medium">
-                        ({getTimeUntil(nextSession.session_date)})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Clock className="h-4 w-4" />
-                      <span>
-                        {formatTime(nextSession.session_date)} •{" "}
-                        {nextSession.duration || 60} minutes
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button className="flex-1">Join Session</Button>
-                <Button variant="outline" className="flex-1">
-                  Message Mentor
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Upcoming Sessions Preview */}
       {upcomingSessions.length > 0 && (
         <Card>
@@ -321,6 +252,13 @@ export default function StudentOverview({
                 variant="ghost"
                 size="sm"
                 className="flex items-center gap-1"
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate("sessions");
+                  } else {
+                    navigate("/student-dashboard");
+                  }
+                }}
               >
                 View All
                 <ArrowRight className="h-4 w-4" />
