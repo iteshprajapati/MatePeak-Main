@@ -8,7 +8,6 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Lock,
   Loader2,
   Smartphone,
 } from "lucide-react";
@@ -356,28 +355,6 @@ export default function BookingConfirmation({
           getSubmitButtonText()
         )}
       </Button>
-
-      {/* Security Note */}
-      <div className="flex items-center justify-center gap-2.5 text-xs text-gray-500 bg-gray-50 rounded-xl py-3">
-        <Lock className="h-3.5 w-3.5" />
-        <span className="font-medium">
-          Payments are 100% secure & encrypted
-        </span>
-      </div>
-
-      {/* Terms */}
-      <div className="text-center pb-2">
-        <p className="text-xs text-gray-500">
-          By confirming, you agree to our{" "}
-          <a href="#" className="text-gray-700 hover:underline font-medium">
-            Terms
-          </a>{" "}
-          and{" "}
-          <a href="#" className="text-gray-700 hover:underline font-medium">
-            Privacy Policy
-          </a>
-        </p>
-      </div>
     </form>
   );
 }

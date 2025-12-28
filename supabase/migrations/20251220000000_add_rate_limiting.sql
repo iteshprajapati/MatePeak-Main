@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS rate_limit_config (
 -- Insert default rate limits
 INSERT INTO rate_limit_config (action_type, max_requests, time_window_minutes, description)
 VALUES
-    ('booking_create', 5, 60, 'Max 5 booking requests per hour'),
+    ('booking_create', 20, 60, 'Max 20 booking requests per hour'),
     ('booking_request', 10, 60, 'Max 10 booking-related actions per hour'),
     ('message_send', 30, 60, 'Max 30 messages per hour'),
     ('review_create', 3, 60, 'Max 3 reviews per hour'),

@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       to,
       subject,
       html,
-      from = "Spark Mentor Connect <onboarding@resend.dev>",
+      from = "MatePeak - Be a Solopreneur <onboarding@resend.dev>",
     }: EmailRequest = requestBody;
 
     // Validate required fields

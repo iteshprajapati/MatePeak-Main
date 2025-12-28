@@ -95,6 +95,14 @@ export default function AvailabilityPreview({
       endOfMonth.setHours(0, 0, 0, 0);
       const endDateStr = getLocalDateString(endOfMonth);
 
+      // Get current time for filtering today's slots
+      const currentTime = new Date();
+      const currentHours = currentTime.getHours();
+      const currentMinutes = currentTime.getMinutes();
+      const currentTimeStr = `${String(currentHours).padStart(2, "0")}:${String(
+        currentMinutes
+      ).padStart(2, "0")}`;
+
       // Fetch recurring availability
       const { data: recurring, error: recurringError } = await supabase
         .from("availability_slots")
@@ -131,6 +139,12 @@ export default function AvailabilityPreview({
       // Process specific dates
       specific?.forEach((slot) => {
         if (slot.specific_date && !blockedDates.has(slot.specific_date)) {
+          // Filter out past time slots for today
+          const isToday = slot.specific_date === todayStr;
+          if (isToday && slot.start_time < currentTimeStr) {
+            return; // Skip this slot as it's in the past
+          }
+
           const count = dateMap.get(slot.specific_date) || 0;
           dateMap.set(slot.specific_date, count + 1);
         }
@@ -146,9 +160,17 @@ export default function AvailabilityPreview({
 
           if (!blockedDates.has(dateStr)) {
             const dayOfWeek = checkDate.getDay();
-            const daySlots = recurring.filter(
+            let daySlots = recurring.filter(
               (slot) => slot.day_of_week === dayOfWeek
             );
+
+            // Filter out past time slots for today
+            const isToday = dateStr === todayStr;
+            if (isToday) {
+              daySlots = daySlots.filter(
+                (slot) => slot.start_time >= currentTimeStr
+              );
+            }
 
             if (daySlots.length > 0) {
               const existingCount = dateMap.get(dateStr) || 0;
@@ -210,6 +232,18 @@ export default function AvailabilityPreview({
       const date = parseDateString(dateStr);
       const dayOfWeek = date.getDay();
 
+      // Check if selected date is today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isToday = date.getTime() === today.getTime();
+
+      // Get current time for filtering
+      const currentTime = new Date();
+      const currentTimeStr = `${String(currentTime.getHours()).padStart(
+        2,
+        "0"
+      )}:${String(currentTime.getMinutes()).padStart(2, "0")}`;
+
       // Fetch specific slots for this date
       const { data: specificSlots } = await supabase
         .from("availability_slots")
@@ -231,13 +265,20 @@ export default function AvailabilityPreview({
       const allSlots = [...(specificSlots || []), ...(recurringSlots || [])];
 
       // Remove duplicates and sort
-      const uniqueSlots = allSlots.reduce((acc, slot) => {
+      let uniqueSlots = allSlots.reduce((acc, slot) => {
         const key = `${slot.start_time}-${slot.end_time}`;
         if (!acc.some((s) => `${s.start_time}-${s.end_time}` === key)) {
           acc.push(slot);
         }
         return acc;
       }, [] as { start_time: string; end_time: string }[]);
+
+      // Filter out past time slots if viewing today
+      if (isToday) {
+        uniqueSlots = uniqueSlots.filter(
+          (slot) => slot.start_time >= currentTimeStr
+        );
+      }
 
       uniqueSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
 

@@ -238,7 +238,7 @@ export default function BookingDialog({
     </div>
     
     <div class="footer">
-      <p>Need help? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
+      <p>Need help? <a href="mailto:iteshofficial@gmail.com">Contact Support</a></p>
       <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
     </div>
   </div>
@@ -364,7 +364,7 @@ export default function BookingDialog({
     </div>
     
     <div class="footer">
-      <p>Questions? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
+      <p>Questions? <a href="mailto:iteshofficial@gmail.com">Contact Support</a></p>
       <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
     </div>
   </div>
