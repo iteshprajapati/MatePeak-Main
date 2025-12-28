@@ -90,8 +90,7 @@ const BookingConfirmed = () => {
             created_at,
             expert_profiles!bookings_expert_id_fkey(
               full_name,
-              email,
-              avatar_url,
+              profile_picture_url,
               username
             )
           `
@@ -141,6 +140,20 @@ const BookingConfirmed = () => {
         // Extract mentor data
         const mentorData = bookingData.expert_profiles;
 
+        // Fetch mentor email from profiles table
+        let mentorEmail = "";
+        if (bookingData.expert_id) {
+          const { data: mentorProfile } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", bookingData.expert_id)
+            .single();
+          
+          if (mentorProfile) {
+            mentorEmail = mentorProfile.email || "";
+          }
+        }
+
         // For student name, use the user_name field from booking (which was captured at booking time)
         // If viewing as student, fetch their own profile for full data
         let studentName = bookingData.user_name || "Student";
@@ -173,8 +186,8 @@ const BookingConfirmed = () => {
           status: bookingData.status,
           created_at: bookingData.created_at,
           mentor_name: mentorData?.full_name || "Unknown Mentor",
-          mentor_email: mentorData?.email || "",
-          mentor_image: mentorData?.avatar_url || "",
+          mentor_email: mentorEmail,
+          mentor_image: mentorData?.profile_picture_url || "",
           student_name: studentName,
           student_email: studentEmail,
           meeting_link: bookingData.meeting_link,

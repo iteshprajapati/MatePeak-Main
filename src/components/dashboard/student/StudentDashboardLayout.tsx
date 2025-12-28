@@ -16,6 +16,7 @@ import {
   Search,
   Settings,
   GraduationCap,
+  Clock,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -28,7 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type StudentView = "overview" | "sessions" | "calendar" | "messages" | "mentors" | "reviews" | "profile";
+type StudentView = "overview" | "sessions" | "time-request" | "messages" | "mentors" | "reviews" | "profile";
 
 interface StudentDashboardLayoutProps {
   activeView: StudentView;
@@ -70,10 +71,11 @@ const StudentDashboardLayout = ({
           icon: BookOpen,
           badge: null,
         },
+
         {
-          id: "calendar" as StudentView,
-          label: "Calendar",
-          icon: CalendarCheck,
+          id: "time-request" as StudentView,
+          label: "Time Request",
+          icon: Clock,
           badge: null,
         },
         {
@@ -178,7 +180,7 @@ const StudentDashboardLayout = ({
                     <div className="relative">
                       <Avatar className="h-8 w-8 ring-2 ring-gray-200">
                         <AvatarImage
-                          src={studentProfile?.profile_picture_url || ""}
+                          src={studentProfile?.avatar_url || studentProfile?.profile_picture_url || ""}
                           alt={studentProfile?.full_name || "Student"}
                         />
                         <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
@@ -201,7 +203,7 @@ const StudentDashboardLayout = ({
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12 ring-2 ring-gray-200">
                         <AvatarImage
-                          src={studentProfile?.profile_picture_url || ""}
+                          src={studentProfile?.avatar_url || studentProfile?.profile_picture_url || ""}
                           alt={studentProfile?.full_name || "Student"}
                         />
                         <AvatarFallback className="bg-blue-600 text-white font-semibold">
@@ -274,7 +276,7 @@ const StudentDashboardLayout = ({
             <div className="flex flex-col items-center text-center mb-4">
               <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3">
                 <AvatarImage
-                  src={studentProfile?.profile_picture_url || ""}
+                  src={studentProfile?.avatar_url || studentProfile?.profile_picture_url || ""}
                   alt={studentProfile?.full_name || "Student"}
                 />
                 <AvatarFallback className="bg-blue-600 text-white text-xl font-bold">
@@ -365,7 +367,7 @@ const StudentDashboardLayout = ({
                 <div className="flex flex-col items-center text-center mb-4">
                   <Avatar className="h-20 w-20 ring-4 ring-white shadow-md mb-3">
                     <AvatarImage
-                      src={studentProfile?.profile_picture_url || ""}
+                      src={studentProfile?.avatar_url || studentProfile?.profile_picture_url || ""}
                       alt={studentProfile?.full_name || "Student"}
                     />
                     <AvatarFallback className="bg-blue-600 text-white text-xl font-bold">
