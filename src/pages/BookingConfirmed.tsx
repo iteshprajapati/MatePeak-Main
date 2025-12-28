@@ -46,7 +46,10 @@ const BookingConfirmed = () => {
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [userRole, setUserRole] = useState<"student" | "mentor" | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [checkComplete, setCheckComplete] = useState(false);
 
+  // Fetch booking details
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
@@ -90,8 +93,7 @@ const BookingConfirmed = () => {
             created_at,
             expert_profiles!bookings_expert_id_fkey(
               full_name,
-              email,
-              avatar_url,
+              profile_picture_url,
               username
             )
           `
@@ -141,6 +143,20 @@ const BookingConfirmed = () => {
         // Extract mentor data
         const mentorData = bookingData.expert_profiles;
 
+        // Fetch mentor email from profiles table
+        let mentorEmail = "";
+        if (bookingData.expert_id) {
+          const { data: mentorProfile } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", bookingData.expert_id)
+            .single();
+
+          if (mentorProfile) {
+            mentorEmail = mentorProfile.email || "";
+          }
+        }
+
         // For student name, use the user_name field from booking (which was captured at booking time)
         // If viewing as student, fetch their own profile for full data
         let studentName = bookingData.user_name || "Student";
@@ -173,8 +189,8 @@ const BookingConfirmed = () => {
           status: bookingData.status,
           created_at: bookingData.created_at,
           mentor_name: mentorData?.full_name || "Unknown Mentor",
-          mentor_email: mentorData?.email || "",
-          mentor_image: mentorData?.avatar_url || "",
+          mentor_email: mentorEmail,
+          mentor_image: mentorData?.profile_picture_url || "",
           student_name: studentName,
           student_email: studentEmail,
           meeting_link: bookingData.meeting_link,
@@ -191,6 +207,32 @@ const BookingConfirmed = () => {
 
     fetchBookingDetails();
   }, [bookingId]);
+
+  // Trigger celebration animation
+  useEffect(() => {
+    if (booking) {
+      // Show check animation
+      const checkTimer = setTimeout(() => {
+        setCheckComplete(true);
+      }, 300);
+
+      // Trigger confetti after check completes
+      const confettiTimer = setTimeout(() => {
+        setShowConfetti(true);
+      }, 800);
+
+      // Hide confetti after animation
+      const hideTimer = setTimeout(() => {
+        setShowConfetti(false);
+      }, 3000);
+
+      return () => {
+        clearTimeout(checkTimer);
+        clearTimeout(confettiTimer);
+        clearTimeout(hideTimer);
+      };
+    }
+  }, [booking]);
 
   // Loading state
   if (loading) {
@@ -250,6 +292,18 @@ const BookingConfirmed = () => {
     );
   }
 
+  // Format service type for display
+  const formatServiceType = (type: string) => {
+    const typeMap: Record<string, string> = {
+      oneOnOneSession: "1:1 Session",
+      groupSession: "Group Session",
+      workshop: "Workshop",
+      consultation: "Consultation",
+      mentorship: "Mentorship",
+    };
+    return typeMap[type] || type.replace(/([A-Z])/g, " $1").trim();
+  };
+
   // Format date and time
   const bookingDate = new Date(booking.date);
   const formattedDate = format(bookingDate, "EEEE, MMMM d, yyyy");
@@ -258,237 +312,471 @@ const BookingConfirmed = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Success Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-500 rounded-full mb-4 shadow-md">
-              <CheckCircle className="w-11 h-11 text-white" />
+      <div className="min-h-screen bg-white">
+        {/* Success Banner with Celebration Animation */}
+        <div className="bg-emerald-50 border-b border-emerald-100 py-8 relative overflow-hidden">
+          {/* Confetti Spray from Both Sides */}
+          {showConfetti && (
+            <>
+              {/* Left Side Confetti */}
+              <div className="absolute left-0 top-0 bottom-0 w-full pointer-events-none">
+                {[...Array(40)].map((_, i) => {
+                  const size = Math.random() * 8 + 4; // 4-12px
+                  const isRectangle = i % 3 === 0;
+                  const delay = i * 0.02;
+                  const duration = 1.2 + Math.random() * 0.8;
+                  const startY = Math.random() * 100;
+                  const endX = 100 + Math.random() * 200;
+                  const endY = Math.random() * 300 - 150;
+                  const rotation = Math.random() * 1080 - 540;
+
+                  return (
+                    <div
+                      key={`left-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `-10px`,
+                        top: `${startY}%`,
+                        width: isRectangle ? `${size * 1.5}px` : `${size}px`,
+                        height: isRectangle ? `${size * 0.6}px` : `${size}px`,
+                        backgroundColor: [
+                          "#10b981",
+                          "#3b82f6",
+                          "#f59e0b",
+                          "#ef4444",
+                          "#8b5cf6",
+                          "#ec4899",
+                          "#22d3ee",
+                          "#fb923c",
+                          "#14b8a6",
+                          "#f97316",
+                        ][i % 10],
+                        borderRadius: isRectangle ? "2px" : "50%",
+                        animation: `confettiLeft-${i} ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+                        animationDelay: `${delay}s`,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Right Side Confetti */}
+              <div className="absolute right-0 top-0 bottom-0 w-full pointer-events-none">
+                {[...Array(40)].map((_, i) => {
+                  const size = Math.random() * 8 + 4; // 4-12px
+                  const isRectangle = i % 3 === 0;
+                  const delay = i * 0.02;
+                  const duration = 1.2 + Math.random() * 0.8;
+                  const startY = Math.random() * 100;
+                  const endX = -(100 + Math.random() * 200);
+                  const endY = Math.random() * 300 - 150;
+                  const rotation = Math.random() * 1080 - 540;
+
+                  return (
+                    <div
+                      key={`right-${i}`}
+                      className="absolute"
+                      style={{
+                        right: `-10px`,
+                        top: `${startY}%`,
+                        width: isRectangle ? `${size * 1.5}px` : `${size}px`,
+                        height: isRectangle ? `${size * 0.6}px` : `${size}px`,
+                        backgroundColor: [
+                          "#10b981",
+                          "#3b82f6",
+                          "#f59e0b",
+                          "#ef4444",
+                          "#8b5cf6",
+                          "#ec4899",
+                          "#22d3ee",
+                          "#fb923c",
+                          "#14b8a6",
+                          "#f97316",
+                        ][i % 10],
+                        borderRadius: isRectangle ? "2px" : "50%",
+                        animation: `confettiRight-${i} ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+                        animationDelay: `${delay}s`,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="relative inline-block mb-4">
+                {/* Animated Check Circle */}
+                <div
+                  className={`inline-flex items-center justify-center w-16 h-16 bg-emerald-500 rounded-full transition-all duration-500 ${
+                    checkComplete ? "scale-110" : "scale-0"
+                  }`}
+                  style={{
+                    animation: checkComplete
+                      ? "checkPulse 0.6s ease-out"
+                      : "none",
+                  }}
+                >
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+              </div>
+
+              <h1
+                className={`text-3xl font-bold text-gray-900 mb-2 transition-all duration-500 ${
+                  checkComplete
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-4"
+                }`}
+              >
+                Woohoo! Your booking is confirmed 🎉
+              </h1>
+              <p
+                className={`text-gray-600 transition-all duration-500 delay-100 ${
+                  checkComplete
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-4"
+                }`}
+              >
+                {isStudent
+                  ? "Get ready for an awesome session!"
+                  : "You have a new booking request"}
+              </p>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Booking Confirmed!
-            </h1>
-            <p className="text-base text-gray-600">
-              {isStudent
-                ? "Your session has been successfully booked"
-                : "You have a new booking request"}
-            </p>
           </div>
 
-          {/* Main Booking Card */}
-          <Card className="overflow-hidden shadow-sm border border-gray-200 bg-white">
-            {/* Clean Header */}
-            <div className="bg-emerald-500 p-6 text-white">
-              <div className="flex items-center gap-4">
-                {booking.mentor_image && (
-                  <img
-                    src={booking.mentor_image}
-                    alt={booking.mentor_name}
-                    className="w-16 h-16 rounded-full border-4 border-white/30 object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-emerald-50 mb-1">
-                    {isStudent ? "Session with" : "Session booked by"}
-                  </p>
-                  <h2 className="text-2xl font-bold">
-                    {isStudent ? booking.mentor_name : booking.student_name}
-                  </h2>
+          {/* CSS Animations */}
+          <style>{`
+            @keyframes checkPulse {
+              0% {
+                transform: scale(0);
+              }
+              50% {
+                transform: scale(1.2);
+              }
+              100% {
+                transform: scale(1);
+              }
+            }
+            
+            ${[...Array(40)]
+              .map((_, i) => {
+                const endX = 100 + Math.random() * 250;
+                const midY = Math.random() * 150 - 75;
+                const endY = Math.random() * 400 - 200;
+                const rotation = Math.random() * 1440 - 720;
+
+                return `
+                @keyframes confettiLeft-${i} {
+                  0% {
+                    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+                    opacity: 1;
+                  }
+                  30% {
+                    transform: translateX(${
+                      endX * 0.3
+                    }px) translateY(${midY}px) rotate(${
+                  rotation * 0.3
+                }deg) scale(1.1);
+                    opacity: 1;
+                  }
+                  70% {
+                    transform: translateX(${endX * 0.7}px) translateY(${
+                  midY + (endY - midY) * 0.7
+                }px) rotate(${rotation * 0.7}deg) scale(1);
+                    opacity: 0.6;
+                  }
+                  100% {
+                    transform: translateX(${endX}px) translateY(${endY}px) rotate(${rotation}deg) scale(0.8);
+                    opacity: 0;
+                  }
+                }
+              `;
+              })
+              .join("\n")}
+            
+            ${[...Array(40)]
+              .map((_, i) => {
+                const endX = -(100 + Math.random() * 250);
+                const midY = Math.random() * 150 - 75;
+                const endY = Math.random() * 400 - 200;
+                const rotation = Math.random() * 1440 - 720;
+
+                return `
+                @keyframes confettiRight-${i} {
+                  0% {
+                    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+                    opacity: 1;
+                  }
+                  30% {
+                    transform: translateX(${
+                      endX * 0.3
+                    }px) translateY(${midY}px) rotate(${
+                  rotation * 0.3
+                }deg) scale(1.1);
+                    opacity: 1;
+                  }
+                  70% {
+                    transform: translateX(${endX * 0.7}px) translateY(${
+                  midY + (endY - midY) * 0.7
+                }px) rotate(${rotation * 0.7}deg) scale(1);
+                    opacity: 0.6;
+                  }
+                  100% {
+                    transform: translateX(${endX}px) translateY(${endY}px) rotate(${rotation}deg) scale(0.8);
+                    opacity: 0;
+                  }
+                }
+              `;
+              })
+              .join("\n")} {
+                transform: translateX(-150px) translateY(${
+                  Math.random() * 200 - 100
+                }px) rotate(${Math.random() * 720}deg);
+                opacity: 0;
+              }
+            }
+          `}</style>
+        </div>
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Mentor/Student Info Card */}
+            <Card className="mb-6 border border-gray-200 shadow-sm">
+              <div className="p-6">
+                <div className="flex items-center gap-4">
+                  {booking.mentor_image ? (
+                    <div className="relative">
+                      <img
+                        src={booking.mentor_image}
+                        alt={booking.mentor_name}
+                        className="w-20 h-20 rounded-full border-2 border-gray-200 object-cover"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-full border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                      <User className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 mb-1">
+                      {isStudent ? "Session with" : "Session booked by"}
+                    </p>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {isStudent ? booking.mentor_name : booking.student_name}
+                    </h2>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            {/* Booking Details */}
-            <div className="p-6 space-y-6">
+            {/* Session Details */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
               {/* Service Info */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  Service Details
-                </h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Video className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Service Type</p>
+              <Card className="border border-gray-200 shadow-sm">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <Video className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      Service Details
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Service Type</p>
                       <p className="font-semibold text-gray-900">
-                        {booking.service_name}
+                        {formatServiceType(booking.service_name)}
                       </p>
                     </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Duration</p>
-                      <p className="font-semibold text-gray-900">
-                        {booking.duration} minutes
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  Schedule
-                </h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Date</p>
-                      <p className="font-semibold text-gray-900">
-                        {formattedDate}
-                      </p>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Time</p>
-                      <p className="font-semibold text-gray-900">
-                        {booking.time_slot}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Info */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  Contact Information
-                </h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <User className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">
-                        {isStudent ? "Mentor" : "Student"}
-                      </p>
-                      <p className="font-semibold text-gray-900">
-                        {isStudent ? booking.mentor_name : booking.student_name}
-                      </p>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Email</p>
-                      <p className="font-semibold text-gray-900 break-all">
-                        {isStudent
-                          ? booking.mentor_email
-                          : booking.student_email}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Meeting Link - Show if available */}
-              {booking.meeting_link && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Video Meeting
-                  </h3>
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Video className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm text-emerald-800 mb-2">
-                          Your meeting link is ready!
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Duration</p>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-600" />
+                        <p className="font-semibold text-gray-900">
+                          {booking.duration} minutes
                         </p>
-                        <a
-                          href={booking.meeting_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm underline break-all"
-                        >
-                          {booking.meeting_link}
-                        </a>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+              </Card>
 
-              {/* What's Next */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5" />
-                  What's Next?
-                </h3>
-                <ul className="space-y-2 text-sm text-blue-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
+              {/* Schedule Info */}
+              <Card className="border border-gray-200 shadow-sm">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      Schedule
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Date</p>
+                      <p className="font-semibold text-gray-900">
+                        {formattedDate}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Time</p>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-600" />
+                        <p className="font-semibold text-gray-900">
+                          {booking.time_slot}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Contact Info */}
+            <Card className="mb-6 border border-gray-200 shadow-sm">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Contact Information
+                  </h3>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">
+                      {isStudent ? "Mentor" : "Student"}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {isStudent ? booking.mentor_name : booking.student_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1 flex items-center gap-1.5">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </p>
+                    <p className="font-medium text-gray-900 break-all">
+                      {isStudent ? booking.mentor_email : booking.student_email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Meeting Link */}
+            {booking.meeting_link && (
+              <Card className="mb-6 border border-emerald-200 bg-emerald-50 shadow-sm">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                      <Video className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-emerald-900">
+                      Meeting Link Ready
+                    </h3>
+                  </div>
+                  <p className="text-gray-700 mb-4">
+                    Your session meeting link is ready. Click below to join when
+                    it's time.
+                  </p>
+                  <a
+                    href={booking.meeting_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Join Meeting
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </a>
+                </div>
+              </Card>
+            )}
+
+            {/* What's Next */}
+            <Card className="mb-6 border border-gray-200 shadow-sm">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    What Happens Next
+                  </h3>
+                </div>
+                <ul className="space-y-3 text-gray-700">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <span>
                       You'll receive a confirmation email with all the details
                     </span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <span>
                       A reminder will be sent 24 hours before the session
                     </span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>Another reminder will arrive 1 hour before</span>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>Final reminder will arrive 1 hour before</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span>
-                      Meeting link will be available in your dashboard
-                    </span>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>Access your meeting link from dashboard anytime</span>
                   </li>
                 </ul>
               </div>
-
-              {/* Booking ID */}
-              <div className="text-center py-3 border-t">
-                <p className="text-xs text-gray-500">
-                  Booking ID:{" "}
-                  <span className="font-mono text-gray-700">{booking.id}</span>
-                </p>
-              </div>
-            </div>
+            </Card>
 
             {/* Action Buttons */}
-            <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row gap-3 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 variant="outline"
                 onClick={() => navigate("/")}
-                className="flex-1"
+                className="flex-1 h-12 border-2 text-base"
               >
-                <Home className="w-4 h-4 mr-2" />
+                <Home className="w-5 h-5 mr-2" />
                 Back to Home
               </Button>
               <Button
                 onClick={() =>
                   navigate(isStudent ? "/dashboard" : "/mentor/dashboard")
                 }
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white text-base"
               >
-                <LayoutDashboard className="w-4 h-4 mr-2" />
+                <LayoutDashboard className="w-5 h-5 mr-2" />
                 Go to Dashboard
               </Button>
             </div>
-          </Card>
 
-          {/* Additional Help */}
-          <div className="text-center mt-8">
-            <p className="text-gray-600">
-              Need help?{" "}
-              <a
-                href="mailto:support@sparkmentorconnect.com"
-                className="text-emerald-600 hover:text-emerald-700 font-medium underline"
-              >
-                Contact Support
-              </a>
-            </p>
+            {/* Booking ID and Help */}
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-500 mb-4">
+                Booking ID:{" "}
+                <span className="font-mono text-gray-700 font-semibold">
+                  {booking.id.slice(0, 8)}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                Need help?{" "}
+                <a
+                  href="mailto:support@sparkmentorconnect.com"
+                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Contact Support
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>

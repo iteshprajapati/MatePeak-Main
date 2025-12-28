@@ -302,7 +302,7 @@ async function sendReminderEmail(
     
     <div class="footer">
       <p>Need to reschedule? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -316,7 +316,7 @@ async function sendReminderEmail(
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Spark Mentor Connect <onboarding@resend.dev>",
+      from: "MatePeak - Be a Solopreneur <onboarding@resend.dev>",
       to: [to],
       subject,
       html,

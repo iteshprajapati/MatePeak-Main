@@ -39,6 +39,7 @@ export interface BookingDetails {
 interface MentorData {
   id: string;
   full_name: string;
+  username: string;
   avatar_url: string;
   timezone: string;
   services: any;
@@ -102,6 +103,7 @@ const BookingPage = () => {
           .select(
             `
             id,
+            username,
             full_name,
             profile_picture_url,
             services,
@@ -144,6 +146,7 @@ const BookingPage = () => {
 
         setMentorData({
           id: mentor.id,
+          username: mentor.username,
           full_name: mentor.full_name,
           avatar_url: mentor.profile_picture_url || "",
           timezone: "Asia/Kolkata", // Default timezone since column doesn't exist
@@ -275,8 +278,8 @@ const BookingPage = () => {
       setStep(1);
     } else {
       // Go back to mentor profile or explore page
-      if (mentorData) {
-        navigate(`/mentors/${mentorData.id}`);
+      if (mentorData?.username) {
+        navigate(`/mentor/${mentorData.username}`);
       } else {
         navigate("/explore");
       }
@@ -324,6 +327,7 @@ const BookingPage = () => {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1 style="margin: 0; font-size: 28px;">✅ Booking Confirmed!</h1>
       <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Your session has been successfully booked</p>
     </div>
@@ -429,6 +433,7 @@ const BookingPage = () => {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1 style="margin: 0; font-size: 28px;">🎉 New Booking Request!</h1>
     </div>
     

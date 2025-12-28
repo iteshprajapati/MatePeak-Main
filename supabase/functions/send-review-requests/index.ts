@@ -77,7 +77,7 @@ const reviewRequestEmailTemplate = (data: any) => ({
     
     <div class="footer">
       <p>Questions? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -105,7 +105,7 @@ const sendEmail = async (to: string, subject: string, html: string) => {
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Spark Mentor Connect <noreply@sparkmentorconnect.com>",
+      from: "MatePeak - Be a Solopreneur <noreply@sparkmentorconnect.com>",
       to,
       subject,
       html,

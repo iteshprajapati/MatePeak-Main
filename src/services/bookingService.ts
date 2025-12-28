@@ -166,13 +166,15 @@ export async function createBooking(data: CreateBookingData) {
       };
     }
 
-    // 4. Validate duration
-    if (data.duration < 15 || data.duration > 240) {
-      return {
-        success: false,
-        error: "Session duration must be between 15 and 240 minutes",
-        data: null,
-      };
+    // 4. Validate duration (only for video sessions)
+    if (data.session_type === "oneOnOneSession") {
+      if (data.duration < 15 || data.duration > 240) {
+        return {
+          success: false,
+          error: "Session duration must be between 15 and 240 minutes",
+          data: null,
+        };
+      }
     }
 
     // 5. SERVER-SIDE PRICE VALIDATION

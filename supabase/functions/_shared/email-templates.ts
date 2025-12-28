@@ -26,6 +26,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>🎉 Booking Confirmed!</h1>
     </div>
     
@@ -79,7 +80,7 @@ export const emailTemplates = {
     
     <div class="footer">
       <p>Need help? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -113,6 +114,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>📅 New Booking Received</h1>
     </div>
     
@@ -173,7 +175,7 @@ export const emailTemplates = {
     
     <div class="footer">
       <p>Questions? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -206,6 +208,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>⏰ ${
         hoursUntil === 24 ? "Session Tomorrow!" : "Session Starting Soon!"
       }</h1>
@@ -267,7 +270,7 @@ export const emailTemplates = {
       <p>Need to reschedule? <a href="${
         data.dashboardLink
       }">Manage Booking</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -297,6 +300,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>✨ Session Completed!</h1>
     </div>
     
@@ -327,7 +331,7 @@ export const emailTemplates = {
     
     <div class="footer">
       <p>Questions? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -356,6 +360,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>❌ Session Cancelled</h1>
     </div>
     
@@ -396,7 +401,7 @@ export const emailTemplates = {
     
     <div class="footer">
       <p>Need help? <a href="mailto:support@sparkmentorconnect.com">Contact Support</a></p>
-      <p>&copy; 2025 Spark Mentor Connect. All rights reserved.</p>
+      <p>&copy; 2025 MatePeak - Be a Solopreneur. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -427,6 +432,7 @@ export const emailTemplates = {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://wpltqdlvrzukghiwvxqd.supabase.co/storage/v1/object/public/avatars/lovable-uploads/MatePeak_logo_with_name.png" alt="MatePeak" style="height: 40px; margin-bottom: 16px;" />
       <h1>⭐ Share Your Experience</h1>
     </div>
     
