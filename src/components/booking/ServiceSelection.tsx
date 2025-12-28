@@ -8,6 +8,13 @@ import {
   Star,
   Calendar,
   ArrowRight,
+  CheckCircle2,
+  Clock3,
+  Target,
+  FolderOpen,
+  FileCheck,
+  PlayCircle,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -151,98 +158,97 @@ export default function ServiceSelection({
           return (
             <Card
               key={serviceKey}
-              className="group bg-gray-100 border-0 rounded-2xl shadow-none hover:shadow-md transition-all duration-200"
+              className="group bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300"
             >
               <div className="p-5 space-y-4">
-                {/* Header with Icon & Rating */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                      <Icon className="w-6 h-6 text-gray-900" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 text-base leading-tight">
-                        {config.name}
-                      </h4>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {totalReviews > 0 ? (
-                          <>
-                            <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-                            <span className="font-semibold text-gray-900 text-xs">
-                              {averageRating.toFixed(1)}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ({totalReviews})
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-500 italic">
-                            No rating yet
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                {/* Header with Icon & Title */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br from-gray-800 to-gray-900 flex-shrink-0">
+                    <Icon className="w-6 h-6 text-white" />
                   </div>
-                  {pricing.hasFreeDemo && (
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0 text-xs font-semibold px-2.5 py-1">
-                      Free Demo
-                    </Badge>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 text-base leading-tight mb-1.5">
+                      {config.name}
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {config.description}
+                    </p>
+                    {totalReviews > 0 && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="inline-flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-full px-2.5 py-1">
+                          <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+                          <span className="font-semibold text-yellow-700 text-xs">
+                            {averageRating.toFixed(1)}
+                          </span>
+                          <span className="text-xs text-yellow-600">
+                            ({totalReviews})
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {config.description}
-                </p>
 
                 {/* Benefits */}
                 {config.benefits && config.benefits.length > 0 && (
-                  <div className="space-y-2">
-                    {config.benefits.map((benefit, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-2 text-sm text-gray-700"
-                      >
-                        <span className="text-base">
-                          {benefit.startsWith("24-hour")
-                            ? "🕒"
-                            : benefit.startsWith("Personalized") ||
-                              benefit.startsWith("Actionable")
-                            ? "📌"
-                            : benefit.startsWith("Resume")
-                            ? "📁"
-                            : benefit.startsWith("LinkedIn")
-                            ? "📄"
-                            : benefit.startsWith("Short") ||
-                              benefit.startsWith("guidance")
-                            ? "🎥"
-                            : benefit.includes("min")
-                            ? "🕒"
-                            : "✓"}
-                        </span>
-                        <span className="font-medium">{benefit}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-2.5">
+                    {config.benefits.map((benefit, index) => {
+                      const IconComponent = benefit.startsWith("24-hour")
+                        ? Clock3
+                        : benefit.startsWith("Personalized") ||
+                          benefit.startsWith("Actionable")
+                        ? Target
+                        : benefit.startsWith("Resume")
+                        ? FolderOpen
+                        : benefit.startsWith("LinkedIn")
+                        ? FileCheck
+                        : benefit.startsWith("Short") ||
+                          benefit.startsWith("guidance")
+                        ? PlayCircle
+                        : benefit.includes("min")
+                        ? Clock3
+                        : CheckCircle2;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-100"
+                        >
+                          <div className="w-5 h-5 rounded bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+                            <IconComponent className="w-3.5 h-3.5 text-gray-700" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {benefit}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
                 {/* Free Demo Toggle - Only show if service has free demo */}
                 {pricing.hasFreeDemo && (
                   <div
-                    className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl p-3.5"
+                    className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="flex-1">
-                      <Label
-                        htmlFor={`free-demo-${serviceKey}`}
-                        className="text-sm font-semibold text-green-800 cursor-pointer"
-                      >
-                        🎁 Try Free Demo
-                      </Label>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        {isFreeDemo &&
-                          "Session duration may vary for free sessions"}
-                      </p>
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                        <Sparkles className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor={`free-demo-${serviceKey}`}
+                          className="text-sm font-semibold text-green-800 cursor-pointer block"
+                        >
+                          Try Free Demo
+                        </Label>
+                        {isFreeDemo && (
+                          <p className="text-xs text-green-700 mt-0.5">
+                            Session duration may vary
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <Switch
                       id={`free-demo-${serviceKey}`}
@@ -268,12 +274,12 @@ export default function ServiceSelection({
                 </div>
 
                 {/* Pricing & CTA */}
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   {/* Price display */}
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex flex-col">
                     {isFreeDemo ? (
                       <>
-                        <span className="text-xl font-bold text-gray-400 line-through decoration-2">
+                        <span className="text-base font-semibold text-gray-400 line-through">
                           ₹{pricing.price?.toLocaleString("en-IN") || 0}
                         </span>
                         <span className="text-2xl font-bold text-green-600">
@@ -281,9 +287,14 @@ export default function ServiceSelection({
                         </span>
                       </>
                     ) : (
-                      <span className="text-2xl font-bold text-gray-900">
-                        ₹{pricing.price?.toLocaleString("en-IN") || 0}
-                      </span>
+                      <>
+                        <span className="text-xs text-gray-500 font-medium mb-1">
+                          Price
+                        </span>
+                        <span className="text-2xl font-bold text-gray-900">
+                          ₹{pricing.price?.toLocaleString("en-IN") || 0}
+                        </span>
+                      </>
                     )}
                   </div>
                   <Button
@@ -292,15 +303,14 @@ export default function ServiceSelection({
                       handleSelect(serviceKey);
                     }}
                     className={cn(
-                      "font-semibold transition-all rounded-xl",
+                      "font-semibold transition-all rounded-lg px-6 py-2.5 h-auto text-sm",
                       isFreeDemo
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-gray-900 hover:bg-gray-800 text-white"
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                        : "bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white"
                     )}
-                    size="sm"
                   >
                     {isFreeDemo ? "Try Free" : "Select"}
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>
