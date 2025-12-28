@@ -543,9 +543,10 @@ const BookingConfirmed = () => {
 
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
-            {/* Mentor/Student Info Card */}
-            <Card className="mb-6 border border-gray-200 shadow-sm">
-              <div className="p-6">
+            {/* Single unified card matching mentor dashboard style */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Mentor/Student Info Section */}
+              <div className="p-8 border-b border-gray-100">
                 <div className="flex items-center gap-4">
                   {booking.mentor_image ? (
                     <div className="relative">
@@ -573,14 +574,12 @@ const BookingConfirmed = () => {
                   </div>
                 </div>
               </div>
-            </Card>
 
-            {/* Session Details */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              {/* Service Info */}
-              <Card className="border border-gray-200 shadow-sm">
-                <div className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
+              {/* Session Details Grid */}
+              <div className="grid md:grid-cols-2 gap-0">
+                {/* Service Info */}
+                <div className="p-8 border-r border-b border-gray-100">
+                  <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                       <Video className="w-5 h-5 text-blue-600" />
                     </div>
@@ -606,12 +605,10 @@ const BookingConfirmed = () => {
                     </div>
                   </div>
                 </div>
-              </Card>
 
-              {/* Schedule Info */}
-              <Card className="border border-gray-200 shadow-sm">
-                <div className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
+                {/* Schedule Info */}
+                <div className="p-8 border-b border-gray-100">
+                  <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
                       <Calendar className="w-5 h-5 text-purple-600" />
                     </div>
@@ -637,13 +634,11 @@ const BookingConfirmed = () => {
                     </div>
                   </div>
                 </div>
-              </Card>
-            </div>
+              </div>
 
-            {/* Contact Info */}
-            <Card className="mb-6 border border-gray-200 shadow-sm">
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
+              {/* Contact Info */}
+              <div className="p-8 border-b border-gray-100">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
                     <User className="w-5 h-5 text-gray-600" />
                   </div>
@@ -671,12 +666,10 @@ const BookingConfirmed = () => {
                   </div>
                 </div>
               </div>
-            </Card>
 
-            {/* Meeting Link */}
-            {booking.meeting_link && (
-              <Card className="mb-6 border border-emerald-200 bg-emerald-50 shadow-sm">
-                <div className="p-6">
+              {/* Meeting Link */}
+              {booking.meeting_link && (
+                <div className="p-8 bg-emerald-50 border-b border-gray-100">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
                       <Video className="w-5 h-5 text-white" />
@@ -699,13 +692,11 @@ const BookingConfirmed = () => {
                     <ArrowLeft className="w-4 h-4 rotate-180" />
                   </a>
                 </div>
-              </Card>
-            )}
+              )}
 
-            {/* What's Next */}
-            <Card className="mb-6 border border-gray-200 shadow-sm">
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
+              {/* What's Next */}
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-blue-600" />
                   </div>
@@ -736,10 +727,10 @@ const BookingConfirmed = () => {
                   </li>
                 </ul>
               </div>
-            </Card>
+            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* Action Buttons - Outside main card */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <Button
                 variant="outline"
                 onClick={() => navigate("/")}
@@ -770,7 +761,7 @@ const BookingConfirmed = () => {
               <p className="text-gray-600">
                 Need help?{" "}
                 <a
-                  href="mailto:support@sparkmentorconnect.com"
+                  href="mailto:iteshofficial@gmail.com"
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
                   Contact Support
