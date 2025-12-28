@@ -73,7 +73,7 @@ const BookingConfirmed = () => {
           return;
         }
 
-        // Fetch booking details with mentor info
+        // Fetch booking details
         const { data: bookingData, error: bookingError } = await supabase
           .from("bookings")
           .select(
@@ -90,12 +90,7 @@ const BookingConfirmed = () => {
             meeting_link,
             user_name,
             user_email,
-            created_at,
-            expert_profiles!bookings_expert_id_fkey(
-              full_name,
-              profile_picture_url,
-              username
-            )
+            created_at
           `
           )
           .eq("id", bookingId)
@@ -140,8 +135,21 @@ const BookingConfirmed = () => {
         // Determine user role
         setUserRole(bookingData.user_id === userId ? "student" : "mentor");
 
-        // Extract mentor data
-        const mentorData = bookingData.expert_profiles;
+        // Fetch mentor data from expert_profiles table
+        let mentorName = "Unknown Mentor";
+        let mentorImage = "";
+        if (bookingData.expert_id) {
+          const { data: mentorProfile } = await supabase
+            .from("expert_profiles")
+            .select("full_name, profile_picture_url")
+            .eq("id", bookingData.expert_id)
+            .single();
+
+          if (mentorProfile) {
+            mentorName = mentorProfile.full_name || "Unknown Mentor";
+            mentorImage = mentorProfile.profile_picture_url || "";
+          }
+        }
 
         // Fetch mentor email from profiles table
         let mentorEmail = "";
@@ -182,15 +190,15 @@ const BookingConfirmed = () => {
           student_id: bookingData.user_id,
           mentor_id: bookingData.expert_id,
           service_type: bookingData.session_type,
-          service_name: bookingData.session_type, // Use session_type as service name
+          service_name: bookingData.session_type,
           date: bookingData.scheduled_date,
           time_slot: bookingData.scheduled_time,
           duration: bookingData.duration,
           status: bookingData.status,
           created_at: bookingData.created_at,
-          mentor_name: mentorData?.full_name || "Unknown Mentor",
+          mentor_name: mentorName,
           mentor_email: mentorEmail,
-          mentor_image: mentorData?.profile_picture_url || "",
+          mentor_image: mentorImage,
           student_name: studentName,
           student_email: studentEmail,
           meeting_link: bookingData.meeting_link,

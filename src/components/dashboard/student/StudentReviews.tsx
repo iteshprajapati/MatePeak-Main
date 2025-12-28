@@ -50,8 +50,7 @@ export default function StudentReviews({
             id,
             full_name,
             username,
-            profile_picture_url,
-            expertise
+            profile_picture_url
           )
         `
         )
@@ -66,17 +65,14 @@ export default function StudentReviews({
         .from("reviews")
         .select(
           `
-          *,
-          expert_profiles (
-            full_name,
-            username,
-            profile_picture_url,
-            expertise
-          ),
-          bookings (
-            session_date,
-            duration
-          )
+          id,
+          student_id,
+          expert_id,
+          booking_id,
+          rating,
+          comment,
+          created_at,
+          updated_at
         `
         )
         .eq("student_id", user.id)
@@ -84,12 +80,51 @@ export default function StudentReviews({
 
       if (reviewsError) throw reviewsError;
 
+      // Fetch mentor profiles for reviews
+      const mentorIds = Array.from(
+        new Set((reviews || []).map((r: any) => r.expert_id))
+      );
+      const mentorProfilesMap = new Map();
+
+      if (mentorIds.length > 0) {
+        const { data: mentorProfiles } = await supabase
+          .from("expert_profiles")
+          .select("id, full_name, username, profile_picture_url")
+          .in("id", mentorIds);
+
+        (mentorProfiles || []).forEach((m: any) =>
+          mentorProfilesMap.set(m.id, m)
+        );
+      }
+
+      // Fetch booking info for reviews
+      const bookingIds = (reviews || []).map((r: any) => r.booking_id);
+      const bookingsMap = new Map();
+
+      if (bookingIds.length > 0) {
+        const { data: bookings } = await supabase
+          .from("bookings")
+          .select("id, session_date, duration")
+          .in("id", bookingIds);
+
+        (bookings || []).forEach((b: any) =>
+          bookingsMap.set(b.id, b)
+        );
+      }
+
+      // Enrich reviews with mentor and booking data
+      const enrichedReviews = (reviews || []).map((r: any) => ({
+        ...r,
+        expert_profiles: mentorProfilesMap.get(r.expert_id),
+        bookings: bookingsMap.get(r.booking_id),
+      }));
+
       const reviewedBookingIds = new Set(reviews?.map((r) => r.booking_id));
       const pending =
         completedSessions?.filter((s) => !reviewedBookingIds.has(s.id)) || [];
 
       setPendingReviews(pending);
-      setSubmittedReviews(reviews || []);
+      setSubmittedReviews(enrichedReviews);
     } catch (error: any) {
       console.error("Error fetching reviews:", error);
       toast.error("Failed to load reviews");

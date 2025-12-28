@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Loader2,
   Save,
+  Activity,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -68,17 +69,29 @@ const StudentDirectory = ({ mentorProfile }: StudentDirectoryProps) => {
 
       if (error) throw error;
 
+      // Get unique user_ids from bookings
+      const userIds = bookings
+        ?.map((b) => b.user_id)
+        .filter((id, idx, arr) => id && arr.indexOf(id) === idx) || [];
+
+      // Fetch student profiles for these user_ids
+      const { data: studentsData } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
       // Group bookings by student
       const studentMap = new Map<string, Student>();
 
       bookings?.forEach((booking) => {
-        const studentId = booking.student_id || booking.student_email;
+        const studentId = booking.user_id || booking.student_email;
+        const studentProfile = studentsData?.find((s) => s.id === booking.user_id);
         
         if (!studentMap.has(studentId)) {
           studentMap.set(studentId, {
             student_id: studentId,
-            student_name: booking.student_name || "Anonymous",
-            student_email: booking.student_email || "",
+            student_name: studentProfile?.full_name || booking.student_name || "Anonymous",
+            student_email: studentProfile?.email || booking.student_email || "",
             first_session: booking.scheduled_date,
             last_session: booking.scheduled_date,
             total_sessions: 0,
@@ -205,69 +218,76 @@ const StudentDirectory = ({ mentorProfile }: StudentDirectoryProps) => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-gray-200">
+        <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
           <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">
-                Total Students
-              </p>
-              <div className="text-4xl font-bold text-gray-900">
-                {students.length}
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-4xl font-bold text-gray-900 mb-2">
+                  {students.length}
+                </p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Students
+                </p>
               </div>
+              <Users className="h-6 w-6 text-rose-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
           <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">
-                Active Students
-              </p>
-              <div className="text-4xl font-bold text-gray-900">
-                {students.filter((s) => s.upcoming_sessions > 0).length}
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-4xl font-bold text-gray-900 mb-2">
+                  {students.filter((s) => s.upcoming_sessions > 0).length}
+                </p>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Active Students
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">With upcoming sessions</p>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-1">With upcoming sessions</p>
+              <Activity className="h-6 w-6 text-rose-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="bg-gray-100 border-0 rounded-2xl shadow-none">
           <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">
-                Total Sessions
-              </p>
-              <div className="text-4xl font-bold text-gray-900">
-                {students.reduce((sum, s) => sum + s.total_sessions, 0)}
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-4xl font-bold text-gray-900 mb-2">
+                  {students.reduce((sum, s) => sum + s.total_sessions, 0)}
+                </p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Sessions
+                </p>
               </div>
+              <Calendar className="h-6 w-6 text-rose-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Search */}
-      <Card className="border-gray-200">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search students by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+        <Input
+          placeholder="Search students by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 bg-white border border-gray-200 rounded-2xl"
+        />
+      </div>
 
-      {/* Students List */}
-      <div className="space-y-4">
+      {/* Students List - 2 Column Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="border-gray-200">
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="bg-gray-100 border-0 rounded-2xl">
               <CardContent className="p-6">
-                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-24 w-full" />
               </CardContent>
             </Card>
           ))
@@ -280,58 +300,53 @@ const StudentDirectory = ({ mentorProfile }: StudentDirectoryProps) => {
                 setExpandedStudent(open ? student.student_id : null)
               }
             >
-              <Card className="border-gray-200 hover:shadow-md transition-shadow">
+              <Card className="bg-gray-100 border-0 rounded-2xl hover:shadow-md transition-shadow group">
                 <CollapsibleTrigger className="w-full">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-gray-700">
-                            {getStudentInitials(student.student_name)}
-                          </span>
-                        </div>
-
-                        {/* Info */}
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900">
-                            {student.student_name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {student.student_email}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs text-gray-500">
-                              {student.total_sessions} session
-                              {student.total_sessions !== 1 ? "s" : ""}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              Last:{" "}
-                              {formatDistanceToNow(new Date(student.last_session), {
-                                addSuffix: true,
-                              })}
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          {/* Avatar */}
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm font-bold text-white">
+                              {getStudentInitials(student.student_name)}
                             </span>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-4">
-                        {student.upcoming_sessions > 0 && (
-                          <Badge className="bg-green-100 text-green-800 border-0">
-                            {student.upcoming_sessions} upcoming
-                          </Badge>
-                        )}
-                        <Badge className="bg-blue-100 text-blue-800 border-0">
-                          {student.completed_sessions} completed
-                        </Badge>
+                          {/* Info */}
+                          <div className="text-left min-w-0 flex-1">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {student.student_name}
+                            </h3>
+                            <p className="text-sm text-gray-600 truncate">
+                              {student.student_email}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Expand Icon */}
                         <ChevronDown
-                          className={`h-5 w-5 text-gray-400 transition-transform ${
+                          className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ml-2 group-hover:text-gray-600 ${
                             expandedStudent === student.student_id
                               ? "transform rotate-180"
                               : ""
                           }`}
                         />
+                      </div>
+
+                      {/* Stats Row */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-xs font-medium text-gray-600 bg-white rounded-md px-2.5 py-1">
+                          {student.total_sessions} session{student.total_sessions !== 1 ? "s" : ""}
+                        </span>
+                        <span className="text-xs font-medium text-gray-600 bg-white rounded-md px-2.5 py-1">
+                          {student.completed_sessions} completed
+                        </span>
+                        {student.upcoming_sessions > 0 && (
+                          <span className="text-xs font-medium text-green-700 bg-green-50 rounded-md px-2.5 py-1">
+                            {student.upcoming_sessions} upcoming
+                          </span>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -340,7 +355,7 @@ const StudentDirectory = ({ mentorProfile }: StudentDirectoryProps) => {
                 <CollapsibleContent>
                   <div className="border-t border-gray-200 p-6 space-y-4 bg-gray-50">
                     {/* Session Stats */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
                         <p className="text-2xl font-bold text-gray-900">
                           {student.total_sessions}
@@ -454,7 +469,7 @@ const StudentDirectory = ({ mentorProfile }: StudentDirectoryProps) => {
             </Collapsible>
           ))
         ) : (
-          <Card className="border-gray-200">
+          <Card className="bg-gray-100 border-0 rounded-2xl md:col-span-2">
             <CardContent className="p-12 text-center">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-sm font-medium text-gray-900">

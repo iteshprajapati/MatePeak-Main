@@ -48,12 +48,7 @@ export default function MyMentors({ studentProfile }: MyMentorsProps) {
             full_name,
             username,
             profile_picture_url,
-            bio,
-            expertise,
-            location,
-            hourly_rate,
-            languages,
-            total_sessions
+            headline
           )
         `)
         .eq('student_id', user.id);
@@ -161,14 +156,14 @@ export default function MyMentors({ studentProfile }: MyMentorsProps) {
   return (
     <div className="space-y-6">
       {/* Header with Search */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
           <h2 className="text-2xl font-bold text-gray-900">My Mentors</h2>
           <p className="text-gray-600 mt-1">
             {mentors.length} mentor{mentors.length !== 1 ? 's' : ''} you've worked with
           </p>
         </div>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-64 flex-shrink-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="text"
@@ -249,41 +244,18 @@ export default function MyMentors({ studentProfile }: MyMentorsProps) {
                     {mentor.full_name || 'Mentor'}
                   </h3>
                   
-                  {/* Expertise Tags */}
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {mentor.expertise?.slice(0, 2).map((exp: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {exp}
-                      </Badge>
-                    ))}
-                    {mentor.expertise?.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{mentor.expertise.length - 2}
-                      </Badge>
-                    )}
-                  </div>
+                  {/* Headline */}
+                  {mentor.headline && (
+                    <p className="text-sm text-gray-600 truncate mb-2">
+                      {mentor.headline}
+                    </p>
+                  )}
 
                   {/* Rating */}
                   <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-medium">{mentor.avgRating}</span>
                     <span>({mentor.reviewCount} reviews)</span>
-                  </div>
-
-                  {/* Location & Rate */}
-                  <div className="space-y-1 text-sm text-gray-600">
-                    {mentor.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>{mentor.location}</span>
-                      </div>
-                    )}
-                    {mentor.hourly_rate && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        <span>${mentor.hourly_rate}/hour</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -303,20 +275,13 @@ export default function MyMentors({ studentProfile }: MyMentorsProps) {
                   </div>
                 </div>
 
-                {/* Bio Preview */}
-                {mentor.bio && (
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                    {mentor.bio}
-                  </p>
-                )}
-
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     className="flex items-center gap-1"
-                    onClick={() => navigate(`/booking/${mentor.username || mentor.id}`)}
+                    onClick={() => navigate(`/mentor/${mentor.username || mentor.id}`)}
                   >
                     <Calendar className="h-4 w-4" />
                     Book Again
