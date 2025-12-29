@@ -130,6 +130,13 @@ export default function CustomTimeRequests({
 
       if (error) throw error;
 
+      // Send email notification to student
+      await sendTimeRequestResponseEmail(
+        respondDialog.request,
+        newStatus,
+        mentorResponse
+      );
+
       toast.success(
         `Request ${newStatus}! The student will be notified via email.`
       );
@@ -145,6 +152,171 @@ export default function CustomTimeRequests({
       toast.error("Failed to respond. Please try again.");
     } finally {
       setResponding(false);
+    }
+  };
+
+  const sendTimeRequestResponseEmail = async (
+    request: TimeRequest,
+    status: string,
+    mentorResponseText: string
+  ) => {
+    try {
+      const studentEmail = request.profiles?.email;
+      const studentName = request.profiles?.full_name || "Student";
+      const mentorName = mentorProfile.full_name || "Your mentor";
+      const isApproved = status === "approved";
+
+      if (!studentEmail) {
+        console.warn("Student email not found, skipping email notification");
+        return;
+      }
+
+      const formattedDate = new Date(request.requested_date).toLocaleDateString(
+        "en-US",
+        {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      );
+
+      const startTime = formatTime(request.requested_start_time);
+      const endTime = formatTime(request.requested_end_time);
+
+      const subject = isApproved
+        ? `✅ Time Request Approved by ${mentorName}`
+        : `📅 Time Request Update from ${mentorName}`;
+
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: ${
+      isApproved
+        ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+        : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+    }; color: white; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+    .content { padding: 30px 20px; }
+    .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; background: ${
+      isApproved ? "#d1fae5" : "#e0e7ff"
+    }; color: ${isApproved ? "#065f46" : "#3730a3"}; }
+    .details-card { background: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid ${
+      isApproved ? "#10b981" : "#6366f1"
+    }; }
+    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-weight: 600; color: #6b7280; }
+    .detail-value { color: #111827; font-weight: 500; }
+    .message-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 15px; margin: 20px 0; }
+    .message-box h3 { margin: 0 0 10px 0; color: #92400e; font-size: 14px; }
+    .message-box p { margin: 0; color: #78350f; }
+    .cta-button { display: inline-block; background: ${
+      isApproved ? "#10b981" : "#6366f1"
+    }; color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+    .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${
+        isApproved ? "🎉 Time Request Approved!" : "📅 Time Request Response"
+      }</h1>
+    </div>
+    
+    <div class="content">
+      <p style="color: #111827; font-size: 16px;">Hi ${studentName},</p>
+      <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+        ${mentorName} has ${
+        isApproved ? "approved" : "declined"
+      } your custom time request.
+      </p>
+      
+      <span class="status-badge">${
+        isApproved ? "✓ APPROVED" : "✗ DECLINED"
+      }</span>
+      
+      <div class="details-card">
+        <h3 style="margin-top: 0; color: #111827;">Requested Time Details</h3>
+        <div class="detail-row">
+          <span class="detail-label">Mentor</span>
+          <span class="detail-value">${mentorName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Date</span>
+          <span class="detail-value">${formattedDate}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Time</span>
+          <span class="detail-value">${startTime} - ${endTime}</span>
+        </div>
+      </div>
+      
+      ${
+        mentorResponseText
+          ? `
+      <div class="message-box">
+        <h3>💬 Message from ${mentorName}:</h3>
+        <p>${mentorResponseText}</p>
+      </div>
+      `
+          : ""
+      }
+      
+      ${
+        isApproved
+          ? `
+      <p style="color: #059669; font-weight: 600; font-size: 14px; margin-top: 20px;">
+        ✨ Great news! You can now proceed to book this time slot with ${mentorName}.
+      </p>
+      <p style="color: #6b7280; font-size: 14px;">
+        Visit the mentor's profile to complete your booking.
+      </p>
+      `
+          : `
+      <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+        Don't worry! You can request a different time or explore other available slots on ${mentorName}'s profile.
+      </p>
+      `
+      }
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="${
+          typeof window !== "undefined" ? window.location.origin : ""
+        }/dashboard" class="cta-button">
+          ${isApproved ? "View Dashboard" : "Explore Other Times"}
+        </a>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Need help? <a href="mailto:iteshofficial@gmail.com" style="color: #6366f1;">Contact Support</a></p>
+      <p style="margin: 5px 0;">© 2025 MatePeak. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      await supabase.functions.invoke("send-email", {
+        body: {
+          to: studentEmail,
+          subject,
+          html,
+        },
+      });
+
+      console.log(`✅ Time request response email sent to ${studentEmail}`);
+    } catch (error) {
+      console.error("Failed to send time request response email:", error);
+      // Don't throw error - we don't want to fail the response if email fails
     }
   };
 
