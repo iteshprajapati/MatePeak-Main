@@ -9,6 +9,7 @@ const Hero = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const navigate = useNavigate();
 
   const fields = [
@@ -231,6 +232,51 @@ const Hero = () => {
     navigate(`/explore?q=${encodeURIComponent(option)}`);
   };
 
+  // Get filtered suggestions
+  const getFilteredSuggestions = () => {
+    return searchSuggestions
+      .filter((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 5);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const filteredSuggestions = getFilteredSuggestions();
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setShowSearchDropdown(true);
+      setSelectedSuggestionIndex((prev) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (
+        selectedSuggestionIndex >= 0 &&
+        selectedSuggestionIndex < filteredSuggestions.length
+      ) {
+        const selectedSuggestion = filteredSuggestions[selectedSuggestionIndex];
+        setSearchQuery(selectedSuggestion);
+        setShowSearchDropdown(false);
+        setSelectedSuggestionIndex(-1);
+        navigate(`/explore?q=${encodeURIComponent(selectedSuggestion)}`);
+      } else if (searchQuery.trim()) {
+        navigate(`/explore?q=${encodeURIComponent(searchQuery)}`);
+      }
+    } else if (e.key === "Escape") {
+      setShowSearchDropdown(false);
+      setSelectedSuggestionIndex(-1);
+    }
+  };
+
+  // Reset selected index when search query changes
+  useEffect(() => {
+    setSelectedSuggestionIndex(-1);
+  }, [searchQuery]);
+
   return (
     <section
       id="hero-section"
@@ -268,9 +314,13 @@ const Hero = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     onFocus={() => setShowSearchDropdown(true)}
                     onBlur={() =>
-                      setTimeout(() => setShowSearchDropdown(false), 200)
+                      setTimeout(() => {
+                        setShowSearchDropdown(false);
+                        setSelectedSuggestionIndex(-1);
+                      }, 200)
                     }
                     placeholder="What type of mentor are you interested in?"
                     className="w-full h-14 pl-6 pr-14 rounded-full bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 text-gray-700 placeholder:text-sm placeholder:text-gray-500 outline-none hover:border-gray-300 focus:border-matepeak-primary focus:ring-2 focus:ring-matepeak-primary/20 transition-all"
@@ -286,30 +336,35 @@ const Hero = () => {
                 {/* Search Dropdown */}
                 {showSearchDropdown && searchQuery.length > 0 && (
                   <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                    {searchSuggestions
-                      .filter((s) =>
-                        s.toLowerCase().includes(searchQuery.toLowerCase())
-                      )
-                      .slice(0, 5)
-                      .map((suggestion, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => {
-                            setSearchQuery(suggestion);
-                            setShowSearchDropdown(false);
-                            navigate(
-                              `/explore?q=${encodeURIComponent(suggestion)}`
-                            );
-                          }}
-                          className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 font-poppins"
-                        >
-                          <Search className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-700">
-                            {suggestion}
-                          </span>
-                        </button>
-                      ))}
+                    {getFilteredSuggestions().map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(suggestion);
+                          setShowSearchDropdown(false);
+                          setSelectedSuggestionIndex(-1);
+                          navigate(
+                            `/explore?q=${encodeURIComponent(suggestion)}`
+                          );
+                        }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                        className={`w-full px-4 py-2.5 text-left transition-colors flex items-center gap-3 font-poppins ${
+                          selectedSuggestionIndex === index
+                            ? "bg-matepeak-primary/10 text-matepeak-primary"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <Search
+                          className={`w-4 h-4 ${
+                            selectedSuggestionIndex === index
+                              ? "text-matepeak-primary"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <span className="text-sm">{suggestion}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </form>

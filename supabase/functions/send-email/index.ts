@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       to,
       subject,
       html,
-      from = "MatePeak - Be a Solopreneur <onboarding@resend.dev>",
+      from = "MatePeak <onboarding@resend.dev>",
     }: EmailRequest = requestBody;
 
     // Validate required fields
@@ -70,7 +70,20 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       console.error("Resend API error:", data);
-      throw new Error(data.message || "Failed to send email");
+      console.error("Status code:", res.status);
+      console.error("Full error:", JSON.stringify(data, null, 2));
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: data.message || "Failed to send email",
+          details: data,
+          statusCode: res.status,
+        }),
+        {
+          status: 200, // Return 200 so client can read the error details
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log("Email sent successfully:", data.id);
@@ -85,9 +98,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message || "Unknown error occurred",
+        stack: error.stack,
       }),
       {
-        status: 500,
+        status: 200, // Return 200 so client can read the error
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
