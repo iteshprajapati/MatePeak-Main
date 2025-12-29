@@ -120,6 +120,7 @@ export default function CustomTimeRequests({
       const newStatus =
         respondDialog.action === "approve" ? "approved" : "declined";
 
+      // Update database
       const { error } = await supabase
         .from("booking_requests")
         .update({
@@ -130,12 +131,23 @@ export default function CustomTimeRequests({
 
       if (error) throw error;
 
+      console.log("[Email] Attempting to send email notification...");
+      console.log("Student email:", respondDialog.request.profiles?.email);
+      console.log("Student name:", respondDialog.request.profiles?.full_name);
+      console.log("Mentor name:", mentorProfile.full_name);
+
       // Send email notification to student
-      await sendTimeRequestResponseEmail(
-        respondDialog.request,
-        newStatus,
-        mentorResponse
-      );
+      try {
+        await sendTimeRequestResponseEmail(
+          respondDialog.request,
+          newStatus,
+          mentorResponse
+        );
+        console.log("[Email] Email sent successfully");
+      } catch (emailError) {
+        console.error("[Email] Email sending failed:", emailError);
+        // Continue even if email fails
+      }
 
       toast.success(
         `Request ${newStatus}! The student will be notified via email.`
@@ -160,35 +172,43 @@ export default function CustomTimeRequests({
     status: string,
     mentorResponseText: string
   ) => {
-    try {
-      const studentEmail = request.profiles?.email;
-      const studentName = request.profiles?.full_name || "Student";
-      const mentorName = mentorProfile.full_name || "Your mentor";
-      const isApproved = status === "approved";
+    const studentEmail = request.profiles?.email;
+    const studentName = request.profiles?.full_name || "Student";
+    const mentorName = mentorProfile.full_name || "Your mentor";
+    const isApproved = status === "approved";
 
-      if (!studentEmail) {
-        console.warn("Student email not found, skipping email notification");
-        return;
-      }
+    console.log("[Email] Email function called with:");
+    console.log("- Student Email:", studentEmail);
+    console.log("- Student Name:", studentName);
+    console.log("- Mentor Name:", mentorName);
+    console.log("- Status:", status);
 
-      const formattedDate = new Date(request.requested_date).toLocaleDateString(
-        "en-US",
-        {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }
+    if (!studentEmail) {
+      console.error(
+        "[Email] Student email not found, cannot send email notification"
       );
+      console.log("Request data:", request);
+      throw new Error("Student email not found");
+    }
 
-      const startTime = formatTime(request.requested_start_time);
-      const endTime = formatTime(request.requested_end_time);
+    const formattedDate = new Date(request.requested_date).toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }
+    );
 
-      const subject = isApproved
-        ? `✅ Time Request Approved by ${mentorName}`
-        : `📅 Time Request Update from ${mentorName}`;
+    const startTime = formatTime(request.requested_start_time);
+    const endTime = formatTime(request.requested_end_time);
 
-      const html = `
+    const subject = isApproved
+      ? `Time Request Approved by ${mentorName}`
+      : `Time Request Update from ${mentorName}`;
+
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -235,8 +255,8 @@ export default function CustomTimeRequests({
       <p style="color: #111827; font-size: 16px;">Hi ${studentName},</p>
       <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
         ${mentorName} has ${
-        isApproved ? "approved" : "declined"
-      } your custom time request.
+      isApproved ? "approved" : "declined"
+    } your custom time request.
       </p>
       
       <span class="status-badge">${
@@ -288,9 +308,7 @@ export default function CustomTimeRequests({
       }
       
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${
-          typeof window !== "undefined" ? window.location.origin : ""
-        }/dashboard" class="cta-button">
+        <a href="https://spark-mentor-connect.vercel.app/dashboard" class="cta-button">
           ${isApproved ? "View Dashboard" : "Explore Other Times"}
         </a>
       </div>
@@ -303,21 +321,43 @@ export default function CustomTimeRequests({
   </div>
 </body>
 </html>
-      `;
+    `;
 
-      await supabase.functions.invoke("send-email", {
-        body: {
-          to: studentEmail,
-          subject,
-          html,
-        },
-      });
+    console.log("[Email] Invoking send-email function...");
+    console.log("Subject:", subject);
+    console.log("To:", studentEmail);
 
-      console.log(`✅ Time request response email sent to ${studentEmail}`);
-    } catch (error) {
-      console.error("Failed to send time request response email:", error);
-      // Don't throw error - we don't want to fail the response if email fails
+    const response = await supabase.functions.invoke("send-email", {
+      body: {
+        to: studentEmail,
+        subject,
+        html,
+      },
+    });
+
+    console.log("[Email] Full response:", response);
+
+    if (response.error) {
+      console.error("[Email] Supabase function error:", response.error);
+      console.error(
+        "[Email] Error details:",
+        JSON.stringify(response.error, null, 2)
+      );
+      throw response.error;
     }
+
+    // Check if the function returned an error in the data
+    if (!response.data?.success) {
+      console.error("[Email] Function returned error:", response.data);
+      console.error("[Email] Error message:", response.data?.error);
+      console.error("[Email] Error details:", response.data?.details);
+      throw new Error(response.data?.error || "Failed to send email");
+    }
+
+    console.log("[Email] Function response:", response.data);
+    console.log(
+      `[Email] Time request response email sent successfully to ${studentEmail}`
+    );
   };
 
   const formatTime = (time: string) => {
