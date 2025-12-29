@@ -537,14 +537,19 @@ const DashboardOverview = ({
                 {upcomingSessions.map((session) => (
                   <div
                     key={session.id}
-                    className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-white hover:shadow-sm hover:border-gray-300 transition-all"
+                    onClick={() => onNavigate?.("sessions")}
+                    className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-white hover:shadow-sm hover:border-gray-300 transition-all cursor-pointer"
                   >
                     <div className="p-2 rounded-lg bg-gray-100">
                       <Calendar className="h-5 w-5 text-gray-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">
-                        {session.session_type || "1-on-1 Session"}
+                        {session.session_type === "oneOnOneSession"
+                          ? "1:1 Session"
+                          : session.session_type === "groupSession"
+                          ? "Group Session"
+                          : session.session_type || "1-on-1 Session"}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
                         {formatDate(

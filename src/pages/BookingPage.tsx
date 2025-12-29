@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, AlertCircle, Home } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, Home, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
@@ -630,19 +630,21 @@ const BookingPage = () => {
       <Navbar />
       <div className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              className="mb-4 hover:bg-gray-100 text-gray-700"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {step === 1 ? "Back to Profile" : "Back"}
-            </Button>
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="mb-6 hover:bg-gray-100 text-gray-700"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {step === 1 ? "Back to Profile" : "Back"}
+          </Button>
 
-            <Card className="p-6 bg-white shadow-none border border-gray-200 rounded-2xl hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-4">
+          {/* Unified Card */}
+          <Card className="bg-white shadow-sm border border-gray-200 rounded-2xl overflow-hidden">
+            {/* Header Section */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-4 mb-6">
                 {mentorData.avatar_url && (
                   <img
                     src={mentorData.avatar_url}
@@ -660,20 +662,70 @@ const BookingPage = () => {
                 </div>
               </div>
 
-              {/* Progress Bar */}
-              <div className="mt-5">
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gray-900 transition-all duration-300 rounded-full"
-                    style={{ width: `${(step / 3) * 100}%` }}
-                  />
+              {/* Modern Step Indicator */}
+              <div className="flex justify-center">
+                <div className="w-full max-w-md">
+                  <div className="flex items-start justify-between relative px-8">
+                    {/* Background Line */}
+                    <div
+                      className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200"
+                      style={{ zIndex: 0 }}
+                    />
+
+                    {/* Progress Line */}
+                    <div
+                      className="absolute top-5 left-8 h-0.5 bg-gray-900 transition-all duration-300"
+                      style={{
+                        width: `calc(${((step - 1) / 2) * 100}% - ${
+                          ((step - 1) / 2) * 64
+                        }px)`,
+                        zIndex: 1,
+                      }}
+                    />
+
+                    {[1, 2, 3].map((stepNumber) => (
+                      <div
+                        key={stepNumber}
+                        className="flex flex-col items-center relative"
+                        style={{ zIndex: 2 }}
+                      >
+                        {/* Step Circle */}
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                            stepNumber < step
+                              ? "bg-gray-900 text-white"
+                              : stepNumber === step
+                              ? "bg-gray-900 text-white ring-4 ring-gray-200"
+                              : "bg-white border-2 border-gray-300 text-gray-400"
+                          }`}
+                        >
+                          {stepNumber < step ? (
+                            <Check className="w-5 h-5" />
+                          ) : (
+                            stepNumber
+                          )}
+                        </div>
+                        <span
+                          className={`mt-3 text-xs font-medium whitespace-nowrap ${
+                            stepNumber <= step
+                              ? "text-gray-900"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {stepNumber === 1
+                            ? "Service"
+                            : stepNumber === 2
+                            ? "Date & Time"
+                            : "Confirm"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </Card>
-          </div>
+            </div>
 
-          {/* Content */}
-          <Card className="bg-white border border-gray-200 rounded-2xl shadow-none hover:shadow-sm transition-shadow">
+            {/* Content Section */}
             <div className="p-6">
               {step === 1 && (
                 <ServiceSelection
