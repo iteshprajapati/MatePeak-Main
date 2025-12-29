@@ -73,7 +73,7 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
 
       // Get student profile
       const { data, error } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -86,7 +86,7 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
       };
 
       setProfile(profileData);
-      setProfilePictureUrl(profileData.profile_picture_url || '');
+      setProfilePictureUrl(profileData.avatar_url || '');
       setFormData({
         full_name: profileData.full_name || '',
         email: profileData.email || user.email || '',
@@ -170,9 +170,9 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
 
       // Update profile with new picture URL
       const { data, error: updateError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .update({ 
-          profile_picture_url: publicUrlWithCache,
+          avatar_url: publicUrlWithCache,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -203,24 +203,29 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from('student_profiles')
+      const { data, error } = await supabase
+        .from('profiles')
         .upsert({
           id: user.id,
-          ...formData,
-          profile_picture_url: profilePictureUrl,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          location: formData.location,
+          avatar_url: profilePictureUrl,
           updated_at: new Date().toISOString(),
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast.success('Profile updated successfully!');
-      fetchProfile();
       
-      // Call onProfileUpdate if provided
-      if (onProfileUpdate) {
-        onProfileUpdate({ ...profile, ...formData, profile_picture_url: profilePictureUrl });
+      // Call onProfileUpdate if provided to refresh parent component
+      if (onProfileUpdate && data) {
+        onProfileUpdate(data);
       }
+      
+      fetchProfile();
     } catch (error: any) {
       console.error('Error saving profile:', error);
       toast.error('Failed to update profile');
@@ -409,77 +414,6 @@ export default function StudentProfile({ studentProfile, onProfileUpdate }: Stud
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="New York, USA"
               />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="occupation">Occupation/Role</Label>
-              <Input
-                id="occupation"
-                value={formData.occupation}
-                onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-                placeholder="Software Engineer, Student, etc."
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="bio">About You</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                placeholder="Tell mentors a bit about yourself..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="learning_goals">Learning Goals</Label>
-              <Textarea
-                id="learning_goals"
-                value={formData.learning_goals}
-                onChange={(e) => setFormData({ ...formData, learning_goals: e.target.value })}
-                placeholder="What do you want to learn or achieve?"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Interests & Topics</Label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.interests.map((interest, idx) => (
-                <Badge key={idx} variant="secondary" className="gap-1">
-                  {interest}
-                  <button
-                    onClick={() => removeInterest(interest)}
-                    className="ml-1 hover:text-red-600"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add an interest (e.g., Python, Web Design)"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addInterest((e.target as HTMLInputElement).value);
-                    (e.target as HTMLInputElement).value = '';
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={(e) => {
-                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                  addInterest(input.value);
-                  input.value = '';
-                }}
-              >
-                Add
-              </Button>
             </div>
           </div>
 

@@ -133,17 +133,17 @@ export default function ServiceSelection({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-1.5">
+        <h3 className="text-base font-bold text-gray-900 mb-1">
           What do you want help with?
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 mt-1">
           Pick an outcome. Delivery is handled by the expert.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {availableServices.map((serviceKey) => {
           const config = serviceConfig[serviceKey];
           const pricing = servicePricing?.[serviceKey];
@@ -158,16 +158,16 @@ export default function ServiceSelection({
           return (
             <Card
               key={serviceKey}
-              className="group bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300"
+              className="bg-gray-100 border-0 rounded-2xl shadow-none"
             >
-              <div className="p-5 space-y-4">
+              <div className="p-7 space-y-4">
                 {/* Header with Icon & Title */}
                 <div className="flex items-start gap-3.5">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br from-gray-800 to-gray-900 flex-shrink-0">
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 text-base leading-tight mb-1.5">
+                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1.5">
                       {config.name}
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -212,7 +212,7 @@ export default function ServiceSelection({
                       return (
                         <div
                           key={index}
-                          className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-100"
+                          className="flex items-center gap-3 bg-white rounded-lg p-3.5 border border-gray-100"
                         >
                           <div className="w-5 h-5 rounded bg-white flex items-center justify-center shadow-sm flex-shrink-0">
                             <IconComponent className="w-3.5 h-3.5 text-gray-700" />
@@ -229,7 +229,7 @@ export default function ServiceSelection({
                 {/* Free Demo Toggle - Only show if service has free demo */}
                 {pricing.hasFreeDemo && (
                   <div
-                    className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4"
+                    className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4.5"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex-1 flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function ServiceSelection({
                 )}
 
                 {/* Duration & Type Info */}
-                <div className="bg-white rounded-xl p-3.5 space-y-3 shadow-sm">
+                <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
                   {/* Duration Selection (for 1:1 sessions) */}
                   {/* ...removed duration selection UI... */}
 
@@ -276,26 +276,20 @@ export default function ServiceSelection({
                 {/* Pricing & CTA */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   {/* Price display */}
-                  <div className="flex flex-col">
-                    {isFreeDemo ? (
-                      <>
-                        <span className="text-base font-semibold text-gray-400 line-through">
-                          ₹{pricing.price?.toLocaleString("en-IN") || 0}
-                        </span>
-                        <span className="text-2xl font-bold text-green-600">
-                          FREE
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xs text-gray-500 font-medium mb-1">
-                          Price
-                        </span>
-                        <span className="text-2xl font-bold text-gray-900">
-                          ₹{pricing.price?.toLocaleString("en-IN") || 0}
-                        </span>
-                      </>
-                    )}
+                  <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-green-600">
+                        ₹
+                        {pricing.discount_price !== undefined
+                          ? pricing.discount_price
+                          : 0}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-semibold text-gray-400 line-through">
+                        ₹{pricing.price?.toLocaleString("en-IN") || 0}
+                      </span>
+                    </div>
                   </div>
                   <Button
                     onClick={(e) => {
@@ -303,14 +297,12 @@ export default function ServiceSelection({
                       handleSelect(serviceKey);
                     }}
                     className={cn(
-                      "font-semibold transition-all rounded-lg px-6 py-2.5 h-auto text-sm",
-                      isFreeDemo
-                        ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                        : "bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white"
+                      "font-semibold transition-all rounded-lg px-4 py-2 h-auto text-sm group/button",
+                      "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                     )}
                   >
                     {isFreeDemo ? "Try Free" : "Select"}
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-4 h-4 ml-1.5 transition-transform duration-300 ease-out group-hover/button:translate-x-1" />
                   </Button>
                 </div>
               </div>
@@ -376,9 +368,9 @@ export default function ServiceSelection({
                               hasFreeDemo: customService.hasFreeDemo || false,
                             });
                           }}
-                          className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl transition-all group-hover:shadow-md"
+                          className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-xl transition-all group-hover:shadow-md text-sm"
                         >
-                          Select Service
+                          Select
                           <ArrowRight className="w-4 h-4 ml-1.5" />
                         </Button>
                       </div>

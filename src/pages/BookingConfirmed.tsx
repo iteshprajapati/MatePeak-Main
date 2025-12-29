@@ -14,11 +14,19 @@ import {
   AlertCircle,
   Home,
   LayoutDashboard,
+  CalendarPlus,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BookingDetails {
   id: string;
@@ -73,7 +81,7 @@ const BookingConfirmed = () => {
           return;
         }
 
-        // Fetch booking details with mentor info
+        // Fetch booking details
         const { data: bookingData, error: bookingError } = await supabase
           .from("bookings")
           .select(
@@ -90,12 +98,7 @@ const BookingConfirmed = () => {
             meeting_link,
             user_name,
             user_email,
-            created_at,
-            expert_profiles!bookings_expert_id_fkey(
-              full_name,
-              profile_picture_url,
-              username
-            )
+            created_at
           `
           )
           .eq("id", bookingId)
@@ -140,8 +143,21 @@ const BookingConfirmed = () => {
         // Determine user role
         setUserRole(bookingData.user_id === userId ? "student" : "mentor");
 
-        // Extract mentor data
-        const mentorData = bookingData.expert_profiles;
+        // Fetch mentor data from expert_profiles table
+        let mentorName = "Unknown Mentor";
+        let mentorImage = "";
+        if (bookingData.expert_id) {
+          const { data: mentorProfile } = await supabase
+            .from("expert_profiles")
+            .select("full_name, profile_picture_url")
+            .eq("id", bookingData.expert_id)
+            .single();
+
+          if (mentorProfile) {
+            mentorName = mentorProfile.full_name || "Unknown Mentor";
+            mentorImage = mentorProfile.profile_picture_url || "";
+          }
+        }
 
         // Fetch mentor email from profiles table
         let mentorEmail = "";
@@ -182,15 +198,15 @@ const BookingConfirmed = () => {
           student_id: bookingData.user_id,
           mentor_id: bookingData.expert_id,
           service_type: bookingData.session_type,
-          service_name: bookingData.session_type, // Use session_type as service name
+          service_name: bookingData.session_type,
           date: bookingData.scheduled_date,
           time_slot: bookingData.scheduled_time,
           duration: bookingData.duration,
           status: bookingData.status,
           created_at: bookingData.created_at,
-          mentor_name: mentorData?.full_name || "Unknown Mentor",
+          mentor_name: mentorName,
           mentor_email: mentorEmail,
-          mentor_image: mentorData?.profile_picture_url || "",
+          mentor_image: mentorImage,
           student_name: studentName,
           student_email: studentEmail,
           meeting_link: bookingData.meeting_link,
@@ -233,6 +249,109 @@ const BookingConfirmed = () => {
       };
     }
   }, [booking]);
+
+  // Generate calendar event functions
+  const generateCalendarEvent = () => {
+    if (!booking) return;
+
+    const startDate = new Date(`${booking.date}T${booking.time_slot}`);
+    const endDate = new Date(startDate.getTime() + booking.duration * 60000);
+
+    const formatICSDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    };
+
+    const event = {
+      title: `Mentorship Session: ${booking.service_name}`,
+      description: `Mentorship session with ${booking.mentor_name}${
+        booking.meeting_link ? `\n\nMeeting Link: ${booking.meeting_link}` : ""
+      }`,
+      location: booking.meeting_link || "Online",
+      startTime: formatICSDate(startDate),
+      endTime: formatICSDate(endDate),
+    };
+
+    return event;
+  };
+
+  const downloadICS = () => {
+    const event = generateCalendarEvent();
+    if (!event) return;
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Spark Mentor Connect//EN",
+      "BEGIN:VEVENT",
+      `DTSTART:${event.startTime}`,
+      `DTEND:${event.endTime}`,
+      `SUMMARY:${event.title}`,
+      `DESCRIPTION:${event.description.replace(/\n/g, "\\n")}`,
+      `LOCATION:${event.location}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    const blob = new Blob([icsContent], {
+      type: "text/calendar;charset=utf-8",
+    });
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = `booking-${booking.id.slice(0, 8)}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const addToGoogleCalendar = () => {
+    const event = generateCalendarEvent();
+    if (!event) return;
+
+    const startDate = new Date(`${booking.date}T${booking.time_slot}`);
+    const endDate = new Date(
+      startDate.getTime() + (booking?.duration || 60) * 60000
+    );
+
+    const formatGoogleDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    };
+
+    const googleUrl = new URL("https://calendar.google.com/calendar/render");
+    googleUrl.searchParams.append("action", "TEMPLATE");
+    googleUrl.searchParams.append("text", event.title);
+    googleUrl.searchParams.append("details", event.description);
+    googleUrl.searchParams.append("location", event.location);
+    googleUrl.searchParams.append(
+      "dates",
+      `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`
+    );
+
+    window.open(googleUrl.toString(), "_blank");
+  };
+
+  const addToOutlook = () => {
+    const event = generateCalendarEvent();
+    if (!event) return;
+
+    const startDate = new Date(`${booking.date}T${booking.time_slot}`);
+    const endDate = new Date(
+      startDate.getTime() + (booking?.duration || 60) * 60000
+    );
+
+    const outlookUrl = new URL(
+      "https://outlook.live.com/calendar/0/deeplink/compose"
+    );
+    outlookUrl.searchParams.append("path", "/calendar/action/compose");
+    outlookUrl.searchParams.append("rru", "addevent");
+    outlookUrl.searchParams.append("subject", event.title);
+    outlookUrl.searchParams.append("body", event.description);
+    outlookUrl.searchParams.append("location", event.location);
+    outlookUrl.searchParams.append("startdt", startDate.toISOString());
+    outlookUrl.searchParams.append("enddt", endDate.toISOString());
+
+    window.open(outlookUrl.toString(), "_blank");
+  };
 
   // Loading state
   if (loading) {
@@ -580,8 +699,8 @@ const BookingConfirmed = () => {
                 {/* Service Info */}
                 <div className="p-8 border-r border-b border-gray-100">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <Video className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Video className="w-5 h-5 text-gray-700" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900">
                       Service Details
@@ -609,8 +728,8 @@ const BookingConfirmed = () => {
                 {/* Schedule Info */}
                 <div className="p-8 border-b border-gray-100">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-purple-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-gray-700" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900">
                       Schedule
@@ -639,8 +758,8 @@ const BookingConfirmed = () => {
               {/* Contact Info */}
               <div className="p-8 border-b border-gray-100">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-gray-700" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900">
                     Contact Information
@@ -669,12 +788,12 @@ const BookingConfirmed = () => {
 
               {/* Meeting Link */}
               {booking.meeting_link && (
-                <div className="p-8 bg-emerald-50 border-b border-gray-100">
+                <div className="p-8 bg-gray-50 border-b border-gray-100">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                      <Video className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Video className="w-5 h-5 text-gray-700" />
                     </div>
-                    <h3 className="text-lg font-bold text-emerald-900">
+                    <h3 className="text-lg font-bold text-gray-900">
                       Meeting Link Ready
                     </h3>
                   </div>
@@ -682,23 +801,59 @@ const BookingConfirmed = () => {
                     Your session meeting link is ready. Click below to join when
                     it's time.
                   </p>
-                  <a
-                    href={booking.meeting_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                  >
-                    Join Meeting
-                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                  </a>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href={booking.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                      Join Meeting
+                      <ArrowLeft className="w-4 h-4 rotate-180" />
+                    </a>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white px-6 py-3 h-auto font-medium"
+                        >
+                          <CalendarPlus className="w-5 h-5 mr-2" />
+                          Add to Calendar
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem
+                          onClick={addToGoogleCalendar}
+                          className="cursor-pointer py-3"
+                        >
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Google Calendar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={addToOutlook}
+                          className="cursor-pointer py-3"
+                        >
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Outlook Calendar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={downloadICS}
+                          className="cursor-pointer py-3"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download .ics file
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               )}
 
               {/* What's Next */}
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-gray-700" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900">
                     What Happens Next
@@ -706,23 +861,23 @@ const BookingConfirmed = () => {
                 </div>
                 <ul className="space-y-3 text-gray-700">
                   <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
                     <span>
                       You'll receive a confirmation email with all the details
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
                     <span>
                       A reminder will be sent 24 hours before the session
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
                     <span>Final reminder will arrive 1 hour before</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
                     <span>Access your meeting link from dashboard anytime</span>
                   </li>
                 </ul>
@@ -730,11 +885,11 @@ const BookingConfirmed = () => {
             </div>
 
             {/* Action Buttons - Outside main card */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
               <Button
                 variant="outline"
                 onClick={() => navigate("/")}
-                className="flex-1 h-12 border-2 text-base"
+                className="h-12 border-2 text-base px-6"
               >
                 <Home className="w-5 h-5 mr-2" />
                 Back to Home
@@ -743,7 +898,7 @@ const BookingConfirmed = () => {
                 onClick={() =>
                   navigate(isStudent ? "/dashboard" : "/mentor/dashboard")
                 }
-                className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white text-base"
+                className="h-12 bg-gray-900 hover:bg-black text-white text-base px-6"
               >
                 <LayoutDashboard className="w-5 h-5 mr-2" />
                 Go to Dashboard

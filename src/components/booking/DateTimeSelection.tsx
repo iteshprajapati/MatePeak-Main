@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Loader2,
   MessageSquare,
+  ArrowRight,
 } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -659,12 +660,15 @@ export default function DateTimeSelection({
 
           {/* Continue Button */}
           {selectedDate && selectedTime && (
-            <Button
-              onClick={handleContinue}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white h-10 text-sm font-semibold rounded-lg shadow-sm animate-fade-in transition-all"
-            >
-              Continue
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={handleContinue}
+                className="bg-gray-900 hover:bg-gray-800 text-white py-2.5 px-6 text-sm font-semibold rounded-lg shadow-sm animate-fade-in transition-all group"
+              >
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+              </Button>
+            </div>
           )}
 
           {/* Request Custom Time Section */}
@@ -824,23 +828,25 @@ export default function DateTimeSelection({
                     </p>
                   </div>
 
-                  <Button
-                    onClick={handleCustomTimeRequest}
-                    disabled={submittingRequest}
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11 text-sm font-semibold rounded-xl shadow-sm"
-                  >
-                    {submittingRequest ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Sending Request...
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Send Request
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleCustomTimeRequest}
+                      disabled={submittingRequest}
+                      className="bg-gray-900 hover:bg-gray-800 text-white py-2.5 px-8 text-sm font-semibold rounded-xl shadow-sm"
+                    >
+                      {submittingRequest ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Send Request
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

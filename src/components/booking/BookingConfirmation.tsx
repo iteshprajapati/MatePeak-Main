@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Loader2,
   Smartphone,
+  CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -206,7 +207,7 @@ export default function BookingConfirmation({
               variant="outline"
               size="sm"
               onClick={onChangeDateTime}
-              className="text-sm font-semibold rounded-xl border-gray-300 hover:bg-gray-900 hover:text-white"
+              className="text-xs font-semibold rounded-lg border-gray-300 hover:bg-gray-900 hover:text-white px-3 py-1.5 h-auto"
             >
               Change
             </Button>
@@ -341,20 +342,25 @@ export default function BookingConfirmation({
       </div>
 
       {/* Submit Button */}
-      <Button
-        type="submit"
-        disabled={!isFormValid || isSubmitting}
-        className="w-full bg-gray-900 hover:bg-gray-800 text-white h-10 text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          getSubmitButtonText()
-        )}
-      </Button>
+      <div className="flex justify-center">
+        <Button
+          type="submit"
+          disabled={!isFormValid || isSubmitting}
+          className="group/confirm bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-8 text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="mr-2 h-4 w-4 transition-transform duration-300 ease-out group-hover/confirm:scale-110" />
+              {getSubmitButtonText()}
+            </>
+          )}
+        </Button>
+      </div>
     </form>
   );
 }

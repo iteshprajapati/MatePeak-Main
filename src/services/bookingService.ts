@@ -798,3 +798,230 @@ export async function cancelBooking(bookingId: string) {
     };
   }
 }
+
+/**
+ * Student Dashboard specific functions
+ */
+
+export interface StudentBooking {
+  id: string;
+  student_id: string;
+  expert_id: string;
+  session_date: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  status: string;
+  duration: number;
+  message?: string;
+  total_amount: number;
+  meeting_link?: string;
+  expert?: {
+    id: string;
+    full_name: string;
+    username?: string;
+    profile_picture_url?: string;
+    headline?: string;
+  };
+}
+
+export interface BookingStats {
+  totalSessions: number;
+  upcomingSessions: number;
+  completedSessions: number;
+  totalHours: number;
+}
+
+/**
+ * Fetch student bookings with filters
+ */
+export async function fetchStudentBookings(
+  studentId: string,
+  filters?: {
+    status?: string;
+    searchQuery?: string;
+  }
+): Promise<StudentBooking[]> {
+  try {
+    let query = supabase
+      .from("bookings")
+      .select(
+        `
+        *,
+        expert:expert_profiles!expert_id (
+          id,
+          full_name,
+          username,
+          profile_picture_url,
+          headline
+        )
+      `
+      )
+      .eq("student_id", studentId)
+      .order("session_date", { ascending: false });
+
+    if (filters?.status && filters.status !== "all") {
+      query = query.eq("status", filters.status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("❌ Error fetching student bookings:", error);
+      throw error;
+    }
+
+    let results = data || [];
+    if (filters?.searchQuery && results.length > 0) {
+      const searchLower = filters.searchQuery.toLowerCase();
+      results = results.filter((booking) => {
+        const mentorName = booking.expert?.full_name?.toLowerCase() || "";
+        return mentorName.includes(searchLower);
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error in fetchStudentBookings:", error);
+    return [];
+  }
+}
+
+/**
+ * Get next upcoming session for student
+ */
+export async function fetchUpcomingSession(
+  studentId: string
+): Promise<StudentBooking | null> {
+  try {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `
+        *,
+        expert:expert_profiles!expert_id (
+          id,
+          full_name,
+          username,
+          profile_picture_url,
+          headline
+        )
+      `
+      )
+      .eq("student_id", studentId)
+      .gte("session_date", now)
+      .order("session_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("❌ Error fetching upcoming session:", error);
+      throw error;
+    }
+
+    return data || null;
+  } catch (error) {
+    console.error("Error in fetchUpcomingSession:", error);
+    return null;
+  }
+}
+
+/**
+ * Get booking statistics for student
+ */
+export async function getStudentBookingStats(
+  studentId: string
+): Promise<BookingStats> {
+  try {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("status, duration, session_date")
+      .eq("student_id", studentId);
+
+    if (error) {
+      console.error("❌ Error fetching booking stats:", error);
+      throw error;
+    }
+
+    const bookings = data || [];
+    const now = new Date().toISOString();
+
+    const stats: BookingStats = {
+      totalSessions: bookings.length,
+      upcomingSessions: bookings.filter((b) => b.session_date >= now && b.status === "confirmed").length,
+      completedSessions: bookings.filter((b) => b.status === "completed").length,
+      totalHours: Math.round(
+        bookings.reduce((sum, b) => sum + (b.duration || 0), 0) / 60
+      ),
+    };
+
+    return stats;
+  } catch (error) {
+    console.error("Error in getStudentBookingStats:", error);
+    return {
+      totalSessions: 0,
+      upcomingSessions: 0,
+      completedSessions: 0,
+      totalHours: 0,
+    };
+  }
+}
+
+/**
+ * Get unique mentors from student's bookings
+ */
+export async function fetchStudentMentors(studentId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `
+        expert_id,
+        session_date,
+        expert:expert_profiles!expert_id (
+          id,
+          full_name,
+          username,
+          profile_picture_url,
+          headline
+        )
+      `
+      )
+      .eq("student_id", studentId)
+      .order("session_date", { ascending: false });
+
+    if (error) {
+      console.error("❌ Error fetching student mentors:", error);
+      throw error;
+    }
+
+    const bookings = data || [];
+    const mentorMap = new Map();
+    const now = new Date().toISOString();
+
+    bookings.forEach((booking) => {
+      if (booking.expert) {
+        const mentorId = booking.expert_id;
+        if (!mentorMap.has(mentorId)) {
+          mentorMap.set(mentorId, {
+            ...booking.expert,
+            sessionCount: 0,
+            nextSession: undefined,
+          });
+        }
+
+        const mentor = mentorMap.get(mentorId);
+        mentor.sessionCount = (mentor.sessionCount || 0) + 1;
+
+        if (booking.session_date >= now && !mentor.nextSession) {
+          mentor.nextSession = booking.session_date;
+        }
+      }
+    });
+
+    return Array.from(mentorMap.values());
+  } catch (error) {
+    console.error("Error in fetchStudentMentors:", error);
+    return [];
+  }
+}

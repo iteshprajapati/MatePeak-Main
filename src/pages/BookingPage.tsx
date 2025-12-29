@@ -635,34 +635,36 @@ const BookingPage = () => {
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="mb-4 hover:bg-gray-100"
+              className="mb-4 hover:bg-gray-100 text-gray-700"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {step === 1 ? "Back to Profile" : "Back"}
             </Button>
 
-            <Card className="p-6 bg-white shadow-sm border border-gray-200">
+            <Card className="p-6 bg-white shadow-none border border-gray-200 rounded-2xl hover:shadow-sm transition-shadow">
               <div className="flex items-center gap-4">
                 {mentorData.avatar_url && (
                   <img
                     src={mentorData.avatar_url}
                     alt={mentorData.full_name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
+                    className="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100"
                   />
                 )}
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900">
                     {getStepTitle()}
                   </h1>
-                  <p className="text-gray-500 mt-1">Step {step} of 3</p>
+                  <p className="text-gray-500 mt-1 text-sm font-medium">
+                    Step {step} of 3
+                  </p>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-4">
+              <div className="mt-5">
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary transition-all duration-300"
+                    className="h-full bg-gray-900 transition-all duration-300 rounded-full"
                     style={{ width: `${(step / 3) * 100}%` }}
                   />
                 </div>
@@ -671,38 +673,40 @@ const BookingPage = () => {
           </div>
 
           {/* Content */}
-          <Card className="p-6 bg-white shadow-sm border border-gray-200">
-            {step === 1 && (
-              <ServiceSelection
-                services={mentorData.services}
-                servicePricing={mentorData.service_pricing}
-                suggestedServices={[]}
-                onServiceSelect={handleServiceSelect}
-                averageRating={mentorData.average_rating}
-                totalReviews={mentorData.total_reviews}
-              />
-            )}
+          <Card className="bg-white border border-gray-200 rounded-2xl shadow-none hover:shadow-sm transition-shadow">
+            <div className="p-6">
+              {step === 1 && (
+                <ServiceSelection
+                  services={mentorData.services}
+                  servicePricing={mentorData.service_pricing}
+                  suggestedServices={[]}
+                  onServiceSelect={handleServiceSelect}
+                  averageRating={mentorData.average_rating}
+                  totalReviews={mentorData.total_reviews}
+                />
+              )}
 
-            {step === 2 && selectedService && (
-              <DateTimeSelection
-                key="datetime-selection"
-                selectedService={selectedService}
-                mentorId={mentorData.id}
-                timezone={mentorData.timezone}
-                onDateTimeSelect={handleDateTimeSelect}
-              />
-            )}
+              {step === 2 && selectedService && (
+                <DateTimeSelection
+                  key="datetime-selection"
+                  selectedService={selectedService}
+                  mentorId={mentorData.id}
+                  timezone={mentorData.timezone}
+                  onDateTimeSelect={handleDateTimeSelect}
+                />
+              )}
 
-            {step === 3 && selectedService && (
-              <BookingConfirmation
-                selectedService={selectedService}
-                selectedDateTime={selectedDateTime}
-                mentorName={mentorData.full_name}
-                onSubmit={handleBookingSubmit}
-                onChangeDateTime={() => setStep(2)}
-                isSubmitting={isSubmitting}
-              />
-            )}
+              {step === 3 && selectedService && (
+                <BookingConfirmation
+                  selectedService={selectedService}
+                  selectedDateTime={selectedDateTime}
+                  mentorName={mentorData.full_name}
+                  onSubmit={handleBookingSubmit}
+                  onChangeDateTime={() => setStep(2)}
+                  isSubmitting={isSubmitting}
+                />
+              )}
+            </div>
           </Card>
         </div>
       </div>
