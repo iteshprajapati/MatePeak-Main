@@ -56,8 +56,20 @@ export default function MentorSignup() {
         },
       });
 
+      console.log('Signup response:', {
+        hasSession: !!data?.session,
+        hasUser: !!data?.user,
+        userEmail: data?.user?.email,
+        errorExists: !!error
+      });
+
       if (error) {
         console.error('Signup error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         
         // Handle specific error cases with better messages
         if (error.message.includes('fetch')) {
@@ -76,13 +88,21 @@ export default function MentorSignup() {
         return;
       }
 
-      // With email confirmation disabled, session should be available immediately
+      // Check if email confirmation is required
       if (data.session) {
+        // Session created immediately (email confirmation disabled)
         toast.success("Account created successfully! Redirecting to onboarding...");
         navigate("/expert/onboarding");
-      } else {
-        toast.error("Failed to create session. Please try logging in.");
+      } else if (data.user && !data.session) {
+        // Email confirmation required
+        toast.success(
+          "Account created! Please check your email to verify your account before logging in.",
+          { duration: 6000 }
+        );
         navigate("/expert/login");
+      } else {
+        // Unexpected case
+        toast.error("Failed to create account. Please try again or contact support.");
       }
     } catch (error: any) {
       console.error('Unexpected error during signup:', error);
